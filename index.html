@@ -2107,6 +2107,36 @@ body #printable-area .pmdf-report-footer span:first-child{color:#D4AF37!importan
  body #printable-area .pmdf-report td{background:#fff!important;color:#111!important}
  body #printable-area .pmdf-report .mm-step-text,body #printable-area .pmdf-report .mm-card-title{color:#111!important}
 }
+
+/* Padrão documental A4 para os seis modelos - impressão e salvar como PDF */
+@media print {
+ @page {size:210mm 297mm;margin:15mm 14mm 17mm 14mm}
+ html,body{width:auto!important;min-height:0!important;margin:0!important;padding:0!important;background:#fff!important}
+ body #printable-area{width:100%!important;max-width:100%!important;margin:0!important;padding:0!important;display:block!important;box-sizing:border-box!important}
+ body #printable-area .pmdf-report{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;overflow:visible!important;padding:0!important;margin:0!important}
+ body #printable-area .pmdf-report *,body #printable-area .mm-root *{box-sizing:border-box!important;max-width:100%;overflow-wrap:anywhere}
+ body #printable-area h1,body #printable-area h2,body #printable-area h3{break-after:avoid-page!important;page-break-after:avoid!important;orphans:3;widows:3}
+ body #printable-area p,body #printable-area li{orphans:3;widows:3;overflow-wrap:anywhere}
+ body #printable-area .pmdf-report-heading,body #printable-area .mm-hero{break-inside:avoid-page!important;page-break-inside:avoid!important}
+ body #printable-area .g-card,body #printable-area .study-card,body #printable-area .mm-card,
+ body #printable-area .mm-case,body #printable-area .mm-compare-row,body #printable-area .mm-review-item{
+   break-inside:auto!important;page-break-inside:auto!important;overflow:visible!important
+ }
+ body #printable-area .mm-grid,body #printable-area .mm-review-grid{
+   display:block!important;column-count:2!important;column-gap:7mm!important
+ }
+ body #printable-area .mm-grid>.mm-card,body #printable-area .mm-review-grid>.mm-review-item{
+   display:inline-block!important;width:100%!important;vertical-align:top!important;
+   break-inside:avoid-column!important;page-break-inside:avoid!important;margin:0 0 6mm!important
+ }
+ body #printable-area table{table-layout:fixed!important;width:100%!important;border-collapse:collapse!important;font-size:9pt!important}
+ body #printable-area thead{display:table-header-group!important}
+ body #printable-area tfoot{display:table-footer-group!important}
+ body #printable-area tr{break-inside:avoid-page!important;page-break-inside:avoid!important}
+ body #printable-area th,body #printable-area td{padding:5pt!important;white-space:normal!important;word-break:break-word!important}
+ body #printable-area .pmdf-report-footer{break-inside:avoid!important;page-break-inside:avoid!important}
+ body #printable-area .mm-nav,body #printable-area .no-print{display:none!important}
+}
 </style>
     <!-- Segurança real: controle de gravação no GitHub e permissões no Supabase; não é possível impedir cópia do HTML público. -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -4411,9 +4441,9 @@ const CLOZE_RE = /(\d+\s*(?:dias|dia|anos|ano|meses|mês|horas|hora)|\d+\/\d+|(?
         }
 
         // ---------- Exportação / prompt ----------
-        const DOC_CSS = 'body{font-family:Calibri,Arial,sans-serif;color:#111;font-size:11pt}h1{font-size:18pt}h2{font-size:14pt;border-bottom:1px solid #999;margin-top:18pt}h3{font-size:12pt}.g-card{border:1px solid #bbb;padding:6pt;margin:6pt 0;page-break-inside:avoid}.g-banner{background:#fff3cd;padding:6pt}.g-ex{color:#116644}.mind-node{border:1px solid #999;background:#f7f7f7;border-radius:6pt;padding:7pt;margin:5pt 0;page-break-inside:avoid}.mind-child{border-left:2px solid #aaa;margin-left:12pt;padding-left:8pt;page-break-inside:avoid}.study-card{display:block;width:100%;border:1px solid #999;background:#fff;border-radius:6pt;padding:8pt;margin:6pt 0;color:#111;page-break-inside:avoid}.study-card .front,.study-card .back{display:block!important;color:#111}.study-card .g-tag{display:inline-block;border:1px solid #ccc;background:#eee;color:#333;padding:2pt 4pt}table{border-collapse:collapse;width:100%;table-layout:auto;margin:6pt 0}thead{display:table-header-group}tr{page-break-inside:avoid}td,th{border:1px solid #888;padding:4pt;vertical-align:top;text-align:left}th{background:#eee;font-weight:bold}.mm-grid{display:table;width:100%}.mm-card{display:inline-block;vertical-align:top;width:45%;border:1px solid #888;border-top:3px solid #666;border-radius:8pt;padding:8pt;margin:4pt;page-break-inside:avoid}.mm-step-text{border:1px solid #ccc;background:#f5f5f5;text-align:center;padding:5pt}.mm-arrow{text-align:center}.mm-compare-row{display:table;width:100%;margin:5pt 0}.mm-compare-row>div{display:table-cell;width:50%;border:1px solid #aaa;padding:6pt}.mm-review-item{display:inline-block;width:28%;border:1px solid #999;padding:5pt;margin:3pt}.mm-nav{display:none}.pmdf-report{font-family:Arial,sans-serif;color:#111;padding:18pt;background:#fff}.pmdf-report-heading{border-bottom:2pt solid #b8860b;padding:9pt 0}.pmdf-report-emblem{color:#b8860b;font-size:20pt}.pmdf-report-kicker{font-weight:bold;color:#8a6800;font-size:9pt}.pmdf-report-heading h1{font-size:19pt;color:#111}.pmdf-report h2{color:#14243d;border-left:3pt solid #b8860b;padding-left:7pt}.pmdf-report-footer{border-top:1pt solid #ccc;padding-top:8pt;font-size:8pt;color:#555}.pmdf-report .g-card,.pmdf-report .study-card{border:1pt solid #ccd2d9;background:#f8fafc;padding:8pt;page-break-inside:avoid}';
+        const DOC_CSS = 'body{font-family:Calibri,Arial,sans-serif;color:#111;font-size:11pt}h1{font-size:18pt}h2{font-size:14pt;border-bottom:1px solid #999;margin-top:18pt}h3{font-size:12pt}.g-card{border:1px solid #bbb;padding:6pt;margin:6pt 0;page-break-inside:avoid}.g-banner{background:#fff3cd;padding:6pt}.g-ex{color:#116644}.mind-node{border:1px solid #999;background:#f7f7f7;border-radius:6pt;padding:7pt;margin:5pt 0;page-break-inside:avoid}.mind-child{border-left:2px solid #aaa;margin-left:12pt;padding-left:8pt;page-break-inside:avoid}.study-card{display:block;width:100%;border:1px solid #999;background:#fff;border-radius:6pt;padding:8pt;margin:6pt 0;color:#111;page-break-inside:avoid}.study-card .front,.study-card .back{display:block!important;color:#111}.study-card .g-tag{display:inline-block;border:1px solid #ccc;background:#eee;color:#333;padding:2pt 4pt}table{border-collapse:collapse;width:100%;table-layout:auto;margin:6pt 0}thead{display:table-header-group}tr{page-break-inside:avoid}td,th{border:1px solid #888;padding:4pt;vertical-align:top;text-align:left}th{background:#eee;font-weight:bold}.mm-grid{display:table;width:100%}.mm-card{display:inline-block;vertical-align:top;width:45%;border:1px solid #888;border-top:3px solid #666;border-radius:8pt;padding:8pt;margin:4pt;page-break-inside:avoid}.mm-step-text{border:1px solid #ccc;background:#f5f5f5;text-align:center;padding:5pt}.mm-arrow{text-align:center}.mm-compare-row{display:table;width:100%;margin:5pt 0}.mm-compare-row>div{display:table-cell;width:50%;border:1px solid #aaa;padding:6pt}.mm-review-item{display:inline-block;width:28%;border:1px solid #999;padding:5pt;margin:3pt}.mm-nav{display:none}.pmdf-report{font-family:Arial,sans-serif;color:#111;padding:18pt;background:#fff}.pmdf-report-heading{border-bottom:2pt solid #b8860b;padding:9pt 0}.pmdf-report-emblem{color:#b8860b;font-size:20pt}.pmdf-report-kicker{font-weight:bold;color:#8a6800;font-size:9pt}.pmdf-report-heading h1{font-size:19pt;color:#111}.pmdf-report h2{color:#14243d;border-left:3pt solid #b8860b;padding-left:7pt}.pmdf-report-footer{border-top:1pt solid #ccc;padding-top:8pt;font-size:8pt;color:#555}.pmdf-report .g-card,.pmdf-report .study-card{border:1pt solid #ccd2d9;background:#f8fafc;padding:8pt;page-break-inside:avoid}@page Section1{size:595.3pt 841.9pt;margin:42.5pt 39.7pt 48.2pt 39.7pt;mso-header-margin:18pt;mso-footer-margin:18pt}div.Section1{page:Section1}html,body{margin:0;padding:0;width:100%;font:10.5pt/1.5 Calibri,Arial,sans-serif;color:#111}.pmdf-report{padding:0;width:100%;box-sizing:border-box}.pmdf-report-heading{page-break-inside:avoid}.g-card,.study-card,.mm-card{page-break-inside:auto;max-width:100%;word-wrap:break-word}.mm-grid,.mm-review-grid{display:block;width:100%}.mm-card,.mm-review-item{display:block;width:auto;margin:7pt 0;page-break-inside:avoid}.mm-compare-row,.mm-compare-row>div{display:block;width:auto}.pmdf-report h1,.pmdf-report h2,.pmdf-report h3{page-break-after:avoid}p,li{orphans:3;widows:3}table{width:100%;table-layout:fixed;word-wrap:break-word}thead{display:table-header-group}tr{page-break-inside:avoid}td,th{word-wrap:break-word;vertical-align:top}';
         function downloadDoc(title, body) {
-            const h = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${DOC_CSS}</style></head><body>${body}</body></html>`;
+            const h = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${DOC_CSS}</style><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]--></head><body><div class="Section1">${body}</div></body></html>`;
             const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + h], { type: 'application/msword' }));
             a.download = sanitizeFilename(title) + '.doc'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
         }
