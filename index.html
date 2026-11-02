@@ -2634,7 +2634,7 @@ body .pmdf-more-laws-grid .law-shortcut-btn.pmdf-law-selected{
                     <span>Copiar Guia Formatado (Colar no Docs)</span>
                 </button>
 
-                <button onclick="window.print()" class="px-3.5 py-2.5 rounded-xl bg-[#0E1B33] hover:bg-[#162646] text-slate-300 font-medium text-xs sm:text-sm flex items-center gap-2 border border-[#1E2E4F] transition" title="Imprimir ou Salvar como PDF">
+                <button onclick="exportPdfA4()" class="px-3.5 py-2.5 rounded-xl bg-[#0E1B33] hover:bg-[#162646] text-slate-300 font-medium text-xs sm:text-sm flex items-center gap-2 border border-[#1E2E4F] transition" title="Imprimir ou Salvar como PDF">
                     <i data-lucide="printer" class="w-4 h-4"></i>
                     <span class="hidden sm:inline">PDF / Imprimir</span>
                 </button>
@@ -2770,7 +2770,7 @@ body .pmdf-more-laws-grid .law-shortcut-btn.pmdf-law-selected{
                 <div class="no-print flex flex-wrap gap-2 mb-4">
                     <button onclick="copyEssayResult()" class="px-3.5 py-2 rounded-xl bg-[#0E1B33] hover:bg-[#162646] text-slate-100 text-xs font-semibold border border-[#1E2E4F]">Copiar correção</button>
                     <button onclick="exportEssayDoc()" class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold">Baixar (.doc)</button>
-                    <button onclick="window.print()" class="px-3.5 py-2 rounded-xl bg-[#0E1B33] hover:bg-[#162646] text-slate-300 text-xs border border-[#1E2E4F]">PDF / Imprimir</button>
+                    <button onclick="exportPdfA4()" class="px-3.5 py-2 rounded-xl bg-[#0E1B33] hover:bg-[#162646] text-slate-300 text-xs border border-[#1E2E4F]">PDF / Imprimir</button>
                 </div>
                 <div id="essay-out" class="essay-out"></div>
             </section>
@@ -4365,7 +4365,7 @@ body .pmdf-more-laws-grid .law-shortcut-btn.pmdf-law-selected{
             openModal('🧠 Mapa mental — Padrão Outro Turno','<div class="pmdf-mind-modal"><div class="pmdf-mind-actions no-print">'+
                 '<button onclick="copyText(window._mmOutro)" class="'+BTN+'">Copiar formato Outro Turno (Markdown)</button>'+
                 '<button onclick="copyText(window._mm[0])" class="'+BTN+'">Copiar árvore</button>'+
-                '<button onclick="window.print()" class="'+BTN+'">Imprimir / Salvar PDF</button></div>'+
+                '<button onclick="exportPdfA4()" class="'+BTN+'">Imprimir / Salvar PDF</button></div>'+
                 pmdfMindHtml(g,getVisibleArticleRows(g))+'</div>');
         }
 
@@ -4565,6 +4565,53 @@ const CLOZE_RE = /(\d+\s*(?:dias|dia|anos|ano|meses|mês|horas|hora)|\d+\/\d+|(?
             const h = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${DOC_CSS}</style><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]--></head><body><div class="Section1">${body}</div></body></html>`;
             const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + h], { type: 'application/msword' }));
             a.download = sanitizeFilename(title) + '.doc'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+        }
+        // Exportação isolada: não depende de abas ocultas, modais ou regras
+        // de impressão da interface principal. O navegador oferece Salvar como PDF.
+        function exportPdfA4(){
+            if(!CUR.guide)return toast('Carregue um guia antes de exportar o PDF.','error');
+            const content=guideHtml(CUR.guide,false);
+            const name=String(CUR.guide.lawName||'Guia Estratégico');
+            const css=[...document.querySelectorAll('style')].filter(el=>
+                ['pmdf-clean-ui','pmdf-a4-color-print'].includes(el.id)
+            ).map(el=>el.textContent).join('\n');
+            const printFix=String.raw`
+                @page{size:A4 portrait;margin:13mm 14mm 15mm}
+                html,body{margin:0!important;padding:0!important;background:#fff!important;
+                  -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+                body #printable-area{display:block!important;position:static!important;
+                  width:100%!important;max-width:none!important;overflow:visible!important;
+                  margin:0!important;padding:0!important;border:0!important;box-shadow:none!important}
+                #printable-area .pmdf-report{margin:0!important;min-height:0!important;
+                  width:100%!important;max-width:100%!important;overflow:visible!important}
+                #printable-area .mm-grid,#printable-area .mm-review-grid,
+                #printable-area .mm-compare-row{display:block!important;columns:auto!important}
+                #printable-area .mm-card,#printable-area .mm-review-item{
+                  display:block!important;width:auto!important;margin:0 0 5mm!important;
+                  height:auto!important;break-inside:auto!important}
+                #printable-area .mm-card-head,#printable-area .mm-step-text,
+                #printable-area .pmdf-report-heading{break-inside:avoid!important}
+                .no-print,.mm-nav{display:none!important}
+                table{width:100%!important;table-layout:fixed!important;overflow-wrap:anywhere}
+                th,td{overflow-wrap:anywhere!important}
+            `;
+            // A janela é aberta diretamente pelo clique, evitando bloqueio de popup.
+            const preview=window.open('','_blank');
+            if(!preview){
+                toast('Permita pop-ups deste site para salvar em PDF. Abrindo impressão da página.','error');
+                window.print();return;
+            }
+            const safeTitle=esc(name);
+            preview.document.open();
+            preview.document.write('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">'+
+                '<meta name="viewport" content="width=device-width,initial-scale=1">'+
+                '<title>Método PMDF — '+safeTitle+'</title><style>'+css+'\n'+printFix+
+                '</style></head><body><article id="printable-area">'+content+
+                '</article></body></html>');
+            preview.document.close();
+            const printNow=()=>{try{preview.focus();preview.print();}catch(e){toast('Falha ao abrir impressão: '+e.message,'error');}};
+            if(preview.document.readyState==='complete')setTimeout(printNow,250);
+            else preview.addEventListener('load',()=>setTimeout(printNow,250),{once:true});
         }
         function exportToWordDoc() { if (!CUR.guide) return toast('Carregue um guia primeiro.', 'error'); downloadDoc('Guia_' + CUR.guide.lawName, guideHtml(CUR.guide, false)); }
         async function copyHtml(html, plain) {
