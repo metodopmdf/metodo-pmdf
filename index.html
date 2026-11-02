@@ -4895,15 +4895,46 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         }
         async function bootstrapAccount(){
             if(AUTH_INITIALIZED)return;AUTH_INITIALIZED=true;
+            const message=$('account-msg');
             try{
+                const url=new URL(location.href),query=url.searchParams;
                 const hash=new URLSearchParams(location.hash.replace(/^#/,''));
-                if(hash.get('access_token')&&hash.get('refresh_token')){
+                const authError=hash.get('error_description')||query.get('error_description')||hash.get('error')||query.get('error');
+                if(authError){
+                    history.replaceState(null,'',location.pathname);
+                    message.textContent='Não foi possível confirmar o e-mail: '+authError+'. Solicite um novo link de confirmação, se necessário.';
+                    return;
+                }
+                const tokenHash=query.get('token_hash'),type=query.get('type');
+                if(tokenHash&&['email','signup','recovery','invite','magiclink'].includes(type)){
+                    message.textContent='Validando link de confirmação...';
+                    const result=await sbCall('/auth/v1/verify',{method:'POST',body:JSON.stringify({token_hash:tokenHash,type})});
+                    history.replaceState(null,'',location.pathname);
+                    if(result.access_token&&result.refresh_token){
+                        saveSbSession(result);
+                    }else{
+                        message.textContent='E-mail confirmado. Faça login com seu e-mail e senha.';
+                        return;
+                    }
+                }else if(hash.get('access_token')&&hash.get('refresh_token')){
                     saveSbSession({access_token:hash.get('access_token'),refresh_token:hash.get('refresh_token'),expires_at:Math.floor(Date.now()/1000)+Number(hash.get('expires_in')||3600)});
-                    history.replaceState(null,'',location.pathname+location.search);
-                }else{try{saveSbSession(JSON.parse(localStorage.getItem(SB_SESSION_KEY)||'null'));}catch(e){saveSbSession(null);}}
-                if(!SB_SESSION){$('account-msg').textContent='Cadastro Supabase ativo ('+PMDF_RELEASE+'). Entre com seu e-mail ou crie uma conta gratuita.';return;}
-                const user=await sbAuthed('/auth/v1/user');AUTH_USER=sbUser(user);await finishAccountSignIn();
-            }catch(e){saveSbSession(null);AUTH_USER=null;$('account-msg').textContent='Sessão expirada. Entre novamente.';}
+                    history.replaceState(null,'',location.pathname);
+                }else{
+                    try{saveSbSession(JSON.parse(localStorage.getItem(SB_SESSION_KEY)||'null'));}
+                    catch(e){saveSbSession(null);}
+                }
+                if(!SB_SESSION){
+                    message.textContent='Cadastro online disponível. Entre com seu e-mail ou crie uma conta gratuita.';
+                    return;
+                }
+                const user=await sbAuthed('/auth/v1/user');
+                AUTH_USER=sbUser(user);
+                await finishAccountSignIn();
+            }catch(e){
+                saveSbSession(null);AUTH_USER=null;
+                history.replaceState(null,'',location.pathname);
+                message.textContent='Falha ao validar confirmação: '+(e.message||'Erro desconhecido')+'. Verifique o link ou entre com sua senha caso o e-mail já esteja confirmado.';
+            }
         }
         async function submitAccount(event){
             event.preventDefault();const button=$('account-submit'),status=$('account-msg');if(button.disabled)return;
