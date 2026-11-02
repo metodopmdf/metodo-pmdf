@@ -1944,6 +1944,34 @@ body .pmdf-mind-modal .mm-root{max-height:75vh;overflow:auto;scroll-behavior:smo
  body .mm-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
  body .mm-root section{break-before:auto}
 }
+
+/* Cadernos de estudo: linguagem visual editorial Navy & Gold, sem dependências */
+body .pmdf-report{--report-paper:var(--bg-card);--report-ink:var(--text-primary);background:var(--report-paper);color:var(--report-ink);padding:clamp(1rem,3vw,2.3rem);border:1px solid var(--border-subtle);border-radius:18px;box-shadow:var(--shadow-card);position:relative;overflow:hidden}
+body .pmdf-report:before{content:"";display:block;height:5px;background:linear-gradient(90deg,var(--accent),#8b6c2e,transparent);position:absolute;top:0;left:0;right:0}
+body .pmdf-report-heading{display:flex;gap:1.1rem;align-items:center;padding:1.15rem 0 1.3rem;border-bottom:1px solid var(--border-subtle);margin-bottom:1.2rem}
+body .pmdf-report-emblem{width:60px;height:60px;flex:none;display:grid;place-items:center;border:1px solid var(--accent);border-radius:14px;background:var(--accent-soft);color:var(--accent);font-size:1.7rem}
+body .pmdf-report-kicker{color:var(--accent);font-size:.72rem;letter-spacing:.14em;font-weight:800}
+body .pmdf-report-heading h1{font-family:Inter,Arial,sans-serif!important;color:var(--text-primary)!important;font-size:clamp(1.35rem,2.5vw,2rem)!important;line-height:1.25!important;margin:.45rem 0!important}
+body .pmdf-report-heading p{font-size:.83rem!important;color:var(--text-secondary)!important;margin:0!important}
+body .pmdf-report h2{font-family:Inter,Arial,sans-serif!important;font-size:1.25rem!important;color:var(--text-primary)!important;border-bottom:1px solid var(--border-subtle)!important;padding:.65rem 0 .75rem!important;margin:1.65rem 0 .95rem!important}
+body .pmdf-report h2:before{content:"";display:inline-block;width:4px;height:1.05em;background:var(--accent);border-radius:2px;margin-right:.65rem;vertical-align:-.15em}
+body .pmdf-report h3{font-size:1.08rem!important;color:var(--text-primary)!important;margin-top:1.4rem!important}
+body .pmdf-report .g-card,body .pmdf-report .study-card{border:1px solid var(--border-subtle)!important;background:var(--bg-raised)!important;border-radius:13px!important;padding:1rem!important;margin:.75rem 0!important;box-shadow:none!important}
+body .pmdf-report .g-banner{border-left:3px solid var(--accent)!important;background:var(--accent-soft)!important;border-radius:8px!important;padding:.85rem 1rem!important}
+body .pmdf-report table{width:100%;border-collapse:separate;border-spacing:0;border:1px solid var(--border-subtle);border-radius:11px;overflow:hidden}
+body .pmdf-report th{background:var(--bg-raised)!important;color:var(--accent)!important;font-size:.85rem!important;text-transform:none!important}
+body .pmdf-report td{background:var(--bg-card)!important;color:var(--text-primary)!important}
+body .pmdf-report th,body .pmdf-report td{padding:.85rem!important;border-bottom:1px solid var(--border-subtle)!important;border-right:1px solid var(--border-subtle)!important;vertical-align:top}
+body .pmdf-report ul,body .pmdf-report ol{padding-left:1.5rem!important}
+body .pmdf-report li{margin:.4rem 0}
+body .pmdf-report-flash .study-card{min-height:160px;transition:transform .2s,border-color .2s}
+body .pmdf-report-flash .study-card:hover{transform:translateY(-2px);border-color:var(--accent)!important}
+body .pmdf-report-traps .g-card{border-left:3px solid #F59E0B!important}
+body .pmdf-report-bullets .g-card{border-left:3px solid var(--accent)!important}
+body .pmdf-report-footer{border-top:1px solid var(--border-subtle);padding-top:1.15rem;margin-top:2rem;display:flex;align-items:center;justify-content:space-between;gap:.7rem;flex-wrap:wrap;color:var(--text-secondary);font-size:.72rem;letter-spacing:.025em}
+body .pmdf-report-footer span:first-child{font-weight:800;color:var(--accent);letter-spacing:.1em}
+@media(max-width:640px){body .pmdf-report-heading{align-items:flex-start}body .pmdf-report-emblem{width:45px;height:45px;font-size:1.25rem}}
+@media print{body .pmdf-report{background:#fff!important;color:#111!important;border:none!important;box-shadow:none!important;padding:12mm!important}body .pmdf-report-heading h1,body .pmdf-report h2,body .pmdf-report h3{color:#111!important}body .pmdf-report .g-card,body .pmdf-report .study-card{background:#f8fafc!important;color:#111!important;break-inside:avoid}body .pmdf-report-footer{color:#333!important}body .pmdf-report-heading{border-bottom:1px solid #aaa!important}}
 </style>
     <!-- Segurança real: controle de gravação no GitHub e permissões no Supabase; não é possível impedir cópia do HTML público. -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -4252,7 +4280,7 @@ const CLOZE_RE = /(\d+\s*(?:dias|dia|anos|ano|meses|mês|horas|hora)|\d+\/\d+|(?
         }
 
         // ---------- Exportação / prompt ----------
-        const DOC_CSS = 'body{font-family:Calibri,Arial,sans-serif;color:#111;font-size:11pt}h1{font-size:18pt}h2{font-size:14pt;border-bottom:1px solid #999;margin-top:18pt}h3{font-size:12pt}.g-card{border:1px solid #bbb;padding:6pt;margin:6pt 0;page-break-inside:avoid}.g-banner{background:#fff3cd;padding:6pt}.g-ex{color:#116644}.mind-node{border:1px solid #999;background:#f7f7f7;border-radius:6pt;padding:7pt;margin:5pt 0;page-break-inside:avoid}.mind-child{border-left:2px solid #aaa;margin-left:12pt;padding-left:8pt;page-break-inside:avoid}.study-card{display:block;width:100%;border:1px solid #999;background:#fff;border-radius:6pt;padding:8pt;margin:6pt 0;color:#111;page-break-inside:avoid}.study-card .front,.study-card .back{display:block!important;color:#111}.study-card .g-tag{display:inline-block;border:1px solid #ccc;background:#eee;color:#333;padding:2pt 4pt}table{border-collapse:collapse;width:100%;table-layout:auto;margin:6pt 0}thead{display:table-header-group}tr{page-break-inside:avoid}td,th{border:1px solid #888;padding:4pt;vertical-align:top;text-align:left}th{background:#eee;font-weight:bold}.mm-grid{display:table;width:100%}.mm-card{display:inline-block;vertical-align:top;width:45%;border:1px solid #888;border-top:3px solid #666;border-radius:8pt;padding:8pt;margin:4pt;page-break-inside:avoid}.mm-step-text{border:1px solid #ccc;background:#f5f5f5;text-align:center;padding:5pt}.mm-arrow{text-align:center}.mm-compare-row{display:table;width:100%;margin:5pt 0}.mm-compare-row>div{display:table-cell;width:50%;border:1px solid #aaa;padding:6pt}.mm-review-item{display:inline-block;width:28%;border:1px solid #999;padding:5pt;margin:3pt}.mm-nav{display:none}';
+        const DOC_CSS = 'body{font-family:Calibri,Arial,sans-serif;color:#111;font-size:11pt}h1{font-size:18pt}h2{font-size:14pt;border-bottom:1px solid #999;margin-top:18pt}h3{font-size:12pt}.g-card{border:1px solid #bbb;padding:6pt;margin:6pt 0;page-break-inside:avoid}.g-banner{background:#fff3cd;padding:6pt}.g-ex{color:#116644}.mind-node{border:1px solid #999;background:#f7f7f7;border-radius:6pt;padding:7pt;margin:5pt 0;page-break-inside:avoid}.mind-child{border-left:2px solid #aaa;margin-left:12pt;padding-left:8pt;page-break-inside:avoid}.study-card{display:block;width:100%;border:1px solid #999;background:#fff;border-radius:6pt;padding:8pt;margin:6pt 0;color:#111;page-break-inside:avoid}.study-card .front,.study-card .back{display:block!important;color:#111}.study-card .g-tag{display:inline-block;border:1px solid #ccc;background:#eee;color:#333;padding:2pt 4pt}table{border-collapse:collapse;width:100%;table-layout:auto;margin:6pt 0}thead{display:table-header-group}tr{page-break-inside:avoid}td,th{border:1px solid #888;padding:4pt;vertical-align:top;text-align:left}th{background:#eee;font-weight:bold}.mm-grid{display:table;width:100%}.mm-card{display:inline-block;vertical-align:top;width:45%;border:1px solid #888;border-top:3px solid #666;border-radius:8pt;padding:8pt;margin:4pt;page-break-inside:avoid}.mm-step-text{border:1px solid #ccc;background:#f5f5f5;text-align:center;padding:5pt}.mm-arrow{text-align:center}.mm-compare-row{display:table;width:100%;margin:5pt 0}.mm-compare-row>div{display:table-cell;width:50%;border:1px solid #aaa;padding:6pt}.mm-review-item{display:inline-block;width:28%;border:1px solid #999;padding:5pt;margin:3pt}.mm-nav{display:none}.pmdf-report{font-family:Arial,sans-serif;color:#111;padding:18pt;background:#fff}.pmdf-report-heading{border-bottom:2pt solid #b8860b;padding:9pt 0}.pmdf-report-emblem{color:#b8860b;font-size:20pt}.pmdf-report-kicker{font-weight:bold;color:#8a6800;font-size:9pt}.pmdf-report-heading h1{font-size:19pt;color:#111}.pmdf-report h2{color:#14243d;border-left:3pt solid #b8860b;padding-left:7pt}.pmdf-report-footer{border-top:1pt solid #ccc;padding-top:8pt;font-size:8pt;color:#555}.pmdf-report .g-card,.pmdf-report .study-card{border:1pt solid #ccd2d9;background:#f8fafc;padding:8pt;page-break-inside:avoid}';
         function downloadDoc(title, body) {
             const h = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${DOC_CSS}</style></head><body>${body}</body></html>`;
             const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + h], { type: 'application/msword' }));
@@ -4832,7 +4860,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             if(level==='avancado')add(/\b(1\/3|1\/2|2\/3|1\/6)\b/,m=>({'1/3':'1/2','1/2':'2/3','2/3':'1/3','1/6':'1/3'})[m[1]],'A fração legal foi alterada.');
             return out.slice(0,5);
         }
-        function questionPool(g,fmt,lvl){
+        function questionPool(g,fmt,lvl,requestedCount=5){
             const level=LEVELS_SAFE_LEVEL(lvl),A=g.articlesMapping||{},law=g._baseLawName||g.lawName||'Conteúdo estudado';
             const all=[],used=new Set(),bank=$('q-board')?.value||'Cebraspe';
             const extract=(arr,inc)=>safeArray(arr).forEach(a=>{
@@ -4879,10 +4907,24 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                         if(choices.length===5)break;
                     }
                 }
+                // Distratores por associação cruzada: outras regras verdadeiras do mesmo guia
+                // tornam-se incorretas apenas quando atribuídas ao artigo perguntado.
+                // Não modifica o teor da regra nem inventa disposições legais.
+                if(choices.length<requestedCount){
+                    for(const other of all){
+                        if(other.head===item.head||other.sentence===item.sentence)continue;
+                        const choice=item.head+' — '+other.sentence;
+                        if(!seenOpts.has(choice)){
+                            seenOpts.add(choice);
+                            choices.push({text:choice,correct:false});
+                        }
+                        if(choices.length>=requestedCount)break;
+                    }
+                }
                 // São aceitas 4 ou 5 opções fundamentadas, nunca distratores artificiais.
                 // O enunciado associativo identifica a correspondência dispositivo/conteúdo.
-                if(choices.length>=4){
-                    const options=shuffle(choices.slice(0,5)),answer='ABCDE'[options.findIndex(x=>x.correct)];
+                if(choices.length>=requestedCount){
+                    const options=shuffle(choices.slice(0,requestedCount)),answer='ABCDE'[options.findIndex(x=>x.correct)];
                     mc.push({...base,type:'MC',statement:examItemStyle(level,'MC',bank,item.head,true),
                         options:options.map(x=>x.text),answer,
                         explanation:'Gabarito '+answer+'. A correspondência correta é '+item.head+
@@ -4933,7 +4975,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const S=g.executiveSummary||{}, X=g.structuralXRay||{}, A=g.articlesMapping||{}, T=g.trapsAndJurisprudence||{}, E=safeArray(g.essayRepertoire), rows=getVisibleArticleRows(g), done=studied(), eb=effBank();
             const wrap=(title,body)=>'<h2>'+title+'</h2>'+body;
             const concepts=safeArray(S.keyConcepts).slice(0,LEVEL==='iniciante'?4:99);
-            const intro='<h1 style="font-size:1.45rem;font-weight:800;color:#fff">'+esc(g.lawName)+'</h1><p>Foco: '+esc($('role-select').value)+' · Banca: '+esc($('board-select').value)+' · Nível: <b>'+LEVELS[LEVEL].label+'</b></p><p class="g-banner">'+LEVELS[LEVEL].road+'</p>';
+            const intro='<div class="pmdf-report-heading"><div class="pmdf-report-emblem" aria-hidden="true">⚖</div><div class="pmdf-report-heading-copy"><span class="pmdf-report-kicker">MÉTODO PMDF · CADERNO ESTRATÉGICO</span><h1>'+esc(g.lawName)+'</h1><p>Foco: '+esc($('role-select').value)+' · Banca: '+esc($('board-select').value)+' · Nível: <b>'+LEVELS[LEVEL].label+'</b></p></div></div><p class="g-banner">'+LEVELS[LEVEL].road+'</p>';
             const executive=LEVEL==='iniciante'?'<ol class="list-decimal pl-5">'+[S.centralObjective,...concepts.slice(0,3)].map(x=>'<li>'+esc(firstSentences(x,260))+'</li>').join('')+'</ol>':'<p>'+esc(S.centralObjective||'')+'</p><ul>'+concepts.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
             const glossary=LEVEL==='iniciante'?glossaryHtml(g):'';
             const articleCard=(a,i)=>{const tags=bankTags(a),dim=interactive&&((eb==='cebraspe'&&!tags.c)||(eb==='fgv'&&!tags.f)),hl=interactive&&((eb==='cebraspe'&&tags.c)||(eb==='fgv'&&tags.f));const id=(CUR.key||'x')+'|'+String(a.article).slice(0,40),noteKey='note:'+id,note=store.get(noteKey)||'';let noteId=-1;if(interactive)noteId=NOTE_IDS.push(noteKey)-1;
@@ -4961,7 +5003,11 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 body=intro+wrap('Fichamento de Pegadinhas & Questões',traps.map((t,i)=>'<div class="g-card"><b>Pegadinha '+(i+1)+'</b><p>'+esc(t)+'</p></div>').join('')+'<h3>Assertivas Certo/Errado comentadas</h3>'+questions.map((q,i)=>'<div class="g-card"><b>'+ (i+1)+'. '+esc(q.answer==='C'?'CERTO':'ERRADO')+'</b><p>'+esc(q.statement)+'</p><p class="g-ex">'+esc(q.explanation)+'</p></div>').join(''));
             }
             const tools=interactive?'<div class="no-print flex flex-wrap gap-2 mt-3"><button onclick="openFlash()" class="'+BTN+'">🃏 Revisão de flashcards</button><button onclick="startSim(null,true)" class="'+BTN+'">📝 Simulado</button><button onclick="openErrors()" class="'+BTN+'">📕 Caderno de Erros</button><button onclick="openMindMap()" class="'+BTN+'">🌳 Mapa mental</button><button onclick="openPanel()" class="'+BTN+'">📊 Painel do Edital &amp; Backup</button><button onclick="toggleCloze()" class="'+BTN+'">🙈 Modo Lacunas</button><input type="search" id="guide-search" oninput="filterGuide(this.value)" placeholder="Buscar neste guia..." class="px-3 py-2 rounded-xl bg-[#0E1B33] border border-[#1E2E4F] text-xs text-slate-200 w-64"><button type="button" onclick="clearGuideOptions()" class="'+BTN+'">↺ Limpar filtros do guia</button><button onclick="searchAll()" class="'+BTN+'">🔎 Busca global</button>'+(LEVEL!=='iniciante'?'<select onchange="setBank(this.value)" class="px-2 py-2 rounded-xl bg-[#0E1B33] border border-[#1E2E4F] text-xs text-slate-200"><option value="auto" '+(BANK==='auto'?'selected':'')+'>Conforme a banca</option><option value="todas" '+(BANK==='todas'?'selected':'')+'>Todas</option><option value="cebraspe" '+(BANK==='cebraspe'?'selected':'')+'>Cebraspe</option><option value="fgv" '+(BANK==='fgv'?'selected':'')+'>FGV/AOCP</option></select>':'')+'</div>':'';
-            return tools+(interactive?'<p id="g-progress" class="no-print mt-2"></p>':'')+body+(interactive?'<div id="sim-box" class="no-print mt-3"></div>':'');
+            return tools+(interactive?'<p id="g-progress" class="no-print mt-2"></p>':'')+
+                '<div class="pmdf-report pmdf-report-'+SUMMARY_FORMAT+'">'+
+                (SUMMARY_FORMAT==='mind'?'<div class="pmdf-report-heading"><div class="pmdf-report-emblem">⚖</div><div class="pmdf-report-heading-copy"><span class="pmdf-report-kicker">MÉTODO PMDF · CADERNO ESTRATÉGICO</span><h1>'+esc(g.lawName)+'</h1><p>Mapa mental de fluxo e decisão</p></div></div>':'')+
+                body+'<footer class="pmdf-report-footer"><span>⚖ MÉTODO PMDF</span><span>Material didático · Confira a norma oficial vigente</span></footer></div>'+
+                (interactive?'<div id="sim-box" class="no-print mt-3"></div>':'');
         }
         function buildStudyCards(g){
             const level=LEVELS_SAFE_LEVEL(LEVEL);
@@ -5158,30 +5204,24 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const fmt=$('q-format').value,lvl=LEVELS_SAFE_LEVEL($('q-level').value),baseFmt=fmt==='CE'?'CE':'MC';
             let pool=[];
             try {
-                if(imported){pool=IMPORTED_QUESTIONS.filter(q=>q.type===baseFmt).map(q=>({...q}));}else for(const g of guides){const found=questionPool(g,baseFmt,lvl);pool.push(...found.map(q=>({ ...q,law:g.lawName })));}
+                if(imported){pool=IMPORTED_QUESTIONS.filter(q=>q.type===baseFmt).map(q=>({...q}));}else for(const g of guides){const found=questionPool(g,baseFmt,lvl,fmt==='MC4'?4:5);pool.push(...found.map(q=>({ ...q,law:g.lawName })));}
                 pool=shuffle(uniqueQuestions(pool.filter(questionIsComplete)));
             }catch(e){return toast('Não foi possível gerar questões: '+e.message,'error');}
-            // A hospedagem estática trabalha com questões locais e provas importadas.
-            if(fmt==='MC4')pool=pool.map(toFour);
-            if(!imported&&baseFmt==='MC')pool=pool.filter(q=>q.type==='MC'&&Array.isArray(q.options)&&(fmt==='MC4'?q.options.length===4:q.options.length===5));
-            if(imported&&fmt!=='CE')pool=pool.filter(q=>Array.isArray(q.options)&&q.options.length===(fmt==='MC4'?4:5));
-            if(!imported&&!pool.length&&baseFmt==='MC'){
-                const four=[];
-                for(const g of guides)four.push(...questionPool(g,'MC',lvl).filter(q=>q.options.length===4).map(q=>({...q,law:g.lawName})));
-                if(four.length){
-                    pool=shuffle(uniqueQuestions(four.filter(questionIsComplete)));
-                    if($('q-format'))$('q-format').value='MC4';
-                    toast('Esta norma possui 4 alternativas fundamentadas por questão. Formato ajustado automaticamente.','ok');
-                }else{
-                    for(const g of guides)pool.push(...questionPool(g,'CE',lvl).map(q=>({...q,law:g.lawName})));
-                    pool=shuffle(uniqueQuestions(pool.filter(questionIsComplete)));
-                    if(pool.length){
-                        if($('q-format'))$('q-format').value='CE';
-                        toast('Não há alternativas verificáveis suficientes; iniciando Certo/Errado sem inventar distratores.','ok');
-                    }
+            // Respeita estritamente o formato escolhido pelo candidato: 4, 5 ou C/E.
+            // Não altera o seletor silenciosamente nem produz distratores genéricos.
+            const desired=fmt==='MC4'?4:fmt==='MC5'?5:0;
+            if(desired){
+                if(imported){
+                    pool=pool.map(q=>desired===4?toFour(q):q);
                 }
+                pool=pool.filter(q=>q.type==='MC'&&Array.isArray(q.options)&&q.options.length===desired);
             }
-            if(!pool.length)return toast(imported?'Nenhuma questão importada no formato escolhido. Importe prova ou altere o filtro.':baseFmt==='MC'?'Não foi possível construir 5 alternativas verificáveis para esta norma. Tente Certo/Errado ou “Todas as leis”.':'O material não possui trechos completos para gerar questões.','error');
+            if(!pool.length){
+                const message=imported?'Não há questões importadas no formato escolhido.':
+                  desired?'Este conteúdo não oferece '+desired+' alternativas fundamentadas por questão. Selecione outra lei ou amplie a fonte.':
+                  'Não há trechos completos para montar questões.';
+                return toast(message,'error');
+            }
             const taken=Math.min(value,pool.length);
             Q_STATE={items:pool.slice(0,taken),index:0,hits:0,wrong:0,blank:0,pending:0,answered:false,questionStart:Date.now()};saveStudySession();
             $('q-status').textContent=(taken<value?'Foram encontradas '+taken+' questões distintas; o banco local não inventa itens extras. ':'')+'Fonte: '+(imported?'Provas importadas':guides.length===1?guides[0].lawName:guides.length+' leis')+' · '+taken+' questões · Nível: '+LEVELS[lvl].label+' · Critério: '+EXAMINER_RUBRIC[lvl].label+'.';
