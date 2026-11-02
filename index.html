@@ -1658,7 +1658,7 @@
      <label class="welcome-secondary" style="display:grid;place-items:center;padding:10px 8px;border-radius:12px;font-weight:700;cursor:pointer">Importar backup<input type="file" accept=".json,application/json" class="hidden" onchange="importProgress(this)" /></label>
    </div>
    <div id="welcome-progress" class="welcome-progress" role="status" aria-live="polite"></div>
-   <p class="welcome-privacy">Ao entrar, seu histórico de estudos é sincronizado pelo Supabase e pode permanecer armazenado neste navegador. Não compartilhe sua senha. Em caso de esquecimento, use a recuperação por e-mail.</p>
+   <p class="welcome-privacy">Ao entrar, seu histórico de estudos é sincronizado pelo Supabase e pode permanecer armazenado neste navegador. Não compartilhe sua senha. Não há recuperação automática de senha. Guarde sua credencial com segurança.</p>
   </div>
 </section>
 
@@ -4805,7 +4805,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         const usernameToLoginEmail=v=>normalizeUsername(v)+'@'+PMDF_USER_DOMAIN;
         const SB_REDIRECT_URL='https://caioveloso.github.io/metodo-pmdf/';
         let SB_SESSION=null,SB_REFRESH=null;
-        const PMDF_RELEASE='2026-11-02-r2';
+        const PMDF_RELEASE='2026-11-02-usuario-senha';
         const sbHeaders=(token)=>({'apikey':SB_KEY,'Authorization':'Bearer '+(token||SB_KEY),'Content-Type':'application/json'});
         function saveSbSession(session){
             SB_SESSION=session?.access_token?{...session,expires_at:session.expires_at||Math.floor(Date.now()/1000)+Number(session.expires_in||3600)}:null;
@@ -4890,44 +4890,12 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             if(AUTH_INITIALIZED)return;AUTH_INITIALIZED=true;
             const message=$('account-msg');
             try{
-                const url=new URL(location.href),query=url.searchParams;
-                const hash=new URLSearchParams(location.hash.replace(/^#/,''));
-                const authError=hash.get('error_description')||query.get('error_description')||hash.get('error')||query.get('error');
-                if(authError){
-                    history.replaceState(null,'',location.pathname);
-                    message.textContent='Não foi possível concluir a autenticação: '+authError+'. Solicite um novo link de confirmação, se necessário.';
-                    return;
-                }
-                const tokenHash=query.get('token_hash'),type=query.get('type');
-                if(tokenHash&&['email','signup','recovery','invite','magiclink'].includes(type)){
-                    message.textContent='Validando link de confirmação...';
-                    const result=await sbCall('/auth/v1/verify',{method:'POST',body:JSON.stringify({token_hash:tokenHash,type})});
-                    history.replaceState(null,'',location.pathname);
-                    if(result.access_token&&result.refresh_token){
-                        saveSbSession(result);
-                    }else{
-                        message.textContent='Conta confirmada. Faça login com seu usuário e senha.';
-                        return;
-                    }
-                }else if(hash.get('access_token')&&hash.get('refresh_token')){
-                    saveSbSession({access_token:hash.get('access_token'),refresh_token:hash.get('refresh_token'),expires_at:Math.floor(Date.now()/1000)+Number(hash.get('expires_in')||3600)});
-                    history.replaceState(null,'',location.pathname);
-                }else{
-                    try{saveSbSession(JSON.parse(localStorage.getItem(SB_SESSION_KEY)||'null'));}
-                    catch(e){saveSbSession(null);}
-                }
-                if(!SB_SESSION){
-                    message.textContent='Cadastro online disponível. Entre com seu usuário e senha ou crie uma conta gratuita.';
-                    return;
-                }
-                const user=await sbAuthed('/auth/v1/user');
-                AUTH_USER=sbUser(user);
+                try{saveSbSession(JSON.parse(localStorage.getItem(SB_SESSION_KEY)||'null'));}
+                catch(e){saveSbSession(null);}
+                if(!SB_SESSION){message.textContent='Cadastro por usuário e senha disponível. Sem confirmação por e-mail.';return;}
+                const user=await sbAuthed('/auth/v1/user');AUTH_USER=sbUser(user);
                 await finishAccountSignIn();
-            }catch(e){
-                saveSbSession(null);AUTH_USER=null;
-                history.replaceState(null,'',location.pathname);
-                message.textContent='Falha ao validar o acesso: '+(e.message||'Erro desconhecido')+'. Verifique o link ou entre com sua senha caso o e-mail já esteja confirmado.';
-            }
+            }catch(e){saveSbSession(null);AUTH_USER=null;message.textContent='Sessão expirada. Entre com seu usuário e senha.';}
         }
         async function submitAccount(event){
             event.preventDefault();
