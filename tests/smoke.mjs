@@ -18,29 +18,30 @@ function createClient(fetchImpl=async()=>({ok:true,status:200,json:async()=>[]})
     removeItem:k=>map.delete(k),key:i=>[...map.keys()][i],get length(){return map.size}
   };
   const defaults={
-    'q-source':'current','q-format':'CE','q-level':'intermediario','q-count':'500','q-board':'Cebraspe','q-year':'2024',
-    'anki-source':'current','anki-count':'5','anki-mode':'due','results-topic':'*','essay-lines':'30'
+    'q-source':'current','q-format':'CE','q-level':'intermediario','q-board':'Cebraspe',
+    'anki-source':'current','anki-mode':'due','results-topic':'*','essay-lines':'30'
   };
   function $(id){
     if(!elements.has(id))elements.set(id,{
       id,value:defaults[id]??'',innerHTML:'',textContent:'',className:'',disabled:false,hidden:false,style:{},
       classList:{add(){},remove(){},toggle(){},contains(){return false}},
-      replaceChildren(){},scrollIntoView(){},addEventListener(){},setAttribute(){},append(){},appendChild(){},remove(){},
+      replaceChildren(){},prepend(){},dispatchEvent(){},scrollIntoView(){},addEventListener(){},setAttribute(){},append(){},appendChild(){},remove(){},
     });
     return elements.get(id);
   }
   const document={
-    getElementById:$,addEventListener(){},querySelectorAll(){return []},
+    getElementById:$,addEventListener(){},querySelectorAll(){return []},querySelector(){return null},
     createElement(tag){return {tagName:tag,setAttribute(){},remove(){},textContent:'',className:'',style:{},appendChild(){},append(){}};},
     body:{classList:{add(){},remove(){},contains(){return false}},dataset:{},appendChild(){}},
     documentElement:{style:{}}
   };
-  const win={};
+  const win={scrollTo(){}};
   const application=new Function(
     'document','window','localStorage','location','navigator','setInterval','setTimeout','clearTimeout','fetch',
     code+'\nreturn {BUILTIN_PMDF_GUIDES,questionPool,buildStudyCards,fullQuestionSentences,getCardBox,'+
     'store,accountData,accountFetch,mergeProgressData,applyProgressSnapshot,getSyncMeta,'+
     'startQuestions,answerQuestion,nextQuestion,startAnki,revealAnki,nextAnki,correctEssay,renderResultsChart,'+
+    'setSummaryFormat,renderGuide,addOfficialQuestions,beginStudies,saveStudySession,readStudySession,'+
     'choose(k){CUR={key:k,guide:BUILTIN_PMDF_GUIDES[k],_poolCache:{}}},'+
     'level(l){LEVEL=l},auth(id){AUTH_USER={username:id,displayName:id};saveSbSession({access_token:"jwt",refresh_token:"refresh",expires_in:3600})},'+
     'questionState(){return Q_STATE},ankiState(){return ANKI_STATE},essayReport(){return ESSAY_MD}};'
@@ -125,6 +126,44 @@ for(const level of ['iniciante','intermediario','avancado']){
   assert(chart.includes('33%')&&chart.includes('#DC2626'),'Gráfico de desempenho incorreto');
   walkthrough.push(level);
 }
+// Fluxos reais: o candidato pode trocar os seis formatos sem perder questões ou cartões.
+const review=createClient(),student=review.application;
+student.auth('qa-revisao');student.choose('cpm');student.level('avancado');
+student.beginStudies(false);
+review.$('q-format').value='MC';review.$('q-level').value='avancado';
+await student.startQuestions();
+const liveQuestions=student.questionState();
+assert(liveQuestions?.items.length>0,'Simulado não iniciado na revisão de sessão');
+for(const format of ['full','bullets','table','mind','flash','traps']){
+  student.setSummaryFormat(format);
+  assert.equal(student.questionState(),liveQuestions,'Formato '+format+' apagou questões');
+}
+student.startAnki();
+const liveCards=student.ankiState();
+assert(liveCards?.cards.length>0,'Cartões indisponíveis');
+student.setSummaryFormat('full');
+assert.equal(student.ankiState(),liveCards,'Troca de resumo apagou a revisão');
+student.level('intermediario');
+assert.equal(student.questionState(),liveQuestions,'Troca de nível apagou o simulado');
+assert.equal(student.ankiState(),liveCards,'Troca de nível apagou cartões');
+assert.equal(student.readStudySession().question.items.length,liveQuestions.items.length,'Sessão incompleta no salvamento');
+assert.equal(student.readStudySession().anki.cards.length,liveCards.cards.length,'Cartões incompletos no salvamento');
+
+// Importação sem gabarito: permitir estudo, mas nunca declarar acerto inexistente.
+student.addOfficialQuestions([{
+  law:'Prova simulada importada',sourceNumber:1,type:'MC',origin:'official-import',
+  topic:'Noções de atuação policial',lawBasis:'Prova importada — sem gabarito',
+  statement:'Ao analisar uma operação de segurança pública e suas condições jurídicas, identifique a alternativa conforme a prova apresentada.',
+  options:['Hipótese jurídica A','Hipótese jurídica B','Hipótese jurídica C','Hipótese jurídica D'],answer:null
+}]);
+assert.equal(review.$('q-format').value,'MC','Importação restaurou valor antigo do seletor');
+await student.startQuestions();
+assert.equal(student.questionState().items.length,1,'Questão importada sem resposta descartada');
+student.answerQuestion('A');
+assert.equal(student.questionState().pending,1,'Questão sem gabarito não ficou pendente');
+student.beginStudies(true);
+assert.equal(review.$('q-format').value,'MC','Retomada de sessão usou opção removida');
+
 // Redação: resultado é estimativa, não correção oficial.
 primary.$('essay-theme').value='Policiamento e direitos fundamentais';
 primary.$('essay-motiv').value='Direitos fundamentais, legalidade e capacitação policial';
