@@ -2615,7 +2615,7 @@ body .pmdf-more-laws-grid .law-shortcut-btn.pmdf-law-selected{
                     <i data-lucide="file-text" class="w-5 h-5"></i>
                 </div>
                 <div>
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400 block">Documento Pronto para Exportação</span>
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400 block">Caderno de Estudo Interativo</span>
                     <h3 id="current-doc-title" class="text-sm sm:text-base font-bold text-white">
                         Guia Estratégico PMDF - Decreto-Lei nº 1.001/1969 (Código Penal Militar)
                     </h3>
@@ -2624,24 +2624,10 @@ body .pmdf-more-laws-grid .law-shortcut-btn.pmdf-law-selected{
 
             <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
                 <label class="text-xs text-slate-300 flex items-center gap-2">Formato <select id="summary-format-toolbar" onchange="setSummaryFormat(this.value)" class="max-w-[230px] px-2.5 py-2 rounded-xl bg-[#040912] border border-[#1E2E4F] text-xs text-white"><option value="full">📖 Por Extenso</option><option value="bullets">⚡ Esquematizado</option><option value="table">📊 Quadro Sinótico</option><option value="mind">🌳 Mapa Mental</option><option value="flash">🃏 Flashcards</option><option value="traps">🎯 Pegadinhas &amp; Questões</option></select></label>
-                <button onclick="exportToWordDoc()" class="flex-1 sm:flex-initial justify-center px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-blue-600/25 transition">
-                    <i data-lucide="download" class="w-4 h-4"></i>
-                    <span>Baixar Arquivo Docs / Word (.doc)</span>
-                </button>
-
-                <button onclick="copyFormattedGuide()" class="flex-1 sm:flex-initial justify-center px-4 py-2.5 rounded-xl bg-[#0E1B33] hover:bg-[#162646] text-slate-100 font-semibold text-xs sm:text-sm flex items-center gap-2 border border-[#1E2E4F] transition">
-                    <i data-lucide="clipboard-check" class="w-4 h-4 text-[#E5C158]"></i>
-                    <span>Copiar Guia Formatado (Colar no Docs)</span>
-                </button>
-
-                <button onclick="exportPdfA4()" class="px-3.5 py-2.5 rounded-xl bg-[#0E1B33] hover:bg-[#162646] text-slate-300 font-medium text-xs sm:text-sm flex items-center gap-2 border border-[#1E2E4F] transition" title="Imprimir ou Salvar como PDF">
-                    <i data-lucide="printer" class="w-4 h-4"></i>
-                    <span class="hidden sm:inline">PDF / Imprimir</span>
-                </button>
             </div>
         </div>
 
-        <!-- Área Renderizada do Guia Estratégico (Visível na tela e exportável para Docs/PDF) -->
+        <!-- Área renderizada do guia estratégico para estudo na plataforma -->
         <article id="printable-area" class="bg-[#0A1426] border border-[#172642] rounded-2xl p-6 sm:p-8 shadow-2xl space-y-8">
             <!-- O conteúdo dinâmico é injetado aqui via JS -->
         </article>
@@ -2669,8 +2655,8 @@ body .pmdf-more-laws-grid .law-shortcut-btn.pmdf-law-selected{
                     <label class="text-xs text-[#E5C158] font-semibold">Ano inicial das provas
                         <input id="q-year" type="number" min="2000" max="2030" value="2024" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"/>
                     </label>
-                    <label class="text-xs text-[#E5C158] font-semibold">Quantidade (5 a 500)
-                        <input id="q-count" type="number" min="5" max="500" step="1" value="30" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]" />
+                    <label class="text-xs text-[#E5C158] font-semibold">Quantidade (mínimo 20)
+                        <input id="q-count" type="number" min="20" max="500" step="1" value="30" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]" />
                     </label>
                 </div>
                 <div class="flex gap-2 flex-wrap"><button type="button" onclick="startQuestions()" class="px-5 py-2.5 rounded-xl bg-[#D4AF37] text-[#050B16] font-extrabold">Gerar e iniciar questões</button>
@@ -3897,15 +3883,15 @@ body .pmdf-more-laws-grid .law-shortcut-btn.pmdf-law-selected{
 
         // ---------- Nível do candidato ----------
         const LEVELS = {
-            iniciante: { label: 'Iniciante', pomo: [25, 5], simN: 5, desc: 'Direto ao ponto: resumo simples, só o que mais cai, passo a passo. Itens secundários ficam recolhidos.',
+            iniciante: { label: 'Iniciante', pomo: [25, 5], simN: 20, desc: 'Direto ao ponto: resumo simples, só o que mais cai, passo a passo. Itens secundários ficam recolhidos.',
                 road: '<b>Roteiro:</b> 1) leia o Resumo; 2) estude só a “Alta Incidência” e marque ✔; 3) treine os Flashcards; 4) faça o Simulado; 5) revise o Caderno de Erros.',
                 essay: 'Iniciante: explique cada erro e cada conceito de forma didática, com exemplos curtos, e priorize os 3 ajustes de maior ganho de nota.',
                 instr: 'NÍVEL INICIANTE: use linguagem simples e frases curtas; defina cada termo jurídico na primeira vez que aparecer; use analogias do cotidiano policial; limite-se a 4 conceitos-chave; priorize apenas o essencial de alta incidência; não aprofunde jurisprudência nem controvérsias doutrinárias.' },
-            intermediario: { label: 'Intermediário', pomo: [40, 8], simN: 8, desc: 'Equilíbrio entre teoria e prova: alta e média incidência, comparativos e filtro por banca.',
+            intermediario: { label: 'Intermediário', pomo: [40, 8], simN: 20, desc: 'Equilíbrio entre teoria e prova: alta e média incidência, comparativos e filtro por banca.',
                 road: '<b>Meta:</b> dominar alta e média incidência; compare institutos parecidos, use o filtro de banca e deixe o Caderno de Erros dizer o que revisar.',
                 essay: 'Intermediário: seja objetivo e técnico, mostrando o erro, a regra e a correção, sem rodeios.',
                 instr: 'NÍVEL INTERMEDIÁRIO: use linguagem técnica acessível; traga 5 a 6 conceitos-chave com os artigos correspondentes; inclua comparativos entre institutos parecidos e os principais prazos/penas; cite jurisprudência apenas quando sumulada.' },
-            avancado: { label: 'Avançado', pomo: [50, 10], simN: 12, desc: 'Tudo aberto: exceções, jurisprudência STF/STJ e pegadinhas finas, começando pelo que a banca mais explora.',
+            avancado: { label: 'Avançado', pomo: [50, 10], simN: 20, desc: 'Tudo aberto: exceções, jurisprudência STF/STJ e pegadinhas finas, começando pelo que a banca mais explora.',
                 road: '<b>Estratégia:</b> comece pelas pegadinhas e jurisprudência, use o Simulado para achar lacunas e feche com baixa incidência e flashcards completos.',
                 essay: 'Avançado: seja sucinto e rigoroso, aponte apenas o que impede a nota máxima, com fundamento normativo preciso.',
                 instr: 'NÍVEL AVANÇADO: use terminologia técnica e densidade alta; traga 6 a 8 conceitos-chave com exceções, controvérsias doutrinárias, entendimentos do STF/STJ e as pegadinhas mais sutis da banca; assuma que o candidato já domina o básico e vá direto aos detalhes que diferenciam acertos de erros.' }
@@ -3984,7 +3970,7 @@ body .pmdf-more-laws-grid .law-shortcut-btn.pmdf-law-selected{
         function simAI() {
             const fmt = boardFmt(), pool = [];
             Object.values(BUILTIN_PMDF_GUIDES).forEach(g => questionPool(g, fmt, LEVEL).forEach(q => { pool.push(Object.assign({}, q, { topic: lawShort(g) + ' › ' + q.topic })); }));
-            if (pool.length < 2) return toast('Não há itens suficientes.');
+            if (pool.length < 20) return toast('São necessárias pelo menos 20 questões fundamentadas.');
             startSim(shuffle(pool), true);
         }
 
@@ -4363,9 +4349,9 @@ body .pmdf-more-laws-grid .law-shortcut-btn.pmdf-law-selected{
             window._mmPrompt=pmdfMindPrompt(g);
             window._mmOutro=pmdfMindMarkdown(g);
             openModal('🧠 Mapa mental — Padrão Outro Turno','<div class="pmdf-mind-modal"><div class="pmdf-mind-actions no-print">'+
-                '<button onclick="copyText(window._mmOutro)" class="'+BTN+'">Copiar formato Outro Turno (Markdown)</button>'+
-                '<button onclick="copyText(window._mm[0])" class="'+BTN+'">Copiar árvore</button>'+
-                '<button onclick="exportPdfA4()" class="'+BTN+'">Imprimir / Salvar PDF</button></div>'+
+                
+                
+                '</div>'+
                 pmdfMindHtml(g,getVisibleArticleRows(g))+'</div>');
         }
 
@@ -4378,8 +4364,8 @@ body .pmdf-more-laws-grid .law-shortcut-btn.pmdf-law-selected{
         function startSim(items,scroll){
             if(!CUR.guide&&!Array.isArray(items))return toast('Carregue um guia antes de iniciar o simulado.','error');
             const explicit=Array.isArray(items),pool=shuffle(explicit?items:getCachedPool(CUR.guide,boardFmt(),LEVEL));
-            if(explicit?pool.length<1:pool.length<2)return toast(explicit?'Não há erros disponíveis para refazer.':'Poucos itens nesta lei. Use “Misto de todas as leis”.');
-            closeModal();SIM={items:pool.slice(0,explicit?Math.max(1,LEVELS[LEVEL].simN):LEVELS[LEVEL].simN),i:0,hits:0,wrong:0,blank:0};drawSim();if(scroll||explicit)$('sim-box')?.scrollIntoView({behavior:'smooth',block:'center'});
+            if(pool.length<20)return toast('Este material possui '+pool.length+' questões válidas no formato e nível selecionados. O simulado exige no mínimo 20 itens distintos; amplie a fonte ou selecione outra lei.','error');
+            closeModal();SIM={items:pool.slice(0,Math.max(20,LEVELS[LEVEL].simN)),i:0,hits:0,wrong:0,blank:0};drawSim();if(scroll||explicit)$('sim-box')?.scrollIntoView({behavior:'smooth',block:'center'});
         }
         const boardFmt = () => /Cebraspe/i.test($('board-select').value) ? 'CE' : 'MC';
         function scanPrompt() {
@@ -5527,7 +5513,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             if(!AUTH_USER)return toast('Faça login para gerar questões.','error');
             const imported=$('q-source').value==='imported';const guides=imported?[]:pickStudyGuides('q');if(!imported&&!guides.length)return toast('Selecione uma norma ou envie conteúdo para gerar questões.','error');
             const value=Number($('q-count').value);
-            if(!Number.isInteger(value)||value<5||value>500)return toast('Informe uma quantidade inteira entre 5 e 500.','error');
+            if(!Number.isInteger(value)||value<20||value>500)return toast('Informe uma quantidade inteira entre 20 e 500.','error');
             const fmt=$('q-format').value,lvl=LEVELS_SAFE_LEVEL($('q-level').value),baseFmt=fmt==='CE'?'CE':'MC';
             let pool=[];
             try {
@@ -5549,6 +5535,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                   'Não há trechos completos para montar questões.';
                 return toast(message,'error');
             }
+            if(pool.length<20)return toast('O material selecionado permite apenas '+pool.length+' questões distintas e verificáveis no nível e formato escolhidos. Acrescente conteúdo ou selecione uma fonte mais extensa para iniciar um simulado de pelo menos 20 itens.','error');
             const taken=Math.min(value,pool.length);
             Q_STATE={items:pool.slice(0,taken),index:0,hits:0,wrong:0,blank:0,pending:0,answered:false,questionStart:Date.now()};saveStudySession();
             $('q-status').textContent=(taken<value?'Foram encontradas '+taken+' questões distintas; o banco local não inventa itens extras. ':'')+'Fonte: '+(imported?'Provas importadas':guides.length===1?guides[0].lawName:guides.length+' leis')+' · '+taken+' questões · Nível: '+LEVELS[lvl].label+' · Critério: '+EXAMINER_RUBRIC[lvl].label+'.';
