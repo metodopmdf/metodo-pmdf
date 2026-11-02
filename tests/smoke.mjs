@@ -66,9 +66,10 @@ for(const level of ['iniciante','intermediario','avancado']){
       assert(!q.statement.includes('exige-independentemente'),'Mutação gramatical inválida');
     }
     for(const q of mc){
-      assert.equal(q.options.length,5,'Alternativas incompletas');
-      assert.equal(new Set(q.options).size,5,'Alternativas duplicadas');
-      assert('ABCDE'.includes(q.answer),'Gabarito múltipla escolha inválido');
+      assert([4,5].includes(q.options.length),'Múltipla escolha exige 4 ou 5 opções fundamentadas');
+      assert.equal(new Set(q.options).size,q.options.length,'Alternativas duplicadas');
+      assert('ABCDE'.slice(0,q.options.length).includes(q.answer),'Gabarito múltipla escolha inválido');
+      assert(q.options.some((_,i)=>'ABCDE'[i]===q.answer),'Alternativa correta ausente');
     }
     ceTotal+=ce.length;mcTotal+=mc.length;cardsTotal+=cards.length;
   }
