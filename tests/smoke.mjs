@@ -41,7 +41,7 @@ function createClient(fetchImpl=async()=>({ok:true,status:200,json:async()=>[]})
     code+'\nreturn {BUILTIN_PMDF_GUIDES,questionPool,buildStudyCards,fullQuestionSentences,getCardBox,'+
     'store,accountData,accountFetch,mergeProgressData,applyProgressSnapshot,getSyncMeta,'+
     'startQuestions,answerQuestion,nextQuestion,startAnki,revealAnki,nextAnki,correctEssay,renderResultsChart,'+
-    'setSummaryFormat,renderGuide,guideHtml,exportEssayPdfA4,addOfficialQuestions,beginStudies,saveStudySession,readStudySession,'+
+    'setSummaryFormat,renderGuide,guideHtml,exportEssayPdfA4,addOfficialQuestions,analyzeLawText,beginStudies,saveStudySession,readStudySession,'+
     'choose(k){CUR={key:k,guide:BUILTIN_PMDF_GUIDES[k],_poolCache:{}}},'+
     'level(l){LEVEL=l},auth(id){AUTH_USER={username:id,displayName:id};saveSbSession({access_token:"jwt",refresh_token:"refresh",expires_in:3600})},'+
     'questionState(){return Q_STATE},ankiState(){return ANKI_STATE},essayReport(){return ESSAY_MD}};'
@@ -175,6 +175,27 @@ assert.equal(student.questionState(),liveQuestions,'Troca de nível apagou o sim
 assert.equal(student.ankiState(),liveCards,'Troca de nível apagou cartões');
 assert.equal(student.readStudySession().question.items.length,liveQuestions.items.length,'Sessão incompleta no salvamento');
 assert.equal(student.readStudySession().anki.cards.length,liveCards.cards.length,'Cartões incompletos no salvamento');
+
+// Sessões extensas não podem ser cortadas silenciosamente ao salvar.
+const originalQuestions=liveQuestions.items,originalCards=liveCards.cards;
+liveQuestions.items=Array.from({length:505},(_,i)=>({...originalQuestions[i%originalQuestions.length],topic:'Auditoria '+i}));
+liveCards.cards=Array.from({length:350},(_,i)=>({...originalCards[i%originalCards.length],id:'audit-card-'+i}));
+student.saveStudySession();
+assert.equal(student.readStudySession().question.items.length,505,'Simulado longo foi truncado');
+assert.equal(student.readStudySession().anki.cards.length,350,'Flashcards extensos foram truncados');
+liveQuestions.items=originalQuestions;liveCards.cards=originalCards;student.saveStudySession();
+
+// Texto próprio: a extração local não depende de IA paga e deve gerar ambos os formatos.
+const customText=[
+ 'Art. 1º O órgão competente deve garantir os requisitos de legalidade e a motivação de cada decisão administrativa.',
+ 'Art. 2º É vedado praticar condutas contrárias à norma vigente, salvo quando houver autorização legal expressa.',
+ 'Art. 3º O agente público poderá responder pelas consequências jurídicas da ação quando estiverem presentes os pressupostos legais.',
+ 'Art. 4º A aplicação da medida depende de análise das condições de fato e da competência da autoridade responsável.',
+ 'Art. 5º A lei exige registro documental das operações de fiscalização administrativa e resguarda os direitos fundamentais.'
+].join('\n');
+const customGuide=student.analyzeLawText(customText,'Material fictício de QA');
+assert(student.questionPool(customGuide,'CE','intermediario').length>0,'Texto próprio sem C/E');
+assert(student.questionPool(customGuide,'MC','intermediario',4).length>0,'Texto próprio sem múltipla escolha');
 
 // Importação sem gabarito: permitir estudo, mas nunca declarar acerto inexistente.
 student.addOfficialQuestions([{
