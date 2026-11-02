@@ -2644,7 +2644,7 @@ body .pmdf-more-laws-grid .law-shortcut-btn.pmdf-law-selected{
                         <select id="q-source" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="current">Conteúdo selecionado / enviado</option><option value="all">Todas as leis cadastradas</option><option value="imported">Questões de provas importadas</option></select>
                     </label>
                     <label class="text-xs text-[#E5C158] font-semibold">Formato
-                        <select id="q-format" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="CE">Certo / Errado</option><option value="MC5">Múltipla escolha (5 alternativas)</option><option value="MC4">Múltipla escolha (4 alternativas)</option></select>
+                        <select id="q-format" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="CE">Certo / Errado</option><option value="MC">Múltipla escolha</option></select>
                     </label>
                     <label class="text-xs text-[#E5C158] font-semibold">Nível
                         <select id="q-level" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="iniciante">Iniciante</option><option value="intermediario" selected>Intermediário</option><option value="avancado">Avançado</option></select>
@@ -5131,7 +5131,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
           avancado:{label:'Exceções e distinções',focus:'limites, prazos e qualificadores da norma'}
         };
         function examItemStyle(level,kind,bank,head,assoc=false){
-            if(assoc)return 'Associe corretamente o dispositivo ao conteúdo normativo descrito no material:';
+            if(assoc)return level==='iniciante'?'Com base na norma estudada, identifique a única associação correta entre dispositivo e regra:':level==='intermediario'?'Considerando os requisitos e efeitos jurídicos dos dispositivos apresentados, assinale a associação correta:':'Examinando as exceções, condições normativas e efeitos previstos nos dispositivos estudados, assinale a única associação juridicamente correta:';
             if(kind==='MC')return level==='iniciante'?'Sobre '+head+', assinale a alternativa correta:':
                 level==='intermediario'?'Considerando os requisitos e efeitos previstos em '+head+', assinale a alternativa correta:':
                 'À luz das condições e das exceções de '+head+', identifique a única alternativa compatível com o guia:';
@@ -5542,24 +5542,30 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const fmt=$('q-format').value,lvl=LEVELS_SAFE_LEVEL($('q-level').value),baseFmt=fmt==='CE'?'CE':'MC';
             let pool=[];
             try {
-                if(imported){pool=IMPORTED_QUESTIONS.filter(q=>q.type===baseFmt).map(q=>({...q}));}else for(const g of guides){const found=questionPool(g,baseFmt,lvl,fmt==='MC4'?4:5);pool.push(...found.map(q=>({ ...q,law:g.lawName })));}
-                pool=shuffle(uniqueQuestions(pool.filter(questionIsComplete)));
-            }catch(e){return toast('Não foi possível gerar questões: '+e.message,'error');}
-            // Respeita estritamente o formato escolhido pelo candidato: 4, 5 ou C/E.
-            // Não altera o seletor silenciosamente nem produz distratores genéricos.
-            const desired=fmt==='MC4'?4:fmt==='MC5'?5:0;
-            if(desired){
                 if(imported){
-                    pool=pool.map(q=>desired===4?toFour(q):q);
+                    pool=IMPORTED_QUESTIONS.filter(q=>q.type===baseFmt).map(q=>({...q}));
+                }else{
+                    for(const g of guides){
+                        // Tenta 5 alternativas verificáveis primeiro; 4 quando necessário.
+                        const five=questionPool(g,baseFmt,lvl,5);
+                        const four=baseFmt==='MC'?questionPool(g,baseFmt,lvl,4):[];
+                        const keys=new Set(five.map(q=>q.statement+'|'+q.lawBasis));
+                        pool.push(...five.map(q=>({...q,law:g.lawName})));
+                        for(const q of four){
+                            if(!keys.has(q.statement+'|'+q.lawBasis)){
+                                pool.push({...q,law:g.lawName});
+                                keys.add(q.statement+'|'+q.lawBasis);
+                            }
+                        }
+                    }
                 }
-                pool=pool.filter(q=>q.type==='MC'&&Array.isArray(q.options)&&q.options.length===desired);
-            }
-            if(!pool.length){
-                const message=imported?'Não há questões importadas no formato escolhido.':
-                  desired?'Não foram identificados trechos independentes suficientes para construir '+desired+' alternativas verificáveis. Amplie o texto-fonte ou selecione outra norma.':
-                  'Não há trechos completos para montar questões.';
-                return toast(message,'error');
-            }
+                pool=shuffle(uniqueQuestions(pool.filter(questionIsComplete).filter(q=>
+                    baseFmt!=='MC'||(Array.isArray(q.options)&&[4,5].includes(q.options.length)&&
+                    new Set(q.options.map(x=>String(x).trim())).size===q.options.length&&
+                    'ABCDE'.slice(0,q.options.length).includes(q.answer)
+                )));
+            }catch(e){return toast('Falha ao preparar questões: '+e.message,'error');}
+            if(!pool.length)return toast('Não foram encontrados itens completos e verificáveis neste material. Amplie a fonte ou escolha outra norma.','error');
             const taken=pool.length;
             Q_STATE={items:pool.slice(0,taken),index:0,hits:0,wrong:0,blank:0,pending:0,answered:false,questionStart:Date.now()};saveStudySession();
             $('q-status').textContent='Fonte: '+(imported?'Provas importadas':guides.length===1?guides[0].lawName:guides.length+' leis')+' · Nível: '+LEVELS[lvl].label+' · Critério: '+EXAMINER_RUBRIC[lvl].label+'. Inicie a resolução para acompanhar o total disponível.';
