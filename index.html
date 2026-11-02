@@ -2034,7 +2034,7 @@
         <section id="tab-anki" class="hidden space-y-5" aria-label="Flashcards com repetição espaçada">
             <div class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
                 <div><h2 class="font-bold text-lg text-white">🃏 Flashcards — revisão estilo Anki</h2>
-                    <p class="text-sm text-slate-400">Flashcards Anki de frente e verso, com conceitos, requisitos, exceções e casos práticos adaptados ao nível do candidato. Toque para revelar o verso e avance no seu ritmo.</p></div>
+                    <p class="text-sm text-slate-400">Flashcards Anki de frente e verso, com conceitos, requisitos, exceções e casos práticos adaptados ao nível do candidato. Ao revelar o verso e avançar, o cartão recebe uma data de revisão automaticamente, sem avaliação Certo/Errado.</p></div>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <label class="text-xs text-[#E5C158] font-semibold">Material / lei
                         <select id="anki-source" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="current">Conteúdo selecionado / enviado</option><option value="all">Todas as leis cadastradas</option></select></label>
@@ -3906,7 +3906,6 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const fc=Math.max(0,Math.min(4,parseInt(store.get('fc:'+id)||'0',10)||0));
             const lt=Math.max(0,Math.min(4,parseInt(store.get('leitner:'+id)||'0',10)||0));
             const box=Math.max(fc,lt), due=Math.max(0,Number(store.get('leitnerDue:'+id)||0)||0);
-            store.set('fc:'+id,String(box)); store.set('leitner:'+id,String(box)); store.set('leitnerDue:'+id,String(due));
             return {box,due};
         }
         function setCardBox(id,known){
@@ -4657,7 +4656,9 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             cards.sort((x,y)=>getCardBox(x.id).due-getCardBox(y.id).due);
             ANKI_STATE={cards:cards.slice(0,count),index:0,seen:0,back:false,graded:null,correct:0,wrong:0};
             saveStudySession();$('anki-panel').classList.remove('hidden');
-            $('anki-status').textContent=ANKI_STATE.cards.length+' cartões nesta revisão · '+LEVELS[LEVEL].label+'.';drawAnki();
+            $('anki-status').textContent=ANKI_STATE.cards.length+' cartões nesta revisão · '+LEVELS[LEVEL].label+' · Ao visualizar o verso e avançar, a próxima revisão é agendada automaticamente.';
+            if(!ANKI_STATE.cards.length){$('anki-panel').innerHTML='<div class="g-card"><h3 class="font-bold text-[#E5C158]">Nenhum cartão vencido</h3><p class="mt-2 text-slate-300">Você está em dia. Se quiser continuar praticando, selecione “Todos (treino livre)”.</p></div>';return;}
+            drawAnki();
         }
         function drawAnki(){
             const el=$('anki-panel'),s=ANKI_STATE;if(!s)return;
@@ -4675,9 +4676,13 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         }
         function revealAnki(){if(!ANKI_STATE||ANKI_STATE.back)return;ANKI_STATE.back=true;saveStudySession();drawAnki();}
         function nextAnki(){
-            const s=ANKI_STATE;if(!s||!s.back)return;
-            // Avanço neutro: sem julgamento certo/errado e sem penalizar o intervalo de revisão.
-            s.index++;s.seen++;s.back=false;s.graded=null;saveStudySession();drawAnki();
+            const session=ANKI_STATE;if(!session||!session.back||session.index>=session.cards.length)return;
+            const card=session.cards[session.index];
+            // Sem botões Certo/Errado: o avanço após visualizar o verso agenda a revisão.
+            // Isso representa exposição ao conteúdo, não comprova domínio do candidato.
+            setCardBox(card.id,true);
+            session.index++;session.seen++;session.back=false;session.graded=null;
+            saveStudySession();drawAnki();
         }
                 // Catálogo complementar: 11 normas com referências oficiais e guias pedagógicos.
         const EXTRA_LAW_URLS = {"jecrim":"https://www.planalto.gov.br/ccivil_03/leis/l9099.htm","orcrim":"https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2013/lei/l12850.htm","genocidio":"https://www.planalto.gov.br/ccivil_03/leis/l2889.htm","racismo":"https://www.planalto.gov.br/ccivil_03/leis/l7716.htm","eca":"https://www.planalto.gov.br/ccivil_03/leis/l8069.htm","improbidade":"https://www.planalto.gov.br/ccivil_03/leis/l8429.htm","temporaria":"https://www.planalto.gov.br/ccivil_03/leis/l7960.htm","jef":"https://www.planalto.gov.br/ccivil_03/leis/leis_2001/l10259.htm","r200":"https://www.planalto.gov.br/ccivil_03/decreto/d88777compilado.htm","d10443":"https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2020/decreto/d10443.htm","l14751":"https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14751.htm"};
