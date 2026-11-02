@@ -82,6 +82,28 @@ for(const level of ['iniciante','intermediario','avancado']){
   assert(ceTotal>=70&&cardsTotal>=100,'Banco de questões C/E ou flashcards insuficiente');
   counts[level]={ce:ceTotal,mc:mcTotal,flashcards:cardsTotal};
 }
+// Regressão real da aba Questões: cada lei e nível deve iniciar MC
+// sem ser descartada pelo validador de enunciados.
+app.auth('qa-multipla');
+for(const level of ['iniciante','intermediario','avancado']){
+  for(const key of Object.keys(app.BUILTIN_PMDF_GUIDES)){
+    app.choose(key);
+    app.level(level);
+    primary.$('q-source').value='current';
+    primary.$('q-level').value=level;
+    primary.$('q-format').value='MC';
+    await app.startQuestions();
+    const items=app.questionState()?.items||[];
+    assert(items.length>0,'Múltipla escolha vazia: '+key+' / '+level);
+    for(const item of items){
+      assert.equal(item.type,'MC','Tipo divergente: '+key);
+      assert([4,5].includes(item.options.length),'Número de alternativas inválido: '+key);
+      assert.equal(new Set(item.options).size,item.options.length,'Alternativas repetidas: '+key);
+      assert('ABCDE'.slice(0,item.options.length).includes(item.answer),'Gabarito incorreto: '+key);
+      assert(!/[:;,–—]\s*$/.test(item.statement),'Enunciado MC incompleto: '+key);
+    }
+  }
+}
 // Simulação do usuário nos três níveis: simulado, revelação, programação e gráfico.
 const walkthrough=[];
 for(const level of ['iniciante','intermediario','avancado']){
