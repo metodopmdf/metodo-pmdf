@@ -5276,7 +5276,20 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             return out;
         }
         function setBank(v) { BANK=v; if(CUR.guide)rerenderPreservingStudyState(); }
-        function bankTags(i) { const e=((i.plainExplanation||'')+' '+(i.practicalExample||'')).toLowerCase(); return {c:/(?<![A-Za-zÀ-ÿ])(somente|apenas|exceto|nunca|sempre|exclusivamente|salvo|independe|errado)(?![A-Za-zÀ-ÿ])|\d+\s*(dias|anos|meses|horas)/i.test(e),f:/(caso|imagine|guarnição|abordagem|soldado|policial|situação|quando)/i.test((i.practicalExample||'').toLowerCase())}; }
+        function bankTags(item){
+            const e=((item.plainExplanation||'')+' '+(item.practicalExample||'')).toLowerCase();
+            const tokens=String(item.article||'').match(/art(?:s)?\.?\s*\d+/gi)||[];
+            const historical=Array.isArray(IMPORTED_QUESTIONS)?IMPORTED_QUESTIONS.filter(q=>{
+                const bank=String(q.examRef||q.bank||q.board||'').toLowerCase();
+                const basis=(String(q.lawBasis||'')+' '+String(q.topic||'')).toLowerCase();
+                return tokens.some(t=>basis.includes(t.toLowerCase()))&&/(cebraspe|cespe|fgv|aocp|idecan|vunesp)/.test(bank);
+            }):[];
+            return {
+                c:/(somente|apenas|exceto|nunca|sempre|exclusivamente|salvo|independe|errado|\d+\s*(dias|anos|meses|horas))/i.test(e),
+                f:/(caso|imagine|guarnição|abordagem|soldado|policial|situação|quando)/i.test((item.practicalExample||'').toLowerCase()),
+                documented:historical.length
+            };
+        }
         function captureStudyUI() {
             const search=$('guide-search')?.value||'';
             const revealed=[...document.querySelectorAll('#printable-area .cloze-mask.on')].map((el,i)=>({text:el.textContent,index:i}));
@@ -5295,7 +5308,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const A=g.articlesMapping||{}, out=[];safeArray(A.highIncidence).forEach(x=>out.push({...x,incidence:'Alta'}));
             if(LEVEL!=='iniciante')safeArray(A.mediumIncidence).forEach(x=>out.push({...x,incidence:'Média'}));
             if(LEVEL==='avancado')safeArray(A.lowIncidence).forEach(x=>out.push({...x,incidence:'Baixa'}));
-            if(LEVEL==='intermediario'){const bank=effBank();if(bank==='cebraspe'||bank==='fgv'){const key=bank==='cebraspe'?'c':'f';out.sort((a,b)=>Number(bankTags(b)[key])-Number(bankTags(a)[key]));}}
+            if(LEVEL==='intermediario'||LEVEL==='avancado'){const bank=effBank();if(bank==='cebraspe'||bank==='fgv'){const key=bank==='cebraspe'?'c':'f';out.sort((a,b)=>(bankTags(b).documented-bankTags(a).documented)||Number(bankTags(b)[key])-Number(bankTags(a)[key]));}}
             return out;
         }
         function formatGuideHtml(g, interactive) {
@@ -5305,9 +5318,9 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const intro='<div class="pmdf-report-heading"><div class="pmdf-report-emblem" aria-hidden="true">⚖</div><div class="pmdf-report-heading-copy"><span class="pmdf-report-kicker">MÉTODO PMDF · CADERNO ESTRATÉGICO</span><h1>'+esc(g.lawName)+'</h1><p>'+esc(({full:'Guia completo',bullets:'Resumo esquematizado',table:'Quadro sinótico',mind:'Mapa mental',flash:'Flashcards',traps:'Pegadinhas e questões'})[SUMMARY_FORMAT]||'Caderno de estudo')+' · Nível '+esc(LEVELS[LEVEL].label)+'</p></div></div><p class="g-banner">'+LEVELS[LEVEL].road+'</p>';
             const executive=LEVEL==='iniciante'?'<ol class="list-decimal pl-5">'+[S.centralObjective,...concepts.slice(0,3)].map(x=>'<li>'+esc(firstSentences(x,260))+'</li>').join('')+'</ol>':'<p>'+esc(S.centralObjective||'')+'</p><ul>'+concepts.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
             const glossary=LEVEL==='iniciante'?glossaryHtml(g):'';
-            const articleCard=(a,i)=>{const tags=bankTags(a),dim=interactive&&((eb==='cebraspe'&&!tags.c)||(eb==='fgv'&&!tags.f)),hl=interactive&&((eb==='cebraspe'&&tags.c)||(eb==='fgv'&&tags.f));const id=(CUR.key||'x')+'|'+String(a.article).slice(0,40),noteKey='note:'+id,note=store.get(noteKey)||'';let noteId=-1;if(interactive)noteId=NOTE_IDS.push(noteKey)-1;
+            const articleCard=(a,i)=>{const tags=bankTags(a),hl=interactive&&((eb==='cebraspe'&&tags.c)||(eb==='fgv'&&tags.f));const id=(CUR.key||'x')+'|'+String(a.article).slice(0,40),noteKey='note:'+id,note=store.get(noteKey)||'';let noteId=-1;if(interactive)noteId=NOTE_IDS.push(noteKey)-1;
                 const checkbox=interactive?'<input type="checkbox" class="no-print mr-2 accent-[#D4AF37]" data-id="'+esc(id)+'" '+(done.includes(id)?'checked':'')+' onchange="toggleStudied(this)">':'';
-                return '<div class="g-card" data-incidence="'+a.incidence+'" style="opacity:'+(dim?'.48':'1')+';filter:'+(dim?'saturate(.55)':'none')+';'+(hl?'border-left:4px solid #D4AF37':'')+'">'+(hl?'<span class="g-tag">⭐ Compatível com a banca selecionada</span>':'')+'<p>'+checkbox+'<b>'+esc(a.article)+'</b> <span class="g-tag">'+a.incidence+' incidência</span></p><p>'+esc(a.plainExplanation)+'</p><p class="g-ex"><b>Aplicação:</b> '+esc(a.practicalExample)+'</p>'+(note?'<p class="g-ex"><b>📝 Nota:</b> '+esc(note)+'</p>':'')+(interactive?'<button class="no-print g-tag" onclick="editNote('+noteId+')">📝 Nota</button>':'')+'</div>';};
+                return '<div class="g-card" data-incidence="'+a.incidence+'" style="'+(hl?'border-left:4px solid #D4AF37':'')+'">'+(hl?'<span class="g-tag">⭐ Afinidade temática com a banca (estimativa)</span>':'')+(tags.documented?'<span class="g-tag">📚 '+tags.documented+' referência(s) em provas importadas</span>':'')+'<p>'+checkbox+'<b>'+esc(a.article)+'</b> <span class="g-tag">'+a.incidence+' incidência</span></p><p>'+esc(a.plainExplanation)+'</p><p class="g-ex"><b>Aplicação:</b> '+esc(a.practicalExample)+'</p>'+(note?'<p class="g-ex"><b>📝 Nota:</b> '+esc(note)+'</p>':'')+(interactive?'<button class="no-print g-tag" onclick="editNote('+noteId+')">📝 Nota</button>':'')+'</div>';};
             const compareRows=rows.slice(0,8).map(a=>'<tr><td>'+esc(a.article)+'</td><td>'+esc(firstSentences(a.plainExplanation,230))+'</td><td>'+esc(uniq(a.plainExplanation.match(PRAZO)||[]).join('; ')||'Não identificado no trecho')+'</td><td>'+esc(uniq(a.plainExplanation.match(RESTR)||[]).join('; ')||'Não identificado no trecho')+'</td></tr>').join('');
             let body='';
             if(SUMMARY_FORMAT==='full'){
