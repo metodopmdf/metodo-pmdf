@@ -2608,22 +2608,22 @@ body .pmdf-more-laws-grid .law-shortcut-btn.pmdf-law-selected{
             </div>
         </div>
 
-        <!-- Barra de Exportação (Google Docs / Word / Copiar / PDF) -->
+        <!-- Barra de navegação e seleção dos formatos de estudo -->
         <div id="export-toolbar" class="bg-[#0A1426]/95 border border-[#1E2E4F]/80 rounded-2xl p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 shadow-lg no-print">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
                     <i data-lucide="file-text" class="w-5 h-5"></i>
                 </div>
                 <div>
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400 block">Caderno de Estudo Interativo</span>
-                    <h3 id="current-doc-title" class="text-sm sm:text-base font-bold text-white">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400 block">Leitura e revisão na plataforma</span>
+                    <h3 id="current-doc-title" class="text-sm sm:text-base font-bold text-white break-words">
                         Guia Estratégico PMDF - Decreto-Lei nº 1.001/1969 (Código Penal Militar)
                     </h3>
                 </div>
             </div>
 
             <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
-                <label class="text-xs text-slate-300 flex items-center gap-2">Formato <select id="summary-format-toolbar" onchange="setSummaryFormat(this.value)" class="max-w-[230px] px-2.5 py-2 rounded-xl bg-[#040912] border border-[#1E2E4F] text-xs text-white"><option value="full">📖 Por Extenso</option><option value="bullets">⚡ Esquematizado</option><option value="table">📊 Quadro Sinótico</option><option value="mind">🌳 Mapa Mental</option><option value="flash">🃏 Flashcards</option><option value="traps">🎯 Pegadinhas &amp; Questões</option></select></label>
+                <label class="text-xs text-slate-300 flex items-center gap-2">Formato de resumo <select id="summary-format-toolbar" onchange="setSummaryFormat(this.value)" class="max-w-[230px] px-2.5 py-2 rounded-xl bg-[#040912] border border-[#1E2E4F] text-xs text-white"><option value="full">📖 Por Extenso</option><option value="bullets">⚡ Esquematizado</option><option value="table">📊 Quadro Sinótico</option><option value="mind">🌳 Mapa Mental</option><option value="flash">🃏 Flashcards</option><option value="traps">🎯 Pegadinhas &amp; Questões</option></select></label>
             </div>
         </div>
 
@@ -2649,7 +2649,7 @@ body .pmdf-more-laws-grid .law-shortcut-btn.pmdf-law-selected{
                     <label class="text-xs text-[#E5C158] font-semibold">Nível
                         <select id="q-level" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="iniciante">Iniciante</option><option value="intermediario" selected>Intermediário</option><option value="avancado">Avançado</option></select>
                     </label>
-                    <label class="text-xs text-[#E5C158] font-semibold">Banca para busca automática
+                    <label class="text-xs text-[#E5C158] font-semibold">Estilo da banca (geração local)
                         <select id="q-board" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option>Cebraspe</option><option>FGV</option><option>FCC</option><option>Vunesp</option><option>Iades</option><option>Idecan</option><option>AOCP</option><option>Cesgranrio</option><option>Quadrix</option><option value="todas">Todas</option></select>
                     </label>
                     
@@ -2663,10 +2663,10 @@ body .pmdf-more-laws-grid .law-shortcut-btn.pmdf-law-selected{
             </div>
 
             <div class="bg-[#0A1426] border border-[#172642] rounded-xl p-4 space-y-2" id="auto-questions-section">
-                <h3 class="font-bold text-[#E5C158] text-sm">📚 Complementação automática de questões</h3>
-                <p class="text-xs text-slate-400">Ao iniciar, o sistema consulta as fontes públicas conforme os filtros. Questões externas só entram automaticamente quando existe permissão de reprodução e gabarito verificável. Caso contrário, segue com os exercícios locais, sem atribuir autoria falsa à banca.</p>
+                <h3 class="font-bold text-[#E5C158] text-sm">📚 Provas anteriores — importação e referências</h3>
+                <p class="text-xs text-slate-400">O gerador utiliza o material estudado e não consulta automaticamente bases externas. Para treinar com questões reais, importe a prova e o gabarito; confira a autoria, a licença e a fundamentação.</p>
                 <p id="research-status" class="text-xs text-slate-300" role="status" aria-live="polite">Aguardando início de treino.</p>
-                <details><summary class="cursor-pointer text-xs text-[#E5C158]">Provas consultadas e fontes</summary><div id="research-results" class="research-results space-y-2 mt-2"></div></details>
+                <details><summary class="cursor-pointer text-xs text-[#E5C158]">Consultar links e fontes de provas</summary><div id="research-results" class="research-results space-y-2 mt-2"></div></details>
             </div>
             <div id="q-panel" class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 hidden" aria-live="polite"></div>
         </section>
@@ -4154,7 +4154,7 @@ body .pmdf-more-laws-grid .law-shortcut-btn.pmdf-law-selected{
             if(BUILTIN_PMDF_GUIDES[key]){
                 CUR={key,guide:BUILTIN_PMDF_GUIDES[key],_poolCache:Object.create(null)};
                 store.set('lastKey',key);
-                renderGuide(CUR.guide);
+                renderGuide(CUR.guide,true);
                 markShortcut(key);
                 saveStudySession();
             }else{
@@ -4625,7 +4625,7 @@ const CLOZE_RE = /(\d+\s*(?:dias|dia|anos|ano|meses|mês|horas|hora)|\d+\/\d+|(?
                 g.trapsAndJurisprudence=g.trapsAndJurisprudence||{examTraps:[],jurisprudence:[]};g.essayRepertoire=Array.isArray(g.essayRepertoire)?g.essayRepertoire:[];
                 g._baseLawName=g._baseLawName||g.lawName;
                 const key='custom-ai-'+hash(g.lawName+'|'+cleaned.slice(0,2000));CUR={key,guide:g,_poolCache:Object.create(null)};
-                store.set('custom:'+key,JSON.stringify(g));store.set('lastKey',key);closePromptModal();renderGuide(g);toast('Guia JSON importado e salvo neste dispositivo.','ok');
+                store.set('custom:'+key,JSON.stringify(g));store.set('lastKey',key);closePromptModal();renderGuide(g,true);toast('Guia JSON importado e salvo neste dispositivo.','ok');
             }catch(e){toast('Não foi possível importar o JSON: '+e.message,'error');}
         }
 
@@ -5055,7 +5055,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             if(SOURCE_MODE==='url'){
                 const law=$('law-input').value.trim(); if(!law)return toast('Informe o link ou nome da norma na aba URL.','error');
                 nameHint=law; key=matchKey(law); built=key&&BUILTIN_PMDF_GUIDES[key];
-                if(built){let g=built;if(filter){g=filterBuiltGuide(built,filter)||built;} CUR={key,guide:g};renderGuide(g);return toast('Guia interno carregado.','ok');}
+                if(built){let g=built;if(filter){g=filterBuiltGuide(built,filter)||built;} CUR={key,guide:g};renderGuide(g,true);return toast('Guia interno carregado.','ok');}
                 if(!/^https?:\/\//i.test(law))return toast('Norma não encontrada no banco interno. Informe um link oficial ou utilize texto/arquivo.','error');
                 setLoading(true,'Buscando o texto da norma pela cascata de proxies...');
                 try{raw=await fetchLawText(law);}catch(e){setLoading(false);return toast(e.message,'error');}
@@ -5070,7 +5070,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             try{
                 await new Promise(r=>setTimeout(r,20)); let g=analyzeLawText(raw,nameHint);
                 if(filter){const fg=filterBuiltGuide(g,filter);if(fg)g=fg;else toast('O recorte não encontrou correspondências; exibindo o conteúdo completo.');}
-                g._baseLawName=g._baseLawName||g.lawName;CUR={key:'custom-'+hash(g.lawName+'|'+raw.slice(0,300)),guide:g,_poolCache:Object.create(null)};store.set('custom:'+CUR.key,JSON.stringify(g));store.set('lastKey',CUR.key);renderGuide(g);
+                g._baseLawName=g._baseLawName||g.lawName;CUR={key:'custom-'+hash(g.lawName+'|'+raw.slice(0,300)),guide:g,_poolCache:Object.create(null)};store.set('custom:'+CUR.key,JSON.stringify(g));store.set('lastKey',CUR.key);renderGuide(g,true);
                 toast('Guia gerado: '+parseArticles(raw).length+' bloco(s) analisado(s).','ok');
             }catch(e){toast('Não foi possível analisar: '+e.message,'error');}finally{setLoading(false);}
         }
@@ -5406,8 +5406,9 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             toast(known?'Cartão avançou na caixa Leitner '+state.box+'.':'Cartão retornou à revisão inicial.','ok');
         }
         function guideHtml(g, interactive) { return formatGuideHtml(g,interactive); }
-        function renderGuide(g){
-            if(!g)return;CUR.guide=g;CUR._poolCache=CUR._poolCache||Object.create(null);NOTE_IDS=[];
+        function renderGuide(g,resetPractice=false){
+            if(!g)return;
+            if(resetPractice){Q_STATE=null;ANKI_STATE=null;['q-panel','anki-panel'].forEach(id=>$(id)?.classList.add('hidden'));}CUR.guide=g;CUR._poolCache=CUR._poolCache||Object.create(null);NOTE_IDS=[];
             if(CUR.key)store.set('lastKey',CUR.key);markShortcut(CUR.key);
             $('printable-area').innerHTML=guideHtml(g,true);
             if (g.officialSource && typeof g.officialSource === 'string') {
@@ -5430,8 +5431,6 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             $('current-doc-title').textContent='Método PMDF — '+g.lawName+' · '+LEVELS[LEVEL].label+' · '+({full:'Por Extenso',bullets:'Esquematizado',table:'Quadro Sinótico',mind:'Mapa Mental',flash:'Flashcards',traps:'Pegadinhas'}[SUMMARY_FORMAT]);
             ['summary-format-config','summary-format-toolbar'].forEach(id=>{if($(id))$(id).value=SUMMARY_FORMAT;});
             updateProgress();applyCloze();
-            ['q-panel','anki-panel'].forEach(id=>$(id)?.classList.add('hidden'));
-            Q_STATE=null;ANKI_STATE=null;
             if(window.lucide)lucide.createIcons();
         }
         function editNote(i){const k=NOTE_IDS[i];if(!k)return;const v=prompt('Sua anotação para este dispositivo (vazio apaga):',store.get(k)||'');if(v===null)return;store.set(k,v.trim());if(!v.trim()){store.del(k)}rerenderPreservingStudyState();}
@@ -5482,7 +5481,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         function showTab(t) {
             TAB = t;
             if(APP_STARTED&&!SESSION_RESTORING)saveStudySession();if(t==='resultados')setTimeout(renderResults,0);
-            ['leis', 'questoes', 'anki', 'redacao','resultados'].forEach(k => { $('tab-' + k).classList.toggle('hidden', k !== t);
+            ['leis', 'questoes', 'anki', 'redacao','resultados'].forEach(k => { $('tab-' + k).classList.toggle('hidden', k !== t);$('tab-btn-'+k).setAttribute('aria-selected',String(k===t));
                 $('tab-btn-' + k).className = 'px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2 transition ' + (k === t ? 'bg-[#0A1426] text-[#E5C158] border-[#D4AF37]/40' : 'bg-[#040912] text-slate-400 border-[#172642] hover:text-slate-200'); });
         }
 
@@ -5670,8 +5669,8 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         function saveStudySession(){
             if(!APP_STARTED||SESSION_RESTORING||!AUTH_USER)return;
             const s={version:4,updated:new Date().toISOString(),tab:TAB,lawKey:CUR.key||null,
-              question:Q_STATE?{...Q_STATE,items:Q_STATE.items.slice(0,500)}:null,
-              anki:ANKI_STATE?{...ANKI_STATE,cards:ANKI_STATE.cards.slice(0,300)}:null};
+              question:Q_STATE?{...Q_STATE,items:Q_STATE.items}:null,
+              anki:ANKI_STATE?{...ANKI_STATE,cards:ANKI_STATE.cards}:null};
             const ok=store.set(STUDY_SESSION_KEY,JSON.stringify(s));
             if(!ok&&!window._studySaveWarning){window._studySaveWarning=true;toast('Armazenamento cheio. Exporte um backup do seu progresso.','error');}
         }
@@ -5687,7 +5686,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 Q_STATE=s.question?.items?.length?s.question:null;
                 if(Q_STATE?.answered){Q_STATE.index=Math.min(Q_STATE.items.length,Q_STATE.index+1);Q_STATE.answered=false;}
                 ANKI_STATE=s.anki?.cards?.length?s.anki:null;
-                if(Q_STATE){$('q-panel').classList.remove('hidden');Q_STATE.questionStart=Date.now();if(Q_STATE.items.some(q=>q.origin==='official-import')){$('q-source').value='imported';$('q-format').value=Q_STATE.items[0]?.type==='CE'?'CE':'MC5';}drawQuestions();}
+                if(Q_STATE){$('q-panel').classList.remove('hidden');Q_STATE.questionStart=Date.now();if(Q_STATE.items.some(q=>q.origin==='official-import')){$('q-source').value='imported';$('q-format').value=Q_STATE.items[0]?.type==='CE'?'CE':'MC';}drawQuestions();}
                 if(ANKI_STATE){$('anki-panel').classList.remove('hidden');drawAnki();}
                 restoreEssayLastResult();showTab(['leis','questoes','anki','redacao','resultados'].includes(s.tab)?s.tab:'leis');
             }else{Q_STATE=null;ANKI_STATE=null;$('q-panel')?.classList.add('hidden');$('anki-panel')?.classList.add('hidden');showTab('leis');}
