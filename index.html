@@ -1619,6 +1619,20 @@
 #tab-anki .g-card {height:auto!important;max-height:none!important;}
 @media(max-width:640px){#tab-anki .anki-fulltext{padding:1rem!important;} #tab-anki .anki-fulltext p{font-size:1rem;line-height:1.65;}}
 </style>
+<style id="pmdf-mobile-qa">
+/* Legibilidade móvel e textos integrais nos módulos de avaliação. */
+#tab-questoes,#tab-anki,#tab-redacao,#tab-resultados,#account-form{min-width:0;max-width:100%}
+#q-panel .q-choice,#q-panel p,#anki-panel p,#tab-redacao .essay-out,#results-time,
+#account-form label,#account-form input{overflow-wrap:anywhere;word-break:normal;white-space:normal;text-overflow:clip;min-width:0}
+#q-panel .q-choice{display:block;width:100%;height:auto;text-align:left}
+#tab-resultados #results-chart svg{width:100%;height:auto;max-width:100%;overflow:visible}
+#results-rows{max-width:100%;overflow-x:auto}
+@media(max-width:639px){
+  #q-panel,#anki-panel{padding:1rem!important}
+  #results-chart{padding:.5rem!important}
+  #tab-redacao textarea,#account-form input{width:100%;max-width:100%}
+}
+</style>
 </head>
 <body class="landing-active min-h-screen flex flex-col font-sans antialiased selection:bg-[#D4AF37] selection:text-[#050B16]">
 
@@ -5061,15 +5075,18 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const total=rows.reduce((a,[,g])=>a+g.a,0),ok=rows.reduce((a,[,g])=>a+g.c,0),bad=total-ok,time=rows.reduce((a,[,g])=>a+g.seconds,0);
             side.innerHTML='<p><strong>Tempo total:</strong> '+fmtSeconds(time)+'</p><p><strong>Tempo médio por questão:</strong> '+fmtSeconds(total?time/total:0)+'</p><p><strong>Acertos:</strong> '+ok+'</p><p><strong>Erros:</strong> '+bad+'</p>';
             if(!total){chart.innerHTML='<p class="text-sm text-slate-300">Sem questões respondidas com gabarito para este tema.</p>';table.textContent='';return;}
-            const W=720,H=310,col='#D4AF37',badCol='#DC2626',muted='#94a3b8',label=x=>esc(x);
+            const mobile=!!(window.matchMedia&&window.matchMedia('(max-width: 639px)').matches);
+            const W=mobile?480:720,H=mobile?350:310,cx=mobile?240:350,cy=148;
+            const legendY=mobile?322:284,errorsX=mobile?240:220;
+            const col='#D4AF37',badCol='#DC2626',muted='#94a3b8',label=x=>esc(x);
             const group=new Map(rows.map(([key,g])=>[key.split(' • ').slice(1).join(' • ')||key,g]));
             const fraction=ok/total,circumference=2*Math.PI*96;
-            const svg='<circle cx="350" cy="148" r="96" stroke="'+badCol+'" stroke-width="40" fill="none"/>'+
-                '<circle cx="350" cy="148" r="96" stroke="'+col+'" stroke-width="40" fill="none" stroke-dasharray="'+(fraction*circumference)+' '+circumference+'" transform="rotate(-90 350 148)"/>'+
-                '<text x="350" y="153" font-size="29" font-weight="bold" text-anchor="middle" fill="'+col+'">'+Math.round(fraction*100)+'%</text>'+
-                '<text x="350" y="179" font-size="13" text-anchor="middle" fill="'+muted+'">de acertos</text>'+
-                '<text x="12" y="284" fill="'+col+'" font-size="16">● Acertos: '+ok+'</text>'+
-                '<text x="220" y="284" fill="'+badCol+'" font-size="16">● Erros: '+bad+'</text>';
+            const svg='<circle cx="'+cx+'" cy="'+cy+'" r="96" stroke="'+badCol+'" stroke-width="40" fill="none"/>'+
+                '<circle cx="'+cx+'" cy="'+cy+'" r="96" stroke="'+col+'" stroke-width="40" fill="none" stroke-dasharray="'+(fraction*circumference)+' '+circumference+'" transform="rotate(-90 '+cx+' '+cy+')" />'+
+                '<text x="'+cx+'" y="153" font-size="29" font-weight="bold" text-anchor="middle" fill="'+col+'">'+Math.round(fraction*100)+'%</text>'+
+                '<text x="'+cx+'" y="179" font-size="13" text-anchor="middle" fill="'+muted+'">de acertos</text>'+
+                '<text x="24" y="'+legendY+'" fill="'+col+'" font-size="16">● Acertos: '+ok+'</text>'+
+                '<text x="'+errorsX+'" y="'+legendY+'" fill="'+badCol+'" font-size="16">● Erros: '+bad+'</text>';
             chart.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Gráfico de rosca de acertos e erros" style="display:block;width:100%;max-height:390px" xmlns="http://www.w3.org/2000/svg">'+svg+'</svg>';
             table.innerHTML='<table class="w-full text-xs text-slate-300 mt-3"><thead><tr><th class="p-2">Tópico</th><th class="p-2">Respondidas</th><th class="p-2">Acertos</th><th class="p-2">Erros</th><th class="p-2">% de acerto</th><th class="p-2">Tempo</th></tr></thead><tbody>'+[...group].sort((a,b)=>b[1].a-a[1].a).slice(0,100).map(([name,g])=>'<tr><td class="p-2">'+label(name)+'</td><td class="p-2">'+g.a+'</td><td class="p-2">'+g.c+'</td><td class="p-2">'+(g.a-g.c)+'</td><td class="p-2">'+Math.round(100*g.c/g.a)+'%</td><td class="p-2">'+fmtSeconds(g.seconds)+'</td></tr>').join('')+'</tbody></table>';
         }
