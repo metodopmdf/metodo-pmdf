@@ -4229,83 +4229,106 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 return true;
             }).map(t=>/[.!?]$/.test(t)?t:t+'.');
         }
-        function qualifiedQuestionMutation(sentence,level){
-            const clean=String(sentence||'').replace(/[.!?]\s*$/,'').trim();
-            if(level==='iniciante')return {text:'Não é correto afirmar que '+clean.charAt(0).toLowerCase()+clean.slice(1)+'.',hint:'A negação contradiz a proposição expressa no trecho-fonte.'};
-            if(level==='intermediario'){
-                const m=clean.match(/\b(?:salvo|exceto|somente|apenas|desde que|mediante|quando|se|até|no mínimo|no máximo|depende de|independe de)\b/i);
-                if(m){const replacement=m[0].toLowerCase()==='somente'?'em qualquer hipótese':m[0].toLowerCase()==='apenas'?'em qualquer hipótese':m[0].toLowerCase()==='depende de'?'independe de':'independentemente de';
-                    return {text:clean.slice(0,m.index)+replacement+clean.slice(m.index+m[0].length)+'.',hint:'A alteração modifica a condição ou restrição presente no texto-base.'};}
-                return {text:'É sempre incorreto afirmar que '+clean.charAt(0).toLowerCase()+clean.slice(1)+'.',hint:'A negativa absoluta contraria a regra enunciada no material.'};
-            }
-            const fine=mutations(sentence).filter(m=>m.text!==sentence&&m.hint&&!/acrescenta uma generalização|inverte o sentido/i.test(m.hint));
-            if(fine.length)return fine[0];
-            const condition=clean.match(/\b(?:salvo|exceto|somente|apenas|desde que|mediante|depende de|independe de|até|no mínimo|no máximo)\b/i);
-            if(condition)return {text:clean.slice(0,condition.index)+'independentemente de'+clean.slice(condition.index+condition[0].length)+'.',hint:'A alteração indevida elimina ou modifica requisito, condição ou exceção.'};
-            return null; // Não criar complexidade artificial sem elementos na fonte.
-        }
-        // Rubrica de elaboração determinística com critérios de banca.
-        // Trabalha apenas com proposições verificáveis da fonte; não simula IA externa.
+        // Gerador determinístico. Não inventa normas, precedentes ou decisões.
+        // Os distratores são comparados à proposição original e a base é indicada no gabarito.
         const EXAMINER_RUBRIC={
           iniciante:{label:'Literalidade e conceitos',focus:'identificação da regra principal'},
-          intermediario:{label:'Aplicação e requisitos',focus:'hipótese, condição e consequência jurídica'},
-          avancado:{label:'Exceções e alcance',focus:'condicionantes, ressalvas e distinções normativas'}
+          intermediario:{label:'Requisitos e aplicação',focus:'condições, hipóteses e consequências'},
+          avancado:{label:'Exceções e distinções',focus:'limites, prazos e qualificadores da norma'}
         };
-        function examItemStyle(level,kind,bank,head){
-          const ce=kind==='CE',fgv=/fgv/i.test(bank||'');
-          if(level==='iniciante')return ce?'Com fundamento em '+head+', julgue a assertiva: ':'De acordo com a regra expressa em '+head+', assinale a opção correta.';
-          if(level==='intermediario')return ce?'Considerando os requisitos e efeitos previstos em '+head+', julgue o item: ':fgv?'À luz de '+head+', assinale a aplicação juridicamente compatível com o dispositivo.':'Com relação aos pressupostos de '+head+', assinale a alternativa correta.';
-          return ce?'Considerando as condições, as exceções e o alcance de '+head+', julgue a assertiva: ':fgv?'A respeito das condições e ressalvas legais de '+head+', assinale a interpretação adequada.':'Identifique a única alternativa compatível com os limites normativos de '+head+'.';
+        function examItemStyle(level,kind,bank,head,assoc=false){
+            if(assoc)return 'Associe corretamente o dispositivo ao conteúdo normativo descrito no material:';
+            if(kind==='MC')return level==='iniciante'?'Sobre '+head+', assinale a alternativa correta:':
+                level==='intermediario'?'Considerando os requisitos e efeitos previstos em '+head+', assinale a alternativa correta:':
+                'À luz das condições e das exceções de '+head+', identifique a única alternativa compatível com o guia:';
+            return level==='iniciante'?'Com fundamento em '+head+', julgue a assertiva: ':
+                level==='intermediario'?'Considerando os requisitos legais previstos em '+head+', julgue a assertiva: ':
+                'Considerando o alcance e os limites de '+head+', julgue a proposição: ';
         }
-        function examSourceQuality(t,level){
-          if(!fullQuestionSentences(t).length)return false;
-          if(level==='iniciante')return t.length<=650;
-          const cond=/\b(?:deve|pode|compete|cabe|condição|requisito|sanção|pena|prazo|mediante|quando|desde que|exige|constitui|prevê|veda|salvo|exceto|somente|apenas|até|mínimo|máximo)\b/i.test(t);
-          if(level==='intermediario')return cond;
-          return cond&&/\b(?:salvo|exceto|somente|apenas|desde que|mediante|depende|independe|prazo|mínimo|máximo|até|não|vedado|proibido|competência|ressalvado)\b|\d+\s*(?:dias|anos|meses|horas|%)/i.test(t);
+        function examSourceQuality(s,level){
+            const t=String(s||'').trim();
+            if(!fullQuestionSentences(t).length||t.length>1350||t.includes('…'))return false;
+            if(level==='iniciante')return true;
+            if(level==='intermediario')return /(?:deve|pode|compete|cabe|condição|requisito|pena|sanção|prazo|quando|exige|constitui|prevê|somente|exceto|crime|direito|dever|vedad|permite|proíbe|ocorre)/i.test(t);
+            return /(?:salvo|exceto|somente|apenas|desde que|mediante|depende|independe|prazo|mínimo|máximo|até|não|vedad|proibid|competência|ressalvad|quando|crime|pena|sanção|deve|pode|\d+\s*(?:dias|anos|meses|horas|%))/i.test(t);
         }
-        function examExplanation(level,head,sentence,mutated){
-          return (mutated?'ERRADO. '+mutated.hint+' ':'CERTO de acordo com o trecho do guia. ')+'Fundamento: '+head+'. Trecho-base: "'+sentence+'". Foco de cobrança: '+EXAMINER_RUBRIC[level].focus+'. Consulte a norma oficial para validação.';
-        }
-        function questionPool(g, fmt, lvl) {
-            const level=LEVELS_SAFE_LEVEL(lvl), A=g.articlesMapping||{},rows=[];
-            const bank=$('q-board')?.value||'Cebraspe';
-            const add=(arr,inc)=>safeArray(arr).forEach(a=>rows.push({a,inc}));
-            add(A.highIncidence,'Alta Incidência');
-            if(level!=='iniciante')add(A.mediumIncidence,'Média Incidência');
-            if(level==='avancado')add(A.lowIncidence,'Baixa Incidência');
-            const ce=[],mc=[],law=g._baseLawName||g.lawName;
-            const all=rows.flatMap(({a})=>fullQuestionSentences(a.plainExplanation));
-            const normalized=t=>String(t||'').replace(/\s+/g,' ').trim();
-            const completeOpts=(correct,seed)=>{
-                const distractors=[];
-                const addOpt=(txt)=>{const v=normalized(txt);if(v&&v!==correct&&v.length>=30&&!distractors.includes(v)&&fullQuestionSentences(v).length)distractors.push(v);};
-                const first=qualifiedQuestionMutation(correct,level);if(first)addOpt(first.text);
-                if(level==='avancado')mutations(correct).forEach(m=>{if(m.hint&&!/generalização|inverte o sentido/i.test(m.hint))addOpt(m.text);});
-                for(const sentence of all)if(sentence!==correct)addOpt('Não é correto afirmar que '+sentence.charAt(0).toLowerCase()+sentence.slice(1));
-                if(distractors.length<4)return null; // Não inventar alternativas artificiais.
-                const options=shuffle([{text:correct,correct:true},...distractors.slice(0,4).map(text=>({text,correct:false}))]);
-                return {options:options.map(x=>x.text),answer:'ABCDE'[options.findIndex(x=>x.correct)]};
+        function qualifiedQuestionMutations(sentence,level){
+            const original=String(sentence||'').trim(),out=[],seen=new Set();
+            const add=(pattern,replacement,hint)=>{
+                const m=pattern.exec(original);if(!m)return;
+                const word=typeof replacement==='function'?replacement(m):replacement;
+                const text=original.slice(0,m.index)+word+original.slice(m.index+m[0].length);
+                if(seen.has(text)||!fullQuestionSentences(text).length)return;
+                seen.add(text);out.push({text,hint,original:m[0],replacement:word});
             };
-            for(const {a,inc} of rows){
-                const head=artHead(a.article),ss=fullQuestionSentences(a.plainExplanation).filter(v=>examSourceQuality(v,level));
-                const base={topic:head,incidence:inc,lawBasis:head+' — '+lawShort(g),law};
-                for(const sentence of ss){
-                    const pre=examItemStyle(level,'CE',bank,head);
-                    const sourceInfo='Trecho de referência: '+sentence+' Fundamento indicado no guia: '+head+'.';
-                    ce.push({...base,type:'CE',difficulty:level,options:[],statement:pre+sentence,answer:'C',explanation:examExplanation(level,head,sentence,null),easyTip:a.practicalExample||'Confira a fonte oficial.'});
-                    const mutated=qualifiedQuestionMutation(sentence,level);
-                    if(mutated&&fullQuestionSentences(mutated.text).length){
-                        ce.push({...base,type:'CE',difficulty:level,options:[],statement:pre+mutated.text,answer:'E',explanation:examExplanation(level,head,sentence,mutated),easyTip:'Compare cada condição e expressão restritiva com a norma.'});
-                    }
-                    if(level!=='avancado'||/(?:salvo|exceto|somente|apenas|desde que|mediante|quando|se|até|prazo|competência|deve|pode|veda|proíbe|exige)/i.test(sentence)){
-                        const option=completeOpts(sentence,head);
-                        if(option)mc.push({...base,type:'MC',difficulty:level,statement:examItemStyle(level,'MC',bank,head),...option,explanation:'Gabarito '+option.answer+'. '+examExplanation(level,head,sentence,null),easyTip:'Confronte todos os qualificadores das alternativas com o texto oficial.'});
+            // Mudanças em elementos expressos da proposição, sem "não é correto afirmar que".
+            add(/\bnão\s+(?:pode|podem|deve|devem)\b/i,m=>m[0].replace(/^não\s+/i,''),'A negação normativa foi suprimida.');
+            add(/(?<!\bnão\s)\b(?:pode|podem|deve|devem)\b/i,m=>'não '+m[0],'Foi introduzida uma negação contrária ao trecho-base.');
+            add(/\bé\s+vedad[oa]\b/i,'é permitido','A proibição foi trocada por permissão.');
+            add(/\bé\s+permitid[oa]\b/i,'é vedado','A permissão foi trocada por proibição.');
+            add(/\bobrigatóri[oa]\b/i,'facultativo','O caráter obrigatório foi trocado por facultativo.');
+            add(/\bfacultativ[oa]\b/i,'obrigatório','O caráter facultativo foi trocado por obrigatório.');
+            add(/\bdepende\s+de\b/i,'independe de','Foi removido um requisito de dependência.');
+            add(/\bindepende\s+de\b/i,'depende de','Foi imposto um requisito ausente na regra.');
+            if(level!=='iniciante')add(/\b(\d{1,3})(\s+(?:dias?|meses?|anos?|horas?))\b/i,m=>String(Number(m[1])+(Number(m[1])<10?1:2))+m[2],'O prazo ou número foi alterado.');
+            if(level==='avancado')add(/\b(1\/3|1\/2|2\/3|1\/6)\b/,m=>({'1/3':'1/2','1/2':'2/3','2/3':'1/3','1/6':'1/3'})[m[1]],'A fração legal foi alterada.');
+            return out.slice(0,5);
+        }
+        function questionPool(g,fmt,lvl){
+            const level=LEVELS_SAFE_LEVEL(lvl),A=g.articlesMapping||{},law=g._baseLawName||g.lawName||'Conteúdo estudado';
+            const all=[],used=new Set(),bank=$('q-board')?.value||'Cebraspe';
+            const extract=(arr,inc)=>safeArray(arr).forEach(a=>{
+                const head=artHead(a.article);if(!head)return;
+                for(const sentence of fullQuestionSentences(a.plainExplanation)){
+                    const key=(head+'|'+sentence).toLowerCase();
+                    if(!used.has(key)){used.add(key);all.push({head,sentence,inc,example:a.practicalExample||''});}
+                }
+            });
+            extract(A.highIncidence,'Alta Incidência');extract(A.mediumIncidence,'Média Incidência');extract(A.lowIncidence,'Baixa Incidência');
+            const permitted=all.filter(x=>level==='avancado'||level==='intermediario'&&x.inc!=='Baixa Incidência'||level==='iniciante'&&x.inc==='Alta Incidência');
+            let targets=permitted.filter(x=>examSourceQuality(x.sentence,level));
+            // Escalonamento transparente: a falta de trechos complexos não bloqueia a revisão.
+            if(targets.length<5)targets=permitted.filter(x=>fullQuestionSentences(x.sentence).length);
+            const ce=[],mc=[];
+            const explanation=(item,mut)=> (mut?'ERRADO. '+mut.hint+' No material: "'+mut.original+'"; na questão: "'+mut.replacement+'". ':
+                'CERTO em relação ao trecho usado neste guia. ')+
+                'Referência: '+item.head+' — '+law+'. Trecho-base: "'+item.sentence+'". Consulte a lei vigente para confirmar o teor.';
+            for(const item of targets){
+                const base={topic:item.head,incidence:item.inc,lawBasis:item.head+' — '+law,law,difficulty:level};
+                const correct={...base,type:'CE',options:[],statement:examItemStyle(level,'CE',bank,item.head)+item.sentence,
+                     answer:'C',explanation:explanation(item,null),easyTip:'Confirme os elementos essenciais na fonte oficial.'};
+                ce.push(correct);
+                const changes=qualifiedQuestionMutations(item.sentence,level);
+                for(const mut of changes.slice(0,level==='iniciante'?1:level==='intermediario'?2:3)){
+                    ce.push({...base,type:'CE',options:[],statement:examItemStyle(level,'CE',bank,item.head)+mut.text,
+                        answer:'E',explanation:explanation(item,mut),easyTip:'Observe a alteração específica explicada no gabarito.'});
+                }
+                // Alternativas: combina mudança pontual expressa e associação com dispositivo diverso.
+                const choices=[{text:item.head+' — '+item.sentence,correct:true}],seenOpts=new Set([choices[0].text]);
+                for(const mut of changes){
+                    const choice=item.head+' — '+mut.text;
+                    if(!seenOpts.has(choice)){seenOpts.add(choice);choices.push({text:choice,correct:false});}
+                    if(choices.length===5)break;
+                }
+                if(choices.length<5){
+                    const otherHeads=new Set();
+                    for(const other of all){
+                        if(other.head===item.head||otherHeads.has(other.head))continue;
+                        otherHeads.add(other.head);
+                        // Uma associação propositalmente equivocada entre artigo e proposição.
+                        const choice=other.head+' — '+item.sentence;
+                        if(!seenOpts.has(choice)){seenOpts.add(choice);choices.push({text:choice,correct:false});}
+                        if(choices.length===5)break;
                     }
                 }
+                if(choices.length===5){
+                    const options=shuffle(choices),answer='ABCDE'[options.findIndex(x=>x.correct)];
+                    mc.push({...base,type:'MC',statement:examItemStyle(level,'MC',bank,item.head,true),
+                       options:options.map(x=>x.text),answer,
+                       explanation:'Gabarito '+answer+'. A associação correta identifica '+item.head+'. As alternativas incorretas modificam a proposição ou associam a afirmação a outro dispositivo. '+explanation(item,null),
+                       easyTip:'Compare dispositivo, conteúdo e eventuais mudanças de sentido.'});
+                }
             }
-            // Conteúdos de pegadinha sem proposição integral verificável não são enunciados.
-            // Jurisprudência genérica sem referência a precedente concreto também não é cobrada.
             return fmt==='MC'?mc:ce;
         }
         function trapItems(g) {
