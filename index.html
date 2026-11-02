@@ -5532,7 +5532,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             }
             const taken=pool.length;
             Q_STATE={items:pool.slice(0,taken),index:0,hits:0,wrong:0,blank:0,pending:0,answered:false,questionStart:Date.now()};saveStudySession();
-            $('q-status').textContent=''+'Fonte: '+(imported?'Provas importadas':guides.length===1?guides[0].lawName:guides.length+' leis')+' · '+taken+' questões · Nível: '+LEVELS[lvl].label+' · Critério: '+EXAMINER_RUBRIC[lvl].label+'.';
+            $('q-status').textContent='Fonte: '+(imported?'Provas importadas':guides.length===1?guides[0].lawName:guides.length+' leis')+' · Nível: '+LEVELS[lvl].label+' · Critério: '+EXAMINER_RUBRIC[lvl].label+'. Inicie a resolução para acompanhar o total disponível.';
             $('q-panel').classList.remove('hidden');drawQuestions();
             // O resultado externo já foi integrado antes de começar a sessão.
         }
