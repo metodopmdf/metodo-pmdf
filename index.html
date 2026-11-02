@@ -2194,6 +2194,29 @@ body .pmdf-more-laws-grid .law-shortcut-btn.pmdf-law-selected{
  body #printable-area thead{display:table-header-group!important}
  body #printable-area tr{break-inside:avoid!important}
 }
+
+/* Auditoria ergonômica: legibilidade e foco de navegação e estudo */
+body #export-toolbar{gap:1rem!important}
+body #export-toolbar>div:first-child{min-width:0!important;flex:1 1 420px!important}
+body #current-doc-title{max-width:60ch;overflow-wrap:anywhere;line-height:1.4!important}
+body #q-panel .q-choice:focus-visible,body #anki-panel button:focus-visible,
+body select:focus-visible,body input:focus-visible,body textarea:focus-visible,
+body [role="tab"]:focus-visible{outline:3px solid #D4AF37!important;outline-offset:3px!important}
+body #q-panel .study-progress-meter,body #anki-panel .study-progress-meter{
+ height:8px!important;border-radius:999px!important;overflow:hidden!important
+}
+body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>span{
+ background:#D4AF37!important;display:block!important;height:100%!important;transition:width .2s ease!important
+}
+@media(max-width:700px){
+ body #export-toolbar{align-items:stretch!important}
+ body #export-toolbar>div:first-child{flex:1 1 auto!important}
+ body #export-toolbar>div:last-child{width:100%!important;justify-content:flex-start!important}
+ body #current-doc-title{font-size:.92rem!important}
+}
+@media(prefers-reduced-motion:reduce){
+ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>span{transition:none!important}
+}
 </style>
     <!-- Segurança real: controle de gravação no GitHub e permissões no Supabase; não é possível impedir cópia do HTML público. -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -5481,7 +5504,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         function showTab(t) {
             TAB = t;
             if(APP_STARTED&&!SESSION_RESTORING)saveStudySession();if(t==='resultados')setTimeout(renderResults,0);
-            ['leis', 'questoes', 'anki', 'redacao','resultados'].forEach(k => { $('tab-' + k).classList.toggle('hidden', k !== t);$('tab-btn-'+k).setAttribute('aria-selected',String(k===t));
+            ['leis', 'questoes', 'anki', 'redacao','resultados'].forEach(k => { $('tab-' + k).classList.toggle('hidden', k !== t);$('tab-btn-'+k).setAttribute('role','tab');$('tab-btn-'+k).setAttribute('aria-selected',String(k===t));
                 $('tab-btn-' + k).className = 'px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2 transition ' + (k === t ? 'bg-[#0A1426] text-[#E5C158] border-[#D4AF37]/40' : 'bg-[#040912] text-slate-400 border-[#172642] hover:text-slate-200'); });
         }
 
@@ -5572,7 +5595,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 pool=shuffle(uniqueQuestions(pool.filter(questionIsComplete).filter(q=>
                     baseFmt!=='MC'||(Array.isArray(q.options)&&[4,5].includes(q.options.length)&&
                     new Set(q.options.map(x=>String(x).trim())).size===q.options.length&&
-                    'ABCDE'.slice(0,q.options.length).includes(q.answer)
+                    (imported||'ABCDE'.slice(0,q.options.length).includes(q.answer))
                 ))));
             }catch(e){return toast('Falha ao preparar questões: '+e.message,'error');}
             if(!pool.length)return toast('Não foram encontrados itens completos e verificáveis neste material. Amplie a fonte ou escolha outra norma.','error');
@@ -5746,7 +5769,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         function addOfficialQuestions(items){const seen=new Set(IMPORTED_QUESTIONS.map(q=>q.law+'|'+q.sourceNumber));let added=0;
             for(const q of items){const id=q.law+'|'+q.sourceNumber;if(seen.has(id))continue;IMPORTED_QUESTIONS.push(q);seen.add(id);added++;if(IMPORTED_QUESTIONS.length>=500)break;}
             if(!store.set('exam:imports',JSON.stringify(IMPORTED_QUESTIONS)))toast('Limite de armazenamento atingido. As questões estarão disponíveis nesta sessão, mas não ficarão salvas. Libere espaço e faça backup.', 'error');
-            $('q-source').value='imported';$('q-format').value=IMPORTED_QUESTIONS.some(q=>q.type==='CE')?'CE':'MC5';
+            $('q-source').value='imported';$('q-format').value=IMPORTED_QUESTIONS.some(q=>q.type==='CE')?'CE':'MC';
             updateImportedStatus(added+' questões extraídas do material público. Total nesta sessão: '+IMPORTED_QUESTIONS.length+'. Para corrigir questões reais, importe o gabarito oficial.');return added;
         }
         async function importOfficialExamFile(inp){const f=inp.files?.[0];if(!f)return;updateImportedStatus('Lendo prova: '+f.name);
