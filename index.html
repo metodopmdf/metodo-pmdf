@@ -2032,6 +2032,81 @@ body .pmdf-report .mm-hero h2,body .pmdf-report .mm-card h3{color:var(--text-pri
  body #printable-area .pmdf-report-footer{color:#334155!important}
  body #printable-area .mm-review-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
+
+/* Identidade editorial unificada - seis tipos de resumo */
+body #printable-area .pmdf-report{
+ --pmdf-paper:#2d2d2d;--pmdf-paper-deep:#090909;
+ --pmdf-paper-text:#f5f5f5;--pmdf-paper-muted:#c6c6c6;
+ --pmdf-paper-rule:rgba(255,255,255,.09);
+ background:var(--pmdf-paper)!important;color:var(--pmdf-paper-text)!important;
+ border:1px solid #464646!important;border-radius:17px!important;
+ padding:clamp(16px,2.5vw,26px)!important;
+ box-shadow:0 12px 32px rgba(0,0,0,.15)!important
+}
+body #printable-area .pmdf-report:before{
+ position:relative!important;top:auto!important;left:auto!important;right:auto!important;
+ display:block!important;height:6px!important;border-radius:99px!important;
+ background:#D4AF37!important;margin:-5px 0 16px!important
+}
+body #printable-area .pmdf-report-heading{
+ display:flex!important;align-items:center!important;gap:16px!important;
+ padding:0 0 22px!important;margin:0 0 22px!important;
+ border-bottom:1px solid var(--pmdf-paper-rule)!important
+}
+body #printable-area .pmdf-report-emblem{
+ width:75px!important;height:75px!important;display:grid!important;place-items:center!important;
+ background:#393525!important;color:#D4AF37!important;border:1px solid #D4AF37!important;
+ border-radius:16px!important;font-size:27px!important
+}
+body #printable-area .pmdf-report-kicker{color:#D4AF37!important;font-size:12px!important;font-weight:800!important;letter-spacing:.05em!important}
+body #printable-area .pmdf-report-heading h1{color:#f5f5f5!important;font-size:clamp(20px,2.4vw,27px)!important;line-height:1.3!important}
+body #printable-area .pmdf-report-heading p{color:#c6c6c6!important;font-size:15px!important}
+body #printable-area .pmdf-report h2,body #printable-area .pmdf-report h3{
+ color:#efefef!important;font-family:Inter,Arial,sans-serif!important
+}
+body #printable-area .pmdf-report h2:before{background:#D4AF37!important}
+body #printable-area .pmdf-report p,body #printable-area .pmdf-report li,
+body #printable-area .pmdf-report td{color:#ededed!important}
+body #printable-area .pmdf-report .g-card,
+body #printable-area .pmdf-report .study-card,
+body #printable-area .pmdf-report .mm-card,
+body #printable-area .pmdf-report .mm-hero,
+body #printable-area .pmdf-report .mm-case,
+body #printable-area .pmdf-report .mm-step-text,
+body #printable-area .pmdf-report .mm-review-item,
+body #printable-area .pmdf-report .mm-compare-row>div{
+ background:var(--pmdf-paper-deep)!important;color:#f5f5f5!important;
+ border:1px solid #292929!important;border-radius:12px!important;
+ box-shadow:none!important
+}
+body #printable-area .pmdf-report .mm-card{border-top:3px solid var(--mm-tone,#D4AF37)!important}
+body #printable-area .pmdf-report .g-banner{
+ background:#393525!important;color:#f5f5f5!important;border-left:3px solid #D4AF37!important
+}
+body #printable-area .pmdf-report .g-banner *{color:#f5f5f5!important}
+body #printable-area .pmdf-report th{background:#181818!important;color:#e2b941!important}
+body #printable-area .pmdf-report td{background:#090909!important;border-color:#383838!important}
+body #printable-area .pmdf-report .g-tag,body #printable-area .pmdf-report .mm-article{color:#e2b941!important}
+body #printable-area .pmdf-report .mm-trigger,body #printable-area .pmdf-report .mm-review-item span{color:#c6c6c6!important}
+body #printable-area .pmdf-report-footer{
+ color:#bdbdbd!important;border-top:1px solid var(--pmdf-paper-rule)!important;
+ padding-top:15px!important;margin-top:24px!important
+}
+body #printable-area .pmdf-report-footer span:first-child{color:#D4AF37!important}
+@media(max-width:600px){
+ body #printable-area .pmdf-report-emblem{width:52px!important;height:52px!important}
+ body #printable-area .pmdf-report-heading{gap:10px!important}
+}
+@media print{
+ body #printable-area .pmdf-report{--pmdf-paper:#fff;--pmdf-paper-deep:#f8fafc;--pmdf-paper-text:#111;--pmdf-paper-muted:#444;--pmdf-paper-rule:#cbd5e1;background:#fff!important;color:#111!important;border:none!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
+ body #printable-area .pmdf-report-heading h1,body #printable-area .pmdf-report h2,body #printable-area .pmdf-report h3,body #printable-area .pmdf-report p,body #printable-area .pmdf-report li,body #printable-area .pmdf-report td{color:#111!important}
+ body #printable-area .pmdf-report-heading p,body #printable-area .pmdf-report .mm-trigger{color:#444!important}
+ body #printable-area .pmdf-report .g-card,body #printable-area .pmdf-report .study-card,body #printable-area .pmdf-report .mm-card,body #printable-area .pmdf-report .mm-hero,body #printable-area .pmdf-report .mm-case,body #printable-area .pmdf-report .mm-step-text,body #printable-area .pmdf-report .mm-review-item,body #printable-area .pmdf-report .mm-compare-row>div{background:#f8fafc!important;color:#111!important;border:1px solid #cbd5e1!important}
+ body #printable-area .pmdf-report .g-banner{background:#fff8e8!important;color:#111!important}
+ body #printable-area .pmdf-report th{background:#eceff3!important;color:#111!important}
+ body #printable-area .pmdf-report td{background:#fff!important;color:#111!important}
+ body #printable-area .pmdf-report .mm-step-text,body #printable-area .pmdf-report .mm-card-title{color:#111!important}
+}
 </style>
     <!-- Segurança real: controle de gravação no GitHub e permissões no Supabase; não é possível impedir cópia do HTML público. -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -5031,7 +5106,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const S=g.executiveSummary||{}, X=g.structuralXRay||{}, A=g.articlesMapping||{}, T=g.trapsAndJurisprudence||{}, E=safeArray(g.essayRepertoire), rows=getVisibleArticleRows(g), done=studied(), eb=effBank();
             const wrap=(title,body)=>'<h2>'+title+'</h2>'+body;
             const concepts=safeArray(S.keyConcepts).slice(0,LEVEL==='iniciante'?4:99);
-            const intro='<div class="pmdf-report-heading"><div class="pmdf-report-emblem" aria-hidden="true">⚖</div><div class="pmdf-report-heading-copy"><span class="pmdf-report-kicker">MÉTODO PMDF · CADERNO ESTRATÉGICO</span><h1>'+esc(g.lawName)+'</h1><p>Foco: '+esc($('role-select').value)+' · Banca: '+esc($('board-select').value)+' · Nível: <b>'+LEVELS[LEVEL].label+'</b></p></div></div><p class="g-banner">'+LEVELS[LEVEL].road+'</p>';
+            const intro='<div class="pmdf-report-heading"><div class="pmdf-report-emblem" aria-hidden="true">⚖</div><div class="pmdf-report-heading-copy"><span class="pmdf-report-kicker">MÉTODO PMDF · CADERNO ESTRATÉGICO</span><h1>'+esc(g.lawName)+'</h1><p>'+esc(({full:'Guia completo',bullets:'Resumo esquematizado',table:'Quadro sinótico',mind:'Mapa mental',flash:'Flashcards',traps:'Pegadinhas e questões'})[SUMMARY_FORMAT]||'Caderno de estudo')+' · Nível '+esc(LEVELS[LEVEL].label)+'</p></div></div><p class="g-banner">'+LEVELS[LEVEL].road+'</p>';
             const executive=LEVEL==='iniciante'?'<ol class="list-decimal pl-5">'+[S.centralObjective,...concepts.slice(0,3)].map(x=>'<li>'+esc(firstSentences(x,260))+'</li>').join('')+'</ol>':'<p>'+esc(S.centralObjective||'')+'</p><ul>'+concepts.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
             const glossary=LEVEL==='iniciante'?glossaryHtml(g):'';
             const articleCard=(a,i)=>{const tags=bankTags(a),dim=interactive&&((eb==='cebraspe'&&!tags.c)||(eb==='fgv'&&!tags.f)),hl=interactive&&((eb==='cebraspe'&&tags.c)||(eb==='fgv'&&tags.f));const id=(CUR.key||'x')+'|'+String(a.article).slice(0,40),noteKey='note:'+id,note=store.get(noteKey)||'';let noteId=-1;if(interactive)noteId=NOTE_IDS.push(noteKey)-1;
@@ -5041,27 +5116,27 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             let body='';
             if(SUMMARY_FORMAT==='full'){
                 const sec=(title,arr)=>safeArray(arr).length?'<h3>'+title+'</h3>'+safeArray(arr).map(x=>'<div class="g-card"><b>'+esc(x.title)+'</b><p>'+esc(x.reason)+'</p></div>').join(''):'';
-                body=intro+wrap('1. Resumo Executivo',executive+glossary)+wrap('2. Raio-X Estrutural',sec('Prioridade Máxima',X.highPriority)+sec('Prioridade Secundária',X.secondaryPriority)+(LEVEL==='iniciante'?'':sec('Zonas de menor incidência',X.deadZones)))+wrap('3. Mapeamento de Dispositivos',rows.map(articleCard).join(''));
+                body=wrap('1. Resumo Executivo',executive+glossary)+wrap('2. Raio-X Estrutural',sec('Prioridade Máxima',X.highPriority)+sec('Prioridade Secundária',X.secondaryPriority)+(LEVEL==='iniciante'?'':sec('Zonas de menor incidência',X.deadZones)))+wrap('3. Mapeamento de Dispositivos',rows.map(articleCard).join(''));
                 if(LEVEL==='intermediario')body+=wrap('4. Comparativos — Distinções de Prova','<p class="text-xs">Comparação automática dos dispositivos efetivamente identificados no material. Confira o texto integral para validar eventuais distinções.</p><div style="overflow-x:auto"><table><thead><tr><th>Dispositivo</th><th>Regra central</th><th>Prazos/quantitativos</th><th>Termos restritivos</th></tr></thead><tbody>'+compareRows+'</tbody></table></div>');
                 body+=wrap('5. Pegadinhas e Jurisprudência','<h3>Pegadinhas da Banca</h3><ul>'+safeArray(T.examTraps).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>'+(LEVEL==='avancado'?'<h3>Jurisprudência STF/STJ</h3><ul>'+safeArray(T.jurisprudence).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':''))+wrap('6. Repertório para Redação',E.map(x=>'<div class="g-card"><b>'+esc(x.legalDevice)+'</b><p>Temas: '+esc(x.themes)+'</p><p class="g-ex">'+esc(x.modelSentence)+'</p></div>').join(''));
             }else if(SUMMARY_FORMAT==='bullets'){
-                body=intro+wrap('Resumo Esquematizado', '<ul><li><b>Regra geral:</b> '+esc(firstSentences(S.centralObjective,300))+'</li>'+rows.map(a=>'<li><b>'+esc(a.article)+':</b> '+esc(firstSentences(a.plainExplanation,190))+' <span class="g-tag">'+a.incidence+'</span></li>').join('')+'</ul>')+wrap('Prazos, exceções e palavras-chave',rows.map(a=>'<div class="g-card"><b>'+esc(a.article)+'</b><ul><li><b>Prazos/quantitativos:</b> '+esc(uniq(a.plainExplanation.match(PRAZO)||[]).join(', ')||'Não identificados no bloco')+'</li><li><b>Exceções/termos:</b> '+esc(uniq(a.plainExplanation.match(RESTR)||[]).join(', ')||'Conferir no texto-fonte')+'</li></ul></div>').join(''));
+                body=wrap('Resumo Esquematizado', '<ul><li><b>Regra geral:</b> '+esc(firstSentences(S.centralObjective,300))+'</li>'+rows.map(a=>'<li><b>'+esc(a.article)+':</b> '+esc(firstSentences(a.plainExplanation,190))+' <span class="g-tag">'+a.incidence+'</span></li>').join('')+'</ul>')+wrap('Prazos, exceções e palavras-chave',rows.map(a=>'<div class="g-card"><b>'+esc(a.article)+'</b><ul><li><b>Prazos/quantitativos:</b> '+esc(uniq(a.plainExplanation.match(PRAZO)||[]).join(', ')||'Não identificados no bloco')+'</li><li><b>Exceções/termos:</b> '+esc(uniq(a.plainExplanation.match(RESTR)||[]).join(', ')||'Conferir no texto-fonte')+'</li></ul></div>').join(''));
             }else if(SUMMARY_FORMAT==='table'){
-                body=intro+wrap('Quadro Sinótico — Regra, prazo, sanção e exceções','<div style="overflow-x:auto"><table><thead><tr><th>Dispositivo/Tópico</th><th>Regra Central / Conduta</th><th>Prazos / Quantitativos / Sanções</th><th>Exceções e Termos Restritivos</th></tr></thead><tbody>'+rows.map(a=>'<tr><td>'+esc(a.article)+'</td><td>'+esc(firstSentences(a.plainExplanation,280))+'</td><td>'+esc([...(a.plainExplanation.match(PRAZO)||[]),...(a.plainExplanation.match(PENA)||[])].join('; ')||'—')+'</td><td>'+esc(uniq(a.plainExplanation.match(RESTR)||[]).join('; ')||'—')+'</td></tr>').join('')+'</tbody></table></div>');
+                body=wrap('Quadro Sinótico — Regra, prazo, sanção e exceções','<div style="overflow-x:auto"><table><thead><tr><th>Dispositivo/Tópico</th><th>Regra Central / Conduta</th><th>Prazos / Quantitativos / Sanções</th><th>Exceções e Termos Restritivos</th></tr></thead><tbody>'+rows.map(a=>'<tr><td>'+esc(a.article)+'</td><td>'+esc(firstSentences(a.plainExplanation,280))+'</td><td>'+esc([...(a.plainExplanation.match(PRAZO)||[]),...(a.plainExplanation.match(PENA)||[])].join('; ')||'—')+'</td><td>'+esc(uniq(a.plainExplanation.match(RESTR)||[]).join('; ')||'—')+'</td></tr>').join('')+'</tbody></table></div>');
             }else if(SUMMARY_FORMAT==='mind'){
                 body=wrap('Mapa Mental Visual — Infográfico Editorial',pmdfMindHtml(g,rows)+
                     (interactive?'<div class="pmdf-mind-actions no-print"><button type="button" onclick="copyText(pmdfMindPrompt(CUR.guide))" class="'+BTN+'">📋 Copiar prompt do mapa mental</button><button type="button" onclick="openMindMap()" class="'+BTN+'">Abrir mapa ampliado</button></div>':''));
             }else if(SUMMARY_FORMAT==='flash'){
                 const cards=buildStudyCards(g), cardHtml=cards.map((c,i)=>interactive?'<button type="button" onclick="flipStudyCard(this)" class="study-card text-left" data-card-id="'+esc(c.id)+'"><span class="g-tag">Card '+(i+1)+' · Toque para virar</span><span class="front"><b>FRENTE</b><p>'+esc(c.front)+'</p></span><span class="back"><b>VERSO / FUNDAMENTO</b><p>'+esc(c.back)+'</p><span class="g-tag">Caixa Leitner: '+getCardBox(c.id).box+'</span></span></button>':'<div class="g-card"><b>Frente:</b><p>'+esc(c.front)+'</p><b>Verso:</b><p>'+esc(c.back)+'</p></div>').join('');
-                body=intro+wrap('Flashcards de Estudo Ativo','<p>Toque em cada cartão para revelar resposta e fundamento. Os cartões são organizados em frente e verso, com dificuldade adaptada ao nível selecionado.</p>'+(interactive?'<div class="flex flex-wrap gap-2 no-print mb-3"><button onclick="startLeitner()" class="'+BTN+'">▶ Iniciar sessão Leitner</button></div>':'')+'<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">'+cardHtml+'</div>');
+                body=wrap('Flashcards de Estudo Ativo','<p>Toque em cada cartão para revelar resposta e fundamento. Os cartões são organizados em frente e verso, com dificuldade adaptada ao nível selecionado.</p>'+(interactive?'<div class="flex flex-wrap gap-2 no-print mb-3"><button onclick="startLeitner()" class="'+BTN+'">▶ Iniciar sessão Leitner</button></div>':'')+'<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">'+cardHtml+'</div>');
             }else{
                 const traps=safeArray(T.examTraps), questions=getCachedPool(g,boardFmt(),LEVEL).slice(0,20);
-                body=intro+wrap('Fichamento de Pegadinhas & Questões',traps.map((t,i)=>'<div class="g-card"><b>Pegadinha '+(i+1)+'</b><p>'+esc(t)+'</p></div>').join('')+'<h3>Assertivas Certo/Errado comentadas</h3>'+questions.map((q,i)=>'<div class="g-card"><b>'+ (i+1)+'. '+esc(q.answer==='C'?'CERTO':'ERRADO')+'</b><p>'+esc(q.statement)+'</p><p class="g-ex">'+esc(q.explanation)+'</p></div>').join(''));
+                body=wrap('Fichamento de Pegadinhas & Questões',traps.map((t,i)=>'<div class="g-card"><b>Pegadinha '+(i+1)+'</b><p>'+esc(t)+'</p></div>').join('')+'<h3>Assertivas Certo/Errado comentadas</h3>'+questions.map((q,i)=>'<div class="g-card"><b>'+ (i+1)+'. '+esc(q.answer==='C'?'CERTO':'ERRADO')+'</b><p>'+esc(q.statement)+'</p><p class="g-ex">'+esc(q.explanation)+'</p></div>').join(''));
             }
             const tools=interactive?'<div class="no-print flex flex-wrap gap-2 mt-3"><button onclick="openFlash()" class="'+BTN+'">🃏 Revisão de flashcards</button><button onclick="startSim(null,true)" class="'+BTN+'">📝 Simulado</button><button onclick="openErrors()" class="'+BTN+'">📕 Caderno de Erros</button><button onclick="openMindMap()" class="'+BTN+'">🌳 Mapa mental</button><button onclick="openPanel()" class="'+BTN+'">📊 Painel do Edital &amp; Backup</button><button onclick="toggleCloze()" class="'+BTN+'">🙈 Modo Lacunas</button><input type="search" id="guide-search" oninput="filterGuide(this.value)" placeholder="Buscar neste guia..." class="px-3 py-2 rounded-xl bg-[#0E1B33] border border-[#1E2E4F] text-xs text-slate-200 w-64"><button type="button" onclick="clearGuideOptions()" class="'+BTN+'">↺ Limpar filtros do guia</button><button onclick="searchAll()" class="'+BTN+'">🔎 Busca global</button>'+(LEVEL!=='iniciante'?'<select onchange="setBank(this.value)" class="px-2 py-2 rounded-xl bg-[#0E1B33] border border-[#1E2E4F] text-xs text-slate-200"><option value="auto" '+(BANK==='auto'?'selected':'')+'>Conforme a banca</option><option value="todas" '+(BANK==='todas'?'selected':'')+'>Todas</option><option value="cebraspe" '+(BANK==='cebraspe'?'selected':'')+'>Cebraspe</option><option value="fgv" '+(BANK==='fgv'?'selected':'')+'>FGV/AOCP</option></select>':'')+'</div>':'';
             return tools+(interactive?'<p id="g-progress" class="no-print mt-2"></p>':'')+
                 '<div class="pmdf-report pmdf-report-'+SUMMARY_FORMAT+'">'+
-                (SUMMARY_FORMAT==='mind'?'<div class="pmdf-report-heading"><div class="pmdf-report-emblem">⚖</div><div class="pmdf-report-heading-copy"><span class="pmdf-report-kicker">MÉTODO PMDF · CADERNO ESTRATÉGICO</span><h1>'+esc(g.lawName)+'</h1><p>Mapa mental de fluxo e decisão</p></div></div>':'')+
+                intro+
                 body+'<footer class="pmdf-report-footer"><span>⚖ MÉTODO PMDF</span><span>Material didático · Confira a norma oficial vigente</span></footer></div>'+
                 (interactive?'<div id="sim-box" class="no-print mt-3"></div>':'');
         }
