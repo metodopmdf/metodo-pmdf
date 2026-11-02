@@ -2774,7 +2774,7 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
                 <div class="no-print flex flex-wrap gap-2 mb-4">
                     <button onclick="copyEssayResult()" class="px-3.5 py-2 rounded-xl bg-[#0E1B33] hover:bg-[#162646] text-slate-100 text-xs font-semibold border border-[#1E2E4F]">Copiar correção</button>
                     <button onclick="exportEssayDoc()" class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold">Baixar (.doc)</button>
-                    <button onclick="exportPdfA4()" class="px-3.5 py-2 rounded-xl bg-[#0E1B33] hover:bg-[#162646] text-slate-300 text-xs border border-[#1E2E4F]">PDF / Imprimir</button>
+                    <button onclick="exportEssayPdfA4()" class="px-3.5 py-2 rounded-xl bg-[#0E1B33] hover:bg-[#162646] text-slate-300 text-xs border border-[#1E2E4F]">PDF / Imprimir</button>
                 </div>
                 <div id="essay-out" class="essay-out"></div>
             </section>
@@ -4616,6 +4616,42 @@ const CLOZE_RE = /(\d+\s*(?:dias|dia|anos|ano|meses|mês|horas|hora)|\d+\/\d+|(?
             const printNow=()=>{try{preview.focus();preview.print();}catch(e){toast('Falha ao abrir impressão: '+e.message,'error');}};
             if(preview.document.readyState==='complete')setTimeout(printNow,250);
             else preview.addEventListener('load',()=>setTimeout(printNow,250),{once:true});
+        }
+        // A exportação da redação é independente do guia de leis.
+        function exportEssayPdfA4(){
+            const result=$('essay-out'),report=String(ESSAY_MD||'').trim();
+            if(!report||!result?.innerHTML?.trim())return toast('Corrija uma redação antes de gerar o PDF.','error');
+            const popup=window.open('','_blank');
+            if(!popup)return toast('Permita pop-ups para abrir a correção em PDF.','error');
+            const title='Correção de Redação — '+String($('essay-theme').value||'Método PMDF').slice(0,100);
+            const css=[
+              '@page{size:A4 portrait;margin:16mm 15mm 18mm}',
+              '*{box-sizing:border-box}html,body{margin:0;padding:0}',
+              'body{background:#fff;color:#1d2939;font:10.5pt/1.48 Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}',
+              'main{max-width:100%;overflow-wrap:anywhere}',
+              'header{border-top:5px solid #d4af37;border-bottom:1px solid #d8dee7;padding:12px 0 16px;margin:0 0 18px}',
+              '.brand{color:#a57c13;font-size:9pt;letter-spacing:.13em;font-weight:800}',
+              'h1{font-size:18pt;line-height:1.2;margin:8px 0;color:#172b49}',
+              'h2,h3{font-size:13pt;color:#172b49;margin:18pt 0 8pt;page-break-after:avoid;break-after:avoid}',
+              'p,li{orphans:3;widows:3;margin:7pt 0;line-height:1.5}ul,ol{padding-left:22px}',
+              'table{border-collapse:collapse;width:100%;table-layout:fixed;font-size:9pt}',
+              'th,td{border:1px solid #ccd4df;padding:6pt;vertical-align:top;overflow-wrap:anywhere}',
+              'th{background:#f1f4f9;color:#172b49}thead{display:table-header-group}',
+              'tr{break-inside:avoid;page-break-inside:avoid}',
+              'footer{border-top:1px solid #d8dee7;color:#667085;font-size:8pt;margin-top:20pt;padding-top:8pt}',
+              '.no-print,button{display:none!important}'
+            ].join('');
+            popup.document.open();
+            popup.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>'+
+                esc(title)+'</title><style>'+css+'</style></head><body><main><header>'+
+                '<div class="brand">MÉTODO PMDF · CORRETOR DE REDAÇÃO</div><h1>'+esc(title)+
+                '</h1></header><article>'+result.innerHTML+
+                '</article><footer>Material didático — correção local estimada, não oficial.</footer>'+
+                '</main></body></html>');
+            popup.document.close();
+            const print=()=>{try{popup.focus();popup.print();}catch(e){toast('Não foi possível imprimir: '+e.message,'error');}};
+            if(popup.document.readyState==='complete')setTimeout(print,250);
+            else popup.addEventListener('load',()=>setTimeout(print,250),{once:true});
         }
         function exportToWordDoc() { if (!CUR.guide) return toast('Carregue um guia primeiro.', 'error'); downloadDoc('Guia_' + CUR.guide.lawName, guideHtml(CUR.guide, false)); }
         async function copyHtml(html, plain) {
