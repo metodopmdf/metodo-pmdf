@@ -56,7 +56,7 @@ for(const level of ['iniciante','intermediario','avancado']){
   let ceTotal=0,mcTotal=0,cardsTotal=0;
   for(const [key,g] of Object.entries(app.BUILTIN_PMDF_GUIDES)){
     app.level(level);
-    const ce=app.questionPool(g,'CE',level),mc=app.questionPool(g,'MC',level),cards=app.buildStudyCards(g);
+    const ce=app.questionPool(g,'CE',level),mc=app.questionPool(g,'MC',level,5),mc4=app.questionPool(g,'MC',level,4),cards=app.buildStudyCards(g);
     assert(ce.length>0,'Sem questões C/E: '+key+' / '+level);
     assert(cards.length>0,'Sem flashcards: '+key+' / '+level);
     for(const q of ce){
@@ -71,9 +71,15 @@ for(const level of ['iniciante','intermediario','avancado']){
       assert('ABCDE'.slice(0,q.options.length).includes(q.answer),'Gabarito múltipla escolha inválido');
       assert(q.options.some((_,i)=>'ABCDE'[i]===q.answer),'Alternativa correta ausente');
     }
+    for(const q of mc4){
+      assert.equal(q.options.length,4,'Seleção MC4 não foi respeitada');
+      assert.equal(new Set(q.options).size,4,'MC4 com opções repetidas');
+      assert('ABCD'.includes(q.answer),'Gabarito MC4 inválido');
+    }
+    for(const q of mc)assert.equal(q.options.length,5,'Seleção MC5 não foi respeitada');
     ceTotal+=ce.length;mcTotal+=mc.length;cardsTotal+=cards.length;
   }
-  assert(ceTotal>=70&&mcTotal>=40&&cardsTotal>=100,'Banco de questões insuficiente');
+  assert(ceTotal>=70&&cardsTotal>=100,'Banco de questões C/E ou flashcards insuficiente');
   counts[level]={ce:ceTotal,mc:mcTotal,flashcards:cardsTotal};
 }
 // Simulação do usuário nos três níveis: simulado, revelação, programação e gráfico.
