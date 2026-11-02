@@ -4219,37 +4219,80 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             while(opts.length<4)push('A alternativa não reproduz o conteúdo literal do material analisado ('+(opts.length+1)+').');
             return shuffle([{text:correct,correct:true},...opts.slice(0,4).map(text=>({text,correct:false}))]);
         }
-        function questionPool(g, fmt, lvl) {
-            const A=g.articlesMapping||{}, rows=[]; const add=(arr,inc)=>safeArray(arr).forEach(a=>rows.push({a,inc}));
-            add(A.highIncidence,'Alta Incidência');if(lvl!=='iniciante')add(A.mediumIncidence,'Média Incidência');if(lvl==='avancado')add(A.lowIncidence,'Baixa Incidência');
-            const corpus=rows.flatMap(r=>sentencesOf(r.a.plainExplanation)); const all=corpus.length?corpus:[firstSentences(g.executiveSummary?.centralObjective||g.lawName,260)];
-            const ce=[],mc=[];
-            rows.forEach(({a,inc})=>{
-                const head=artHead(a.article), ss=sentencesOf(a.plainExplanation); if(!ss.length)return;
-                ss.forEach(sentence=>{
-                    const body=sentence.replace(/[.]$/,''), base={topic:head,incidence:inc,lawBasis:head+' — '+lawShort(g),law:g._baseLawName||g.lawName}, pre='Segundo '+(/^(?:Arts?\.?)/i.test(head)?'o ':'')+head+' ('+lawShort(g)+'), ';
-                    ce.push({...base,type:'CE',options:[],statement:pre+lcSmart(body)+'.',answer:'C',explanation:'CERTO. O enunciado reproduz o conteúdo sintetizado do trecho-fonte: '+sentence,easyTip:a.practicalExample||'Confira o dispositivo correspondente na lei seca.'});
-                    const mu=mutations(sentence)[0]; if(mu)ce.push({...base,type:'CE',options:[],statement:pre+lcSmart(mu.text.replace(/[.]$/,''))+'.',answer:'E',explanation:'ERRADO. '+mu.hint+'. Compare com o trecho original: '+sentence,easyTip:'A alteração foi construída como distrator heurístico; confirme a redação oficial.'});
-                    const opts=makeMCOptions(sentence,head,all), answer='ABCDE'[opts.findIndex(x=>x.correct)];
-                    mc.push({...base,type:'MC',statement:'Assinale a alternativa que reproduz o conteúdo do material — '+head+' ('+lawShort(g)+'):',options:opts.map(x=>x.text),answer,explanation:'Gabarito '+answer+'. A alternativa correta reproduz o trecho-base; as demais são mutações ou trechos de outros pontos do material.',easyTip:a.practicalExample||'Leia os requisitos e termos restritivos antes de marcar.'});
-                });
-            });
-            trapItems(g).forEach(t=>{const base={...t,incidence:'Pegadinha de Prova',lawBasis:t.topic+' — '+lawShort(g),law:g._baseLawName||g.lawName};ce.push({...base,type:'CE',options:[]});const opts=makeMCOptions(t.statement,t.topic,all),answer='ABCDE'[opts.findIndex(x=>x.correct)];mc.push({...base,type:'MC',statement:'Sobre a pegadinha indicada, assinale a alternativa que reproduz corretamente o ponto de atenção:',options:opts.map(x=>x.text),answer,explanation:'Gabarito '+answer+'. A correta é o trecho-base; as demais são formulações distratoras.'});});
-            if(lvl==='avancado') safeArray(g.trapsAndJurisprudence?.jurisprudence).forEach((j,i)=>{
-                const topic='Jurisprudência '+(i+1), base={topic,incidence:'Jurisprudência',lawBasis:'Entendimento jurisprudencial informado no guia',law:g._baseLawName||g.lawName};
-                ce.push({...base,type:'CE',options:[],statement:'Conforme o entendimento jurisprudencial registrado no guia: '+j,answer:'C',explanation:'CERTO segundo a síntese jurisprudencial cadastrada. Confira a íntegra do precedente e sua atualidade.'});
-                const opts=makeMCOptions(j,topic,[...all,j]);const answer='ABCDE'[opts.findIndex(x=>x.correct)];
-                mc.push({...base,type:'MC',statement:'Qual alternativa reproduz o entendimento jurisprudencial registrado no guia?',options:opts.map(x=>x.text),answer,explanation:'Gabarito '+answer+'. A correta reproduz a síntese do guia; os distratores modificam ou negam o entendimento.'});
-            });
-            if(ce.length<2&&all.length){const sentence=all[0],mut=mutations(sentence)[0];ce.push({type:'CE',statement:sentence,answer:'C',topic:'Texto-base',incidence:'Alta Incidência',law:g._baseLawName||g.lawName,lawBasis:'Trecho do material',explanation:'O item reproduz o material fornecido.'});ce.push({type:'CE',statement:mut.text,answer:'E',topic:'Texto-base',incidence:'Pegadinha de Prova',law:g._baseLawName||g.lawName,lawBasis:'Trecho do material',explanation:'Distrator criado por alteração de alcance: '+mut.hint+'.'});}
-            if(fmt==='MC'){
-                const result=mc.length?mc:ce.map(q=>{const opts=makeMCOptions(q.statement,q.topic,all),answer='ABCDE'[opts.findIndex(x=>x.correct)];return {...q,type:'MC',statement:'Assinale o trecho fiel ao conteúdo analisado: '+q.statement,options:opts.map(x=>x.text),answer};});
-                if(result.length===1){const original=result[0].options['ABCDE'.indexOf(result[0].answer)]||result[0].statement,mutated=mutations(original)[0];if(mutated){const options=makeMCOptions(original,result[0].topic,all),answer='ABCDE'[options.findIndex(x=>x.correct)];result.push({...result[0],statement:'Em outro item, assinale a alternativa que reproduz corretamente o conteúdo do dispositivo.',options:options.map(x=>x.text),answer,explanation:'Segundo item de revisão. A alternativa correta mantém o texto-base; foi incluído distrator por mutação: '+mutated.hint+'.'});}}
-                return result;
+        // As questões devem partir de uma proposição verificável, não de títulos,
+        // fragmentos ou textos cortados por resumos extrativos.
+        function fullQuestionSentences(text) {
+            const raw=String(text||'').replace(/\s+/g,' ').trim();
+            if(!raw||/[.…]\s*$/.test(raw)&&/…/.test(raw)||raw.includes('…'))return [];
+            // Não quebrar após abreviações normativas (Art., Arts., inc., nº etc.).
+            const protectedText=raw.replace(/\b(Arts?|incs?|al[sí]neas?|n[º°o]|p[áa]gs?|Drs?)\.(?=\s|\d)/gi,(m)=>m.slice(0,-1)+'∯');
+            const chunks=protectedText.split(/(?<=[.!?;])\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ§0-9])/).map(x=>x.replace(/∯/g,'.').trim());
+            const hasVerb=/(?:\b(?:é|são|foi|será|deve|pode|cabe|compete|constitui|configura|consiste|depende|exige|pressupõe|inclui|exclui|veda|proíbe|permite|aplica|ocorre|implica|prevê|estabelece|considera|responde|incorre|sujeita|assegura|garante|incide|ser|estar|ter|haver|existir|punir|cumprir|dispõe|determina|requer|admite|autoriza|impede|resulta|corresponde|caracteriza|compreende|envolve|define|abrange|atinge|alcança|dispensa|restringe|prescreve)\b|\b[a-záéíóúâêôãõç]{4,}(?:am|em|ará|erá|irá|avam|ariam|eriam|iriam|asse|esse|isse)\b)/i;
+            return chunks.filter(t=>{
+                const v=t.replace(/^\s*[-–•]\s*/,'').trim();
+                if(v.length<48||v.length>1500||!hasVerb.test(v))return false;
+                if(/(?:[:;,\-–—(/]|\b(?:de|do|da|dos|das|e|ou|para|com|sem|por|mediante|conforme|segundo|sobre|quanto|art\.?|arts\.?|inciso|§))\s*$/i.test(v))return false;
+                if(/^(?:art(?:s)?\.?\s*\d+|(?:embriaguez|homicídio|furto|roubo)\s+em\s+serviço\s*\(art\.)\s*$/i.test(v))return false;
+                if((v.match(/\(/g)||[]).length!==(v.match(/\)/g)||[]).length)return false;
+                return true;
+            }).map(t=>/[.!?]$/.test(t)?t:t+'.');
+        }
+        function qualifiedQuestionMutation(sentence,level){
+            const clean=String(sentence||'').replace(/[.!?]\s*$/,'').trim();
+            if(level==='iniciante')return {text:'Não é correto afirmar que '+clean.charAt(0).toLowerCase()+clean.slice(1)+'.',hint:'A negação contradiz a proposição expressa no trecho-fonte.'};
+            if(level==='intermediario'){
+                const m=clean.match(/\b(?:salvo|exceto|somente|apenas|desde que|mediante|quando|se|até|no mínimo|no máximo|depende de|independe de)\b/i);
+                if(m){const replacement=m[0].toLowerCase()==='somente'?'em qualquer hipótese':m[0].toLowerCase()==='apenas'?'em qualquer hipótese':m[0].toLowerCase()==='depende de'?'independe de':'independentemente de';
+                    return {text:clean.slice(0,m.index)+replacement+clean.slice(m.index+m[0].length)+'.',hint:'A alteração modifica a condição ou restrição presente no texto-base.'};}
+                return {text:'É sempre incorreto afirmar que '+clean.charAt(0).toLowerCase()+clean.slice(1)+'.',hint:'A negativa absoluta contraria a regra enunciada no material.'};
             }
-            const result=ce.length?ce:mc.map(q=>({type:'CE',statement:q.options[0],answer:'C',topic:q.topic,law:q.law,lawBasis:q.lawBasis,explanation:q.explanation}));
-            if(result.length===1){const mutated=mutations(result[0].statement)[0];if(mutated)result.push({...result[0],statement:mutated.text,answer:'E',explanation:'ERRADO. O enunciado foi efetivamente alterado em relação ao texto-base: '+mutated.hint+'. '+(result[0].explanation||'')});}
-            return result;
+            const fine=mutations(sentence).filter(m=>m.text!==sentence&&m.hint&&!/acrescenta uma generalização|inverte o sentido/i.test(m.hint));
+            if(fine.length)return fine[0];
+            const condition=clean.match(/\b(?:salvo|exceto|somente|apenas|desde que|mediante|depende de|independe de|até|no mínimo|no máximo)\b/i);
+            if(condition)return {text:clean.slice(0,condition.index)+'independentemente de'+clean.slice(condition.index+condition[0].length)+'.',hint:'A alteração indevida elimina ou modifica requisito, condição ou exceção.'};
+            return null; // Não criar complexidade artificial sem elementos na fonte.
+        }
+        function questionPool(g, fmt, lvl) {
+            const level=LEVELS_SAFE_LEVEL(lvl), A=g.articlesMapping||{},rows=[];
+            const add=(arr,inc)=>safeArray(arr).forEach(a=>rows.push({a,inc}));
+            add(A.highIncidence,'Alta Incidência');
+            if(level!=='iniciante')add(A.mediumIncidence,'Média Incidência');
+            if(level==='avancado')add(A.lowIncidence,'Baixa Incidência');
+            const ce=[],mc=[],law=g._baseLawName||g.lawName;
+            const all=rows.flatMap(({a})=>fullQuestionSentences(a.plainExplanation));
+            const normalized=t=>String(t||'').replace(/\s+/g,' ').trim();
+            const completeOpts=(correct,seed)=>{
+                const distractors=[];
+                const addOpt=(txt)=>{const v=normalized(txt);if(v&&v!==correct&&v.length>=30&&!distractors.includes(v)&&fullQuestionSentences(v).length)distractors.push(v);};
+                const first=qualifiedQuestionMutation(correct,level);if(first)addOpt(first.text);
+                if(level==='avancado')mutations(correct).forEach(m=>{if(m.hint&&!/generalização|inverte o sentido/i.test(m.hint))addOpt(m.text);});
+                for(const sentence of all)if(sentence!==correct)addOpt('Não é correto afirmar que '+sentence.charAt(0).toLowerCase()+sentence.slice(1));
+                if(distractors.length<4)return null; // Não inventar alternativas artificiais.
+                const options=shuffle([{text:correct,correct:true},...distractors.slice(0,4).map(text=>({text,correct:false}))]);
+                return {options:options.map(x=>x.text),answer:'ABCDE'[options.findIndex(x=>x.correct)]};
+            };
+            for(const {a,inc} of rows){
+                const head=artHead(a.article),ss=fullQuestionSentences(a.plainExplanation);
+                const base={topic:head,incidence:inc,lawBasis:head+' — '+lawShort(g),law};
+                for(const sentence of ss){
+                    const pre=level==='iniciante'?'De acordo com o conteúdo estudado ('+head+'), considere a seguinte afirmação: ':
+                        level==='intermediario'?'Considerando os pressupostos e os efeitos previstos em '+head+', examine a assertiva: ':
+                        'À luz da disciplina normativa de '+head+', analise rigorosamente o alcance e as condições da proposição: ';
+                    const sourceInfo='Trecho de referência: '+sentence+' Fundamento indicado no guia: '+head+'.';
+                    ce.push({...base,type:'CE',difficulty:level,options:[],statement:pre+sentence,answer:'C',explanation:'CERTO segundo o material de estudo. '+sourceInfo,easyTip:a.practicalExample||'Confira a fonte oficial.'});
+                    const mutated=qualifiedQuestionMutation(sentence,level);
+                    if(mutated&&fullQuestionSentences(mutated.text).length){
+                        ce.push({...base,type:'CE',difficulty:level,options:[],statement:pre+mutated.text,answer:'E',explanation:'ERRADO: '+mutated.hint+' '+sourceInfo,easyTip:'Compare cada condição e expressão restritiva com a norma.'});
+                    }
+                    if(level!=='avancado'||/(?:salvo|exceto|somente|apenas|desde que|mediante|quando|se|até|prazo|competência|deve|pode|veda|proíbe|exige)/i.test(sentence)){
+                        const option=completeOpts(sentence,head);
+                        if(option)mc.push({...base,type:'MC',difficulty:level,statement:level==='iniciante'?'Assinale a alternativa compatível com o texto estudado ('+head+').':level==='intermediario'?'Considerando os requisitos e consequências jurídicas associados a '+head+', assinale a alternativa correta.':'Examine os elementos normativos, limites e possíveis inversões de sentido em '+head+' e selecione a única assertiva compatível com o material.',...option,explanation:'Gabarito '+option.answer+'. '+sourceInfo,easyTip:'Confronte todos os qualificadores das alternativas com o texto oficial.'});
+                    }
+                }
+            }
+            // Conteúdos de pegadinha sem proposição integral verificável não são enunciados.
+            // Jurisprudência genérica sem referência a precedente concreto também não é cobrada.
+            return fmt==='MC'?mc:ce;
         }
         function trapItems(g) {
             const out=[]; safeArray(g?.trapsAndJurisprudence?.examTraps).forEach((trap,i)=>{
@@ -4490,6 +4533,14 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             $('anki-source').value='current';$('anki-count').value='20';$('anki-mode').value='due';
             $('anki-status').textContent='Filtros limpos.';$('anki-panel').classList.add('hidden');ANKI_STATE=null;
         }
+        function questionIsComplete(q){
+            if(!q||typeof q.statement!=='string'||q.statement.length<55||q.statement.includes('…'))return false;
+            const text=q.statement.trim();
+            if(/(?:[:;,\-–—(/]|\b(?:art\.?|arts\.?|inciso|de|do|da|dos|das|e|ou|para|com|sem|por|mediante|segundo|conforme|sobre))\s*$/i.test(text))return false;
+            if((text.match(/\(/g)||[]).length!==(text.match(/\)/g)||[]).length)return false;
+            if(q.type==='MC'&&(!Array.isArray(q.options)||q.options.some(o=>!o||String(o).includes('…'))||!q.options.length))return false;
+            return true;
+        }
         function uniqueQuestions(qs){
             const used=new Set();return qs.filter(q=>{
                 const sig=q.type+'|'+q.statement.trim();if(used.has(sig))return false;used.add(sig);return true;
@@ -4507,22 +4558,23 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const imported=$('q-source').value==='imported';const guides=imported?[]:pickStudyGuides('q');if(!imported&&!guides.length)return toast('Selecione uma norma ou envie conteúdo para gerar questões.','error');
             const value=Number($('q-count').value);
             if(!Number.isInteger(value)||value<5||value>500)return toast('Informe uma quantidade inteira entre 5 e 500.','error');
-            const fmt=$('q-format').value,lvl=$('q-level').value,baseFmt=fmt==='CE'?'CE':'MC';
+            const fmt=$('q-format').value,lvl=LEVELS_SAFE_LEVEL($('q-level').value),baseFmt=fmt==='CE'?'CE':'MC';
             let pool=[];
             try {
                 if(imported){pool=IMPORTED_QUESTIONS.filter(q=>q.type===baseFmt).map(q=>({...q}));}else for(const g of guides){const found=questionPool(g,baseFmt,lvl);pool.push(...found.map(q=>({ ...q,law:g.lawName })));}
-                pool=shuffle(uniqueQuestions(pool));
+                pool=shuffle(uniqueQuestions(pool.filter(questionIsComplete)));
             }catch(e){return toast('Não foi possível gerar questões: '+e.message,'error');}
             // Busca automática: consulta fontes após aplicar filtros, sem controles manuais de pesquisa.
             // Só acrescenta enunciados externos com permissão documentada e gabarito validado.
             try{const extras=await fetchAutoQuestions({board:$('q-board').value,topic:$('q-topic').value.trim()||guides[0]?.lawName||'legislação policial',year:Number($('q-year').value),format:fmt,limit:value});
-                if(!imported)pool=shuffle(uniqueQuestions([...extras,...pool]));
+                if(!imported)pool=shuffle(uniqueQuestions([...extras,...pool].filter(questionIsComplete)));
+                // Os itens importados de fontes externas sem conteúdo integral são descartados.
             }catch(e){$('research-status').textContent='Pesquisa externa indisponível. Exercícios locais continuam funcionando.';}
             if(fmt==='MC4')pool=pool.map(toFour);if(imported&&fmt!=='CE')pool=pool.filter(q=>Array.isArray(q.options)&&q.options.length===(fmt==='MC4'?4:5));
             if(!pool.length)return toast(imported?'Nenhuma questão importada no formato escolhido. Importe prova ou altere o filtro.':'O material não possui trechos suficientes para gerar questões.','error');
             const taken=Math.min(value,pool.length);
             Q_STATE={items:pool.slice(0,taken),index:0,hits:0,wrong:0,blank:0,pending:0,answered:false,questionStart:Date.now()};saveStudySession();
-            $('q-status').textContent=(taken<value?'Foram encontradas '+taken+' questões distintas; o banco local não inventa itens extras. ':'')+'Fonte: '+(imported?'Provas importadas':guides.length===1?guides[0].lawName:guides.length+' leis')+' · '+taken+' questões.';
+            $('q-status').textContent=(taken<value?'Foram encontradas '+taken+' questões distintas; o banco local não inventa itens extras. ':'')+'Fonte: '+(imported?'Provas importadas':guides.length===1?guides[0].lawName:guides.length+' leis')+' · '+taken+' questões · Nível: '+LEVELS[lvl].label+'.';
             $('q-panel').classList.remove('hidden');drawQuestions();
             // O resultado externo já foi integrado antes de começar a sessão.
         }
