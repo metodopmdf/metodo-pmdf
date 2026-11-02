@@ -1771,7 +1771,7 @@ body .law-shortcut-btn{
  white-space:normal!important;overflow-wrap:anywhere;text-align:center;
 }
 body .law-shortcut-btn:hover{background:var(--accent-soft)!important;border-color:var(--accent)!important}
-body .pmdf-core-laws #btn-law-cpm{background:var(--accent-soft)!important;border-color:var(--accent)!important}
+/* A seleção ativa é determinada exclusivamente por .pmdf-law-selected. */
 body .more-laws-drawer{position:relative;z-index:6;max-width:100%}
 body .more-laws-drawer > summary{
  display:flex;align-items:center;justify-content:space-between;gap:.6rem;cursor:pointer;list-style:none;
@@ -2136,6 +2136,63 @@ body #printable-area .pmdf-report-footer span:first-child{color:#D4AF37!importan
  body #printable-area th,body #printable-area td{padding:5pt!important;white-space:normal!important;word-break:break-word!important}
  body #printable-area .pmdf-report-footer{break-inside:avoid!important;page-break-inside:avoid!important}
  body #printable-area .mm-nav,body #printable-area .no-print{display:none!important}
+}
+
+/* Hotfix de paginação: uma coluna contínua no papel, sem layout multicoluna que
+   fragmenta cartões e provoca páginas vazias no mecanismo de impressão Chromium. */
+body .pmdf-core-laws .law-shortcut-btn:not(.pmdf-law-selected),
+body .pmdf-more-laws-grid .law-shortcut-btn:not(.pmdf-law-selected){
+ background:var(--bg-raised)!important;color:var(--text-primary)!important;
+ border:1px solid var(--border-subtle)!important;box-shadow:none!important;
+}
+body .pmdf-core-laws .law-shortcut-btn.pmdf-law-selected,
+body .pmdf-more-laws-grid .law-shortcut-btn.pmdf-law-selected{
+ background:var(--accent-soft)!important;color:var(--accent)!important;
+ border:2px solid var(--accent)!important;box-shadow:inset 0 0 0 1px var(--accent-soft)!important;
+}
+@media print{
+ @page{size:A4 portrait;margin:14mm 14mm 16mm 14mm}
+ html,body,#printable-area,#printable-area .pmdf-report{
+  width:auto!important;max-width:none!important;height:auto!important;min-height:0!important;
+  overflow:visible!important;display:block!important;position:static!important;
+ }
+ body #printable-area .mm-root,body #printable-area .mm-root section,
+ body #printable-area .mm-grid,body #printable-area .mm-review-grid,
+ body #printable-area .mm-compare-row{
+   display:block!important;columns:auto!important;column-count:auto!important;
+   column-width:auto!important;column-gap:normal!important;
+   overflow:visible!important;position:static!important;
+   height:auto!important;min-height:0!important;break-before:auto!important;
+   break-after:auto!important;break-inside:auto!important;
+ }
+ body #printable-area .mm-card,body #printable-area .mm-review-item,
+ body #printable-area .mm-compare-row>div{
+  display:block!important;width:auto!important;max-width:100%!important;
+  margin:0 0 8mm!important;float:none!important;
+  overflow:visible!important;height:auto!important;min-height:0!important;
+  break-before:auto!important;break-after:auto!important;break-inside:auto!important;
+  page-break-before:auto!important;page-break-after:auto!important;page-break-inside:auto!important;
+ }
+ body #printable-area .mm-card-head,body #printable-area .mm-step,
+ body #printable-area .mm-step-text,body #printable-area .mm-case{
+  break-inside:avoid!important;page-break-inside:avoid!important;
+ }
+ body #printable-area .mm-root section>h3{
+  break-before:auto!important;break-after:avoid!important;
+  page-break-before:auto!important;page-break-after:avoid!important;
+  padding:0 0 3mm!important;margin:4mm 0!important;
+ }
+ body #printable-area .mm-hero,body #printable-area .pmdf-report-heading{
+  display:block!important;break-inside:avoid!important;page-break-inside:avoid!important;
+ }
+ body #printable-area .pmdf-report-heading{display:flex!important}
+ body #printable-area .mm-review-item span,body #printable-area .mm-review-item b,
+ body #printable-area .mm-card-title,body #printable-area .mm-article{
+  color:#111!important
+ }
+ body #printable-area table{width:100%!important;table-layout:auto!important}
+ body #printable-area thead{display:table-header-group!important}
+ body #printable-area tr{break-inside:avoid!important}
 }
 </style>
     <!-- Segurança real: controle de gravação no GitHub e permissões no Supabase; não é possível impedir cópia do HTML público. -->
