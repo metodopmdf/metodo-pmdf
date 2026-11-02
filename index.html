@@ -3173,23 +3173,61 @@
         const $ = id => document.getElementById(id);
         const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
         const BACKUP_KEY_RE = /^(lvl|summaryFormat|lastKey|sim:stats|sim:errs|pmdf:session:v4|exam:imports|pmdf:results:events|pmdf:results:aggregates|essay:totals|(st|fc|leitner|leitnerDue|note|custom|essay):)/;
-        const SCRIPT_CACHE = Object.create(null);
-        let AUTH_USER=null,CLOUD_SAVE_TIMER=null,CLOUD_SAVE_BUSY=false,CLOUD_DIRTY=false,CLOUD_LAST_ERROR='';
+        const SCRIPT_CACHE=Object.create(null);
+        let AUTH_USER=null,CLOUD_SAVE_TIMER=null,CLOUD_SAVE_BUSY=false,CLOUD_DIRTY=false,CLOUD_LAST_ERROR='',CLOUD_MUTATION_SERIAL=0;
+        const SYNC_LOCAL_META='__pmdf_sync_meta_v1',SYNC_REMOTE_META='__pmdfSync';
         const namespaceKey=k=>AUTH_USER?'pmdf:account:'+AUTH_USER.username+':'+k:'pmdf:visitor:'+k;
-        const store = {
+        const getSyncMeta=()=>{try{const m=JSON.parse(localStorage.getItem(namespaceKey(SYNC_LOCAL_META))||'{}');return m&&typeof m==='object'&&!Array.isArray(m)?m:{};}catch(e){return {};}};
+        const putSyncMeta=m=>{try{localStorage.setItem(namespaceKey(SYNC_LOCAL_META),JSON.stringify(m));}catch(e){}};
+        const syncEntry=x=>typeof x==='number'?{ts:x,deleted:false}:x&&typeof x==='object'?{ts:Number(x.ts)||0,deleted:!!x.deleted}:{ts:0,deleted:false};
+        function markSyncMutation(key,deleted=false){
+            const versions=getSyncMeta(),old=syncEntry(versions[key]);
+            versions[key]={ts:Math.max(Date.now(),old.ts+1),deleted};putSyncMeta(versions);CLOUD_MUTATION_SERIAL++;
+        }
+        const store={
             get(k){try{return localStorage.getItem(namespaceKey(k));}catch(e){return null;}},
-            set(k,v){try{localStorage.setItem(namespaceKey(k),String(v));if(AUTH_USER&&BACKUP_KEY_RE.test(k))scheduleCloudSave();return true;}catch(e){return false;}},
-            del(k){try{localStorage.removeItem(namespaceKey(k));if(AUTH_USER)scheduleCloudSave();}catch(e){}}
+            set(k,v){try{localStorage.setItem(namespaceKey(k),String(v));if(AUTH_USER&&BACKUP_KEY_RE.test(k)){markSyncMutation(k);scheduleCloudSave();}return true;}catch(e){return false;}},
+            del(k){try{localStorage.removeItem(namespaceKey(k));if(AUTH_USER&&BACKUP_KEY_RE.test(k)){markSyncMutation(k,true);scheduleCloudSave();}}catch(e){}}
         };
-        const accountData = ()=>{if(!AUTH_USER)return {};const data={},prefix='pmdf:account:'+AUTH_USER.username+':';
-          for(let i=0;i<localStorage.length;i++){const key=localStorage.key(i);if(key?.startsWith(prefix)){const k=key.slice(prefix.length);if(BACKUP_KEY_RE.test(k))data[k]=localStorage.getItem(key);}}return data;};
+        const accountData=()=>{if(!AUTH_USER)return {};const data={},prefix='pmdf:account:'+AUTH_USER.username+':';
+            for(let i=0;i<localStorage.length;i++){const key=localStorage.key(i);if(key?.startsWith(prefix)){const k=key.slice(prefix.length);if(BACKUP_KEY_RE.test(k))data[k]=localStorage.getItem(key);}}
+            return data;};
+        function mergeProgressData(remote,local,localMeta=getSyncMeta()){
+            remote=remote&&typeof remote==='object'&&!Array.isArray(remote)?remote:{};
+            local=local&&typeof local==='object'&&!Array.isArray(local)?local:{};
+            const remoteMeta=remote[SYNC_REMOTE_META]&&typeof remote[SYNC_REMOTE_META]==='object'?remote[SYNC_REMOTE_META]:{};
+            const data={},versions={},keys=new Set([...Object.keys(remote),...Object.keys(local),...Object.keys(remoteMeta),...Object.keys(localMeta)]);
+            for(const k of keys){
+                if(!BACKUP_KEY_RE.test(k))continue;
+                const rv=syncEntry(remoteMeta[k]),lv=syncEntry(localMeta[k]),localHas=typeof local[k]==='string',remoteHas=typeof remote[k]==='string';
+                const localWins=lv.ts>rv.ts||(lv.ts===rv.ts&&!remoteHas&&localHas);
+                const winner=localWins?lv:rv,content=localWins?local[k]:remote[k];
+                if(winner.ts)versions[k]={ts:winner.ts,deleted:!!winner.deleted};
+                if(!winner.deleted&&typeof content==='string')data[k]=content;
+            }
+            data[SYNC_REMOTE_META]=versions;return {data,versions};
+        }
+        function applyProgressSnapshot(snapshot){
+            if(!AUTH_USER)return;
+            const values=snapshot.data||{},versions=snapshot.versions||{};
+            const prior=accountData();
+            for(const k of Object.keys(prior))if(!Object.prototype.hasOwnProperty.call(values,k))try{localStorage.removeItem(namespaceKey(k));}catch(e){}
+            for(const [k,v] of Object.entries(values))if(BACKUP_KEY_RE.test(k)&&typeof v==='string')try{localStorage.setItem(namespaceKey(k),v);}catch(e){}
+            putSyncMeta(versions);
+        }
         const fmtSeconds=n=>{n=Math.max(0,Math.round(Number(n)||0));return [Math.floor(n/3600),Math.floor(n/60)%60,n%60].map(x=>String(x).padStart(2,'0')).join(':');};
         function cloudStatus(message,issue=false){const t=$('cloud-save-status');if(t){t.textContent=message;t.classList.toggle('text-rose-300',issue);}const m=$('account-msg');if(m&&issue&&AUTH_USER)m.textContent=message;}
         function scheduleCloudSave(){if(!AUTH_USER)return;CLOUD_DIRTY=true;cloudStatus('◌ Alterações pendentes');clearTimeout(CLOUD_SAVE_TIMER);CLOUD_SAVE_TIMER=setTimeout(flushCloudSave,5000);}
-        async function flushCloudSave(){if(!AUTH_USER||CLOUD_SAVE_BUSY)return;clearTimeout(CLOUD_SAVE_TIMER);CLOUD_SAVE_BUSY=true;CLOUD_DIRTY=false;cloudStatus('↻ Sincronizando...');
-          try{const r=await accountFetch('progresso',{method:'PUT',headers:{'Content-Type':'application/json','X-PMDF-Request':'1'},body:JSON.stringify({data:accountData()})});if(!r.ok){const d=await r.json().catch(()=>({}));throw Error(d.error||'HTTP '+r.status);}CLOUD_LAST_ERROR='';cloudStatus('✓ Progresso salvo na nuvem');}
-          catch(e){CLOUD_DIRTY=true;CLOUD_LAST_ERROR=e.message;cloudStatus('⚠ Não sincronizado. Dados locais preservados.',true);}
-          finally{CLOUD_SAVE_BUSY=false;if(CLOUD_DIRTY&&AUTH_USER)CLOUD_SAVE_TIMER=setTimeout(flushCloudSave,12000);}}
+        async function flushCloudSave(){
+            if(!AUTH_USER||CLOUD_SAVE_BUSY)return;
+            const owner=AUTH_USER.username;clearTimeout(CLOUD_SAVE_TIMER);CLOUD_SAVE_BUSY=true;CLOUD_DIRTY=false;cloudStatus('↻ Sincronizando...');
+            try{
+                const response=await accountFetch('progresso',{method:'PUT',body:JSON.stringify({data:accountData()})});
+                if(!response.ok){const d=await response.json().catch(()=>({}));throw Error(d.error||'HTTP '+response.status);}
+                CLOUD_LAST_ERROR='';if(AUTH_USER?.username===owner)cloudStatus('✓ Progresso salvo na nuvem');
+            }catch(e){CLOUD_DIRTY=true;CLOUD_LAST_ERROR=e.message;cloudStatus('⚠ Não sincronizado. Dados locais preservados.',true);}
+            finally{CLOUD_SAVE_BUSY=false;if(CLOUD_DIRTY&&AUTH_USER?.username===owner)CLOUD_SAVE_TIMER=setTimeout(flushCloudSave,12000);}
+        }
         const LEVELS_SAFE_LEVEL = v => ['iniciante','intermediario','avancado'].includes(v) ? v : 'intermediario';
         let CUR = { key: null, guide: null, _poolCache: Object.create(null) }, LEVEL = LEVELS_SAFE_LEVEL(store.get('lvl')), TAB = 'leis';
 
@@ -4865,15 +4903,41 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         function sbUser(user){const internalName=user.user_metadata?.username||(user.email||'').split('@')[0];return {username:user.id,displayName:internalName||'Candidato',email:null};}
         async function accountFetch(endpoint,options={}){
             if(endpoint!=='progresso')throw Error('Rota não suportada.');
-            const uid=AUTH_USER?.username;if(!uid)throw Error('Entre na sua conta.');
+            const uid=AUTH_USER?.username;
+            if(!uid)throw Error('Entre na sua conta.');
+            const base='/rest/v1/pmdf_progress',filter='?user_id=eq.'+encodeURIComponent(uid);
             try{
-                if(options.method==='PUT'){
-                    const payload=JSON.parse(options.body||'{}');
-                    await sbAuthed('/rest/v1/pmdf_progress?on_conflict=user_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({user_id:uid,data:payload.data||{},updated_at:new Date().toISOString()})});
-                    return {ok:true,status:204,json:async()=>({})};
+                if(options.method!=='PUT'){
+                    const rows=await sbAuthed(base+filter+'&select=data,updated_at',{method:'GET'});
+                    return {ok:true,status:200,json:async()=>({data:rows[0]?.data||{},updated_at:rows[0]?.updated_at||null})};
                 }
-                const rows=await sbAuthed('/rest/v1/pmdf_progress?user_id=eq.'+encodeURIComponent(uid)+'&select=data',{method:'GET'});
-                return {ok:true,status:200,json:async()=>({data:rows[0]?.data||{}})};
+                // Read/merge/CAS: evita sobrescrever alterações de outro aparelho com um POST cego.
+                for(let attempt=0;attempt<4;attempt++){
+                    if(AUTH_USER?.username!==uid)throw Error('A conta foi alterada durante a sincronização.');
+                    const changed=CLOUD_MUTATION_SERIAL;
+                    const rows=await sbAuthed(base+filter+'&select=data,updated_at',{method:'GET'});
+                    const row=rows[0]||null;
+                    const merged=mergeProgressData(row?.data||{},accountData());
+                    const version=new Date(Math.max(Date.now(),Date.parse(row?.updated_at||0)+1||0)).toISOString();
+                    const payload={user_id:uid,data:merged.data,updated_at:version};
+                    let result;
+                    if(row){
+                        const query=base+filter+'&updated_at=eq.'+encodeURIComponent(row.updated_at)+'&select=updated_at';
+                        result=await sbAuthed(query,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(payload)});
+                    }else{
+                        result=await sbAuthed(base+'?on_conflict=user_id&select=updated_at',{
+                            method:'POST',headers:{Prefer:'resolution=ignore-duplicates,return=representation'},
+                            body:JSON.stringify(payload)});
+                    }
+                    if(Array.isArray(result)&&result.length){
+                        if(AUTH_USER?.username!==uid)throw Error('A conta foi alterada durante a sincronização.');
+                        if(changed===CLOUD_MUTATION_SERIAL)applyProgressSnapshot(merged);
+                        else CLOUD_DIRTY=true; // alterações durante a requisição exigem outra gravação.
+                        return {ok:true,status:200,json:async()=>({updated_at:result[0].updated_at})};
+                    }
+                    // Outro dispositivo atualizou a linha; repetir sobre a versão mais recente.
+                }
+                throw Error('Conflito de sincronização: o servidor foi alterado simultaneamente. O progresso local foi preservado; tente novamente.');
             }catch(e){return {ok:false,status:503,json:async()=>({error:e.message})};}
         }
         async function retryAccountConnection(){
@@ -4896,21 +4960,19 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             refreshWelcome();
         }
         async function loadRemoteProgress(){
-            const r=await accountFetch('progresso',{headers:{'Accept':'application/json'}});
+            const r=await accountFetch('progresso',{headers:{Accept:'application/json'}});
             if(!r.ok){const d=await r.json().catch(()=>({}));throw Error(d.error||'Não foi possível recuperar o histórico (HTTP '+r.status+').');}
-            const obj=await r.json();if(!obj.data||typeof obj.data!=='object')return;
-            // Evitar sobrescrever alterações locais mais recentes, por exemplo após falha de rede.
-            const localSession=readStudySession(),remoteSession=(()=>{try{return JSON.parse(obj.data[STUDY_SESSION_KEY]||'null');}catch(e){return null;}})();
-            if(localSession?.updated&&(!remoteSession?.updated||localSession.updated>remoteSession.updated)){LEVEL=LEVELS_SAFE_LEVEL(store.get('lvl'));paintLevel();restoreLastGuide();restoreEssayDraft();restoreEssayLastResult();scheduleCloudSave();return;}
-            for(const [k,v] of Object.entries(obj.data))if(BACKUP_KEY_RE.test(k)&&typeof v==='string'){
-                try{localStorage.setItem(namespaceKey(k),v);}catch(e){}
-            }
-            // Não enviar a cópia baixada novamente até uma alteração local.
+            const obj=await r.json(),remote=obj.data&&typeof obj.data==='object'?obj.data:{};
+            const snapshot=mergeProgressData(remote,accountData());
+            const localHadNewer=Object.keys(snapshot.data).some(k=>BACKUP_KEY_RE.test(k)&&snapshot.data[k]!==remote[k]);
+            applyProgressSnapshot(snapshot);
             LEVEL=LEVELS_SAFE_LEVEL(store.get('lvl'));paintLevel();
             SUMMARY_FORMAT=SUMMARY_FORMATS.includes(store.get('summaryFormat'))?store.get('summaryFormat'):'full';setSummaryFormat(SUMMARY_FORMAT);
             restoreLastGuide();restoreEssayDraft();restoreEssayLastResult();
-            const imported=jget('exam:imports',[]);IMPORTED_QUESTIONS.splice(0,IMPORTED_QUESTIONS.length,...(Array.isArray(imported)?imported.slice(0,500):[]));
+            const imported=jget('exam:imports',[]);
+            IMPORTED_QUESTIONS.splice(0,IMPORTED_QUESTIONS.length,...(Array.isArray(imported)?imported.slice(0,500):[]));
             showQuestionTotals();
+            if(localHadNewer)scheduleCloudSave();
         }
         async function bootstrapAccount(){
             if(AUTH_INITIALIZED)return;AUTH_INITIALIZED=true;
