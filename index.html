@@ -2652,9 +2652,7 @@ body .pmdf-more-laws-grid .law-shortcut-btn.pmdf-law-selected{
                     <label class="text-xs text-[#E5C158] font-semibold">Banca para busca automática
                         <select id="q-board" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option>Cebraspe</option><option>FGV</option><option>FCC</option><option>Vunesp</option><option>Iades</option><option>Idecan</option><option>AOCP</option><option>Cesgranrio</option><option>Quadrix</option><option value="todas">Todas</option></select>
                     </label>
-                    <label class="text-xs text-[#E5C158] font-semibold">Ano inicial das provas
-                        <input id="q-year" type="number" min="2000" max="2030" value="2024" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"/>
-                    </label>
+                    
                     
                 </div>
                 <div class="flex gap-2 flex-wrap"><button type="button" onclick="startQuestions()" class="px-5 py-2.5 rounded-xl bg-[#D4AF37] text-[#050B16] font-extrabold">Gerar e iniciar questões</button>
@@ -5181,7 +5179,12 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 }
             });
             extract(A.highIncidence,'Alta Incidência');extract(A.mediumIncidence,'Média Incidência');extract(A.lowIncidence,'Baixa Incidência');
-            const permitted=all.filter(x=>level==='avancado'||level==='intermediario'&&x.inc!=='Baixa Incidência'||level==='iniciante'&&x.inc==='Alta Incidência');
+            // Banca examinadora local: prioriza complexidade, mas não elimina toda
+            // a matéria da lei em níveis iniciante/intermediário.
+            const permitted=all.slice().sort((a,b)=>{
+                const weight=x=>x.inc==='Alta Incidência'?3:x.inc==='Média Incidência'?2:1;
+                return weight(b)-weight(a);
+            });
             let targets=permitted.filter(x=>examSourceQuality(x.sentence,level));
             // Escalonamento transparente: a falta de trechos complexos não bloqueia a revisão.
             if(targets.length<5)targets=permitted.filter(x=>fullQuestionSentences(x.sentence).length);
@@ -5204,15 +5207,15 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 for(const mut of changes){
                     const choice=item.head+' — '+mut.text;
                     if(!seenOpts.has(choice)){seenOpts.add(choice);choices.push({text:choice,correct:false});}
-                    if(choices.length===5)break;
+                    if(choices.length>=requestedCount)break;
                 }
-                if(choices.length<5){
+                if(choices.length<requestedCount){
                     const otherHeads=new Set();
                     for(const other of all){
                         if(other.head===item.head||otherHeads.has(other.head))continue;
                         otherHeads.add(other.head);
                         // Uma associação propositalmente equivocada entre artigo e proposição.
-                        const choice=other.head+' — '+item.sentence;
+                        const choice=item.head+' — '+other.sentence;
                         if(!seenOpts.has(choice)){seenOpts.add(choice);choices.push({text:choice,correct:false});}
                         if(choices.length===5)break;
                     }
@@ -5227,6 +5230,20 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                         if(!seenOpts.has(choice)){
                             seenOpts.add(choice);
                             choices.push({text:choice,correct:false});
+                        }
+                        if(choices.length>=requestedCount)break;
+                    }
+                }
+                // Amplia as alternativas por contraposições controladas, sempre
+                // associadas a um trecho-base identificável, sem fatos externos.
+                if(choices.length<requestedCount){
+                    for(const other of all){
+                        for(const mut of qualifiedQuestionMutations(other.sentence,level)){
+                            const candidate=item.head+' — '+mut.text;
+                            if(!seenOpts.has(candidate)){
+                                seenOpts.add(candidate);choices.push({text:candidate,correct:false});
+                            }
+                            if(choices.length>=requestedCount)break;
                         }
                         if(choices.length>=requestedCount)break;
                     }
@@ -5312,12 +5329,12 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 const traps=safeArray(T.examTraps), questions=getCachedPool(g,boardFmt(),LEVEL).slice(0,20);
                 body=wrap('Fichamento de Pegadinhas & Questões',traps.map((t,i)=>'<div class="g-card"><b>Pegadinha '+(i+1)+'</b><p>'+esc(t)+'</p></div>').join('')+'<h3>Assertivas Certo/Errado comentadas</h3>'+questions.map((q,i)=>'<div class="g-card"><b>'+ (i+1)+'. '+esc(q.answer==='C'?'CERTO':'ERRADO')+'</b><p>'+esc(q.statement)+'</p><p class="g-ex">'+esc(q.explanation)+'</p></div>').join(''));
             }
-            const tools=interactive?'<div class="no-print flex flex-wrap gap-2 mt-3"><button onclick="openFlash()" class="'+BTN+'">🃏 Revisão de flashcards</button><button onclick="startSim(null,true)" class="'+BTN+'">📝 Simulado</button><button onclick="openErrors()" class="'+BTN+'">📕 Caderno de Erros</button><button onclick="openMindMap()" class="'+BTN+'">🌳 Mapa mental</button><button onclick="openPanel()" class="'+BTN+'">📊 Painel do Edital &amp; Backup</button><button onclick="toggleCloze()" class="'+BTN+'">🙈 Modo Lacunas</button><input type="search" id="guide-search" oninput="filterGuide(this.value)" placeholder="Buscar neste guia..." class="px-3 py-2 rounded-xl bg-[#0E1B33] border border-[#1E2E4F] text-xs text-slate-200 w-64"><button type="button" onclick="clearGuideOptions()" class="'+BTN+'">↺ Limpar filtros do guia</button><button onclick="searchAll()" class="'+BTN+'">🔎 Busca global</button>'+(LEVEL!=='iniciante'?'<select onchange="setBank(this.value)" class="px-2 py-2 rounded-xl bg-[#0E1B33] border border-[#1E2E4F] text-xs text-slate-200"><option value="auto" '+(BANK==='auto'?'selected':'')+'>Conforme a banca</option><option value="todas" '+(BANK==='todas'?'selected':'')+'>Todas</option><option value="cebraspe" '+(BANK==='cebraspe'?'selected':'')+'>Cebraspe</option><option value="fgv" '+(BANK==='fgv'?'selected':'')+'>FGV/AOCP</option></select>':'')+'</div>':'';
+            const tools=interactive?'<div class="no-print flex flex-wrap gap-2 mt-3"><button onclick="openFlash()" class="'+BTN+'">🃏 Revisão de flashcards</button><button onclick="openErrors()" class="'+BTN+'">📕 Caderno de Erros</button><button onclick="openMindMap()" class="'+BTN+'">🌳 Mapa mental</button><button onclick="openPanel()" class="'+BTN+'">📊 Painel do Edital &amp; Backup</button><button onclick="toggleCloze()" class="'+BTN+'">🙈 Modo Lacunas</button><input type="search" id="guide-search" oninput="filterGuide(this.value)" placeholder="Buscar neste guia..." class="px-3 py-2 rounded-xl bg-[#0E1B33] border border-[#1E2E4F] text-xs text-slate-200 w-64"><button type="button" onclick="clearGuideOptions()" class="'+BTN+'">↺ Limpar filtros do guia</button><button onclick="searchAll()" class="'+BTN+'">🔎 Busca global</button>'+(LEVEL!=='iniciante'?'<select onchange="setBank(this.value)" class="px-2 py-2 rounded-xl bg-[#0E1B33] border border-[#1E2E4F] text-xs text-slate-200"><option value="auto" '+(BANK==='auto'?'selected':'')+'>Conforme a banca</option><option value="todas" '+(BANK==='todas'?'selected':'')+'>Todas</option><option value="cebraspe" '+(BANK==='cebraspe'?'selected':'')+'>Cebraspe</option><option value="fgv" '+(BANK==='fgv'?'selected':'')+'>FGV/AOCP</option></select>':'')+'</div>':'';
             return tools+(interactive?'<p id="g-progress" class="no-print mt-2"></p>':'')+
                 '<div class="pmdf-report pmdf-report-'+SUMMARY_FORMAT+'">'+
                 intro+
                 body+'<footer class="pmdf-report-footer"><span>⚖ MÉTODO PMDF</span><span>Material didático · Confira a norma oficial vigente</span></footer></div>'+
-                (interactive?'<div id="sim-box" class="no-print mt-3"></div>':'');
+                '';
         }
         function buildStudyCards(g){
             const level=LEVELS_SAFE_LEVEL(LEVEL);
@@ -5388,7 +5405,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             }
             $('current-doc-title').textContent='Método PMDF — '+g.lawName+' · '+LEVELS[LEVEL].label+' · '+({full:'Por Extenso',bullets:'Esquematizado',table:'Quadro Sinótico',mind:'Mapa Mental',flash:'Flashcards',traps:'Pegadinhas'}[SUMMARY_FORMAT]);
             ['summary-format-config','summary-format-toolbar'].forEach(id=>{if($(id))$(id).value=SUMMARY_FORMAT;});
-            updateProgress();simIntro();applyCloze();
+            updateProgress();applyCloze();
             ['q-panel','anki-panel'].forEach(id=>$(id)?.classList.add('hidden'));
             Q_STATE=null;ANKI_STATE=null;
             if(window.lucide)lucide.createIcons();
@@ -5526,7 +5543,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             }
             if(!pool.length){
                 const message=imported?'Não há questões importadas no formato escolhido.':
-                  desired?'Este conteúdo não oferece alternativas fundamentadas suficientes para o formato selecionado. Selecione outra lei ou amplie a fonte.':
+                  desired?'Não foram identificados trechos independentes suficientes para construir '+desired+' alternativas verificáveis. Amplie o texto-fonte ou selecione outra norma.':
                   'Não há trechos completos para montar questões.';
                 return toast(message,'error');
             }
