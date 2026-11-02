@@ -1972,6 +1972,66 @@ body .pmdf-report-footer{border-top:1px solid var(--border-subtle);padding-top:1
 body .pmdf-report-footer span:first-child{font-weight:800;color:var(--accent);letter-spacing:.1em}
 @media(max-width:640px){body .pmdf-report-heading{align-items:flex-start}body .pmdf-report-emblem{width:45px;height:45px;font-size:1.25rem}}
 @media print{body .pmdf-report{background:#fff!important;color:#111!important;border:none!important;box-shadow:none!important;padding:12mm!important}body .pmdf-report-heading h1,body .pmdf-report h2,body .pmdf-report h3{color:#111!important}body .pmdf-report .g-card,body .pmdf-report .study-card{background:#f8fafc!important;color:#111!important;break-inside:avoid}body .pmdf-report-footer{color:#333!important}body .pmdf-report-heading{border-bottom:1px solid #aaa!important}}
+
+/* Correção de seleção e exportação - prioridade sobre regras legadas */
+body .pmdf-core-laws .law-shortcut-btn,
+body .pmdf-more-laws-grid .law-shortcut-btn{
+ background:var(--bg-raised)!important;color:var(--text-primary)!important;
+ border:1px solid var(--border-subtle)!important;box-shadow:none!important;
+}
+body .pmdf-core-laws .law-shortcut-btn.pmdf-law-selected,
+body .pmdf-more-laws-grid .law-shortcut-btn.pmdf-law-selected{
+ background:var(--accent-soft)!important;color:var(--accent)!important;
+ border:2px solid var(--accent)!important;box-shadow:inset 0 0 0 1px var(--accent-soft)!important;
+}
+body .pmdf-report .mm-hero h2,body .pmdf-report .mm-card h3{color:var(--text-primary)!important}
+@media print {
+ @page{size:A4;margin:12mm 13mm}
+ html,body{background:#fff!important;color:#111!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+ body #printable-area,body #printable-area *{opacity:1!important;text-shadow:none!important}
+ body #printable-area .pmdf-report,body #printable-area .mm-root,
+ body #printable-area .mm-root section{background:#fff!important;color:#111!important;max-width:none!important;overflow:visible!important}
+ body #printable-area .pmdf-report{border:0!important;padding:0!important;box-shadow:none!important}
+ body #printable-area .pmdf-report-heading,body #printable-area .mm-hero{
+   background:#f8fafc!important;color:#111!important;border:1px solid #b5beca!important;
+   padding:10px!important;margin:0 0 10px!important;break-inside:avoid
+ }
+ body #printable-area .pmdf-report-heading h1,body #printable-area .pmdf-report-heading p,
+ body #printable-area .mm-hero h2,body #printable-area .mm-hero p,
+ body #printable-area .mm-root h3,body #printable-area .mm-card-title,
+ body #printable-area .mm-trigger,body #printable-area .mm-step-text,
+ body #printable-area .mm-compare-row p,body #printable-area .mm-case p{
+   color:#111!important;opacity:1!important
+ }
+ body #printable-area .mm-root h2,body #printable-area .mm-root h3{
+   color:#13213b!important;font-family:Arial,sans-serif!important
+ }
+ body #printable-area .mm-grid{
+   display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+   gap:8px!important;align-items:start!important
+ }
+ body #printable-area .mm-card{
+   display:block!important;border:1px solid #b5beca!important;
+   border-top:3px solid #af8b22!important;border-radius:8px!important;
+   background:#fff!important;padding:9px!important;
+   break-inside:avoid-page!important;page-break-inside:avoid!important
+ }
+ body #printable-area .mm-step-text,body #printable-area .mm-case,
+ body #printable-area .mm-review-item{
+   background:#f1f5f9!important;border:1px solid #cbd5e1!important;color:#111!important
+ }
+ body #printable-area .mm-compare-row{
+   display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important
+ }
+ body #printable-area .mm-compare-row>div{
+   background:#fff!important;color:#111!important;border:1px solid #cbd5e1!important
+ }
+ body #printable-area .mm-root section{margin:8px 0!important;break-before:auto!important;break-after:auto!important}
+ body #printable-area .mm-nav{display:none!important}
+ body #printable-area .mm-hero{margin-bottom:8px!important}
+ body #printable-area .pmdf-report-footer{color:#334155!important}
+ body #printable-area .mm-review-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
 </style>
     <!-- Segurança real: controle de gravação no GitHub e permissões no Supabase; não é possível impedir cópia do HTML público. -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -3864,18 +3924,12 @@ body .pmdf-report-footer span:first-child{font-weight:800;color:var(--accent);le
 
         // ---------- Seleção e geração ----------
         function markShortcut(key) {
-            document.querySelectorAll('.law-shortcut-btn').forEach(b => {
-                const active=b.id==='btn-law-'+key;
-                b.classList.toggle('pmdf-law-selected',active);
-                b.classList.toggle('font-bold',active);
-                b.classList.toggle('font-medium',!active);
-                b.classList.toggle('bg-[#D4AF37]',active);
-                b.classList.toggle('text-[#050B16]',active);
-                b.classList.toggle('border-[#E5C158]',active);
-                b.classList.toggle('bg-[#0E1B33]',!active);
-                b.classList.toggle('text-slate-300',!active);
-                b.classList.toggle('border-[#1E2E4F]',!active);
-                b.setAttribute('aria-pressed',String(active));
+            document.querySelectorAll('.law-shortcut-btn').forEach(button=>{
+                const active=button.id==='btn-law-'+key;
+                button.classList.toggle('pmdf-law-selected',active);
+                button.setAttribute('aria-pressed',String(active));
+                // Classes utilitárias antigas permanecem no DOM, mas o estado tem
+                // uma fonte única de verdade e prioridade de CSS explícita.
             });
         }
         function selectAndLoadLaw(key,url){
@@ -4058,6 +4112,8 @@ body .pmdf-report-footer span:first-child{font-weight:800;color:var(--accent);le
             if(!entries.length)return '<p class="pmdf-mind-empty">Nenhum trecho verificável disponível. Carregue texto ou um documento antes de gerar.</p>';
             const navi=[['overview','01 Visão Geral'],['high','02 Alta Incidência'],['medium','03 Média Incidência'],['compare','04 Não Confunda'],['review','05 Revisão em 15s']];
             const nav='<nav class="mm-nav no-print" aria-label="Navegação do mapa">'+navi.map(([id,label])=>'<a href="#mm-'+id+'">'+label+'</a>').join('')+'</nav>';
+            // O modo imprimível contém os mesmos dados e não depende do estado de botões.
+            // Reduzir quebras dentro de cartões é responsabilidade da folha de impressão.
             const cards=entries.map((x,i)=>{
                 const inc=String(x.tag||'').toLowerCase(),tone=/média|media/.test(inc)?'amber':/baixa|vedad|proib/.test(inc)?'red':/requisit|benef|exclud/.test(inc)?'green':'blue';
                 const words=pmdfMindNodes(x.body);
