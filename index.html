@@ -5131,7 +5131,13 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
           avancado:{label:'Exceções e distinções',focus:'limites, prazos e qualificadores da norma'}
         };
         function examItemStyle(level,kind,bank,head,assoc=false){
-            if(assoc)return level==='iniciante'?'Com base na norma estudada, identifique a única associação correta entre dispositivo e regra:':level==='intermediario'?'Considerando os requisitos e efeitos jurídicos dos dispositivos apresentados, assinale a associação correta:':'Examinando as exceções, condições normativas e efeitos previstos nos dispositivos estudados, assinale a única associação juridicamente correta:';
+            // O enunciado deve terminar com uma pergunta completa, e não
+            // dois-pontos: questionIsComplete rejeita enunciados incompletos.
+            if(assoc)return level==='iniciante'?
+                'Considerando '+head+', qual alternativa descreve corretamente a regra apresentada no material?':
+                level==='intermediario'?
+                'A respeito dos requisitos e efeitos jurídicos relacionados a '+head+', qual alternativa está correta?':
+                'À luz das condições, exceções e consequências normativas associadas a '+head+', qual alternativa corresponde à previsão legal?';
             if(kind==='MC')return level==='iniciante'?'Sobre '+head+', assinale a alternativa correta:':
                 level==='intermediario'?'Considerando os requisitos e efeitos previstos em '+head+', assinale a alternativa correta:':
                 'À luz das condições e das exceções de '+head+', identifique a única alternativa compatível com o guia:';
@@ -5172,8 +5178,13 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const level=LEVELS_SAFE_LEVEL(lvl),A=g.articlesMapping||{},law=g._baseLawName||g.lawName||'Conteúdo estudado';
             const all=[],used=new Set(),bank=$('q-board')?.value||'Cebraspe';
             const extract=(arr,inc)=>safeArray(arr).forEach(a=>{
-                const head=artHead(a.article);if(!head)return;
-                for(const sentence of fullQuestionSentences(a.plainExplanation)){
+                const head=String(a.article||'').trim();if(!head)return;
+                const raw=String(a.plainExplanation||'').replace(/\s+/g,' ').trim();
+                // Dispositivos curtos podem conter regras completas com verbos
+                // que o extrator estrito não reconhece. Preserve o texto-fonte.
+                const selected=fullQuestionSentences(raw);
+                if(!selected.length&&raw.length>=48&&raw.length<=1200&&/[.!?]$/.test(raw)&&!raw.includes('…'))selected.push(raw);
+                for(const sentence of selected){
                     const key=(head+'|'+sentence).toLowerCase();
                     if(!used.has(key)){used.add(key);all.push({head,sentence,inc,example:a.practicalExample||''});}
                 }
@@ -5187,7 +5198,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             });
             let targets=permitted.filter(x=>examSourceQuality(x.sentence,level));
             // Escalonamento transparente: a falta de trechos complexos não bloqueia a revisão.
-            if(targets.length<5)targets=permitted.filter(x=>fullQuestionSentences(x.sentence).length);
+            if(targets.length<5)targets=permitted.filter(x=>x.sentence.length>=48&&x.sentence.length<=1200&&!x.sentence.includes('…'));
             const ce=[],mc=[];
             const explanation=(item,mut)=> (mut?'ERRADO. '+mut.hint+' No material: "'+mut.original+'"; na questão: "'+mut.replacement+'". ':
                 'CERTO em relação ao trecho usado neste guia. ')+
