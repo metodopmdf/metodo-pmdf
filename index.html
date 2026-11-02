@@ -2197,6 +2197,68 @@ body .pmdf-more-laws-grid .law-shortcut-btn.pmdf-law-selected{
 </style>
     <!-- Segurança real: controle de gravação no GitHub e permissões no Supabase; não é possível impedir cópia do HTML público. -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
+
+<style id="pmdf-a4-color-print">
+/* Exportação fiel ao caderno escuro no A4. Incluída após os estilos legados
+   para que a identidade de tela seja preservada no PDF. */
+@page{size:A4 portrait;margin:13mm 14mm 15mm}
+@media print{
+ html,body{background:#fff!important;color:#111!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+ body #printable-area{background:transparent!important;color:#f5f5f5!important;border:none!important;box-shadow:none!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;overflow:visible!important}
+ body #printable-area .pmdf-report{
+   --pmdf-paper:#2d2d2d!important;--pmdf-paper-deep:#090909!important;
+   --pmdf-paper-rule:#444!important;
+   background:#2d2d2d!important;color:#f5f5f5!important;
+   border:1px solid #444!important;border-radius:12px!important;
+   box-shadow:none!important;padding:13mm 9mm!important;margin:0!important;
+   width:100%!important;max-width:100%!important;box-sizing:border-box!important;
+   -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;
+ }
+ body #printable-area .pmdf-report::before{content:""!important;display:block!important;height:5px!important;background:#d4af37!important;border-radius:6px!important;margin:-8mm 0 7mm!important;position:static!important}
+ body #printable-area .pmdf-report-heading{
+   display:flex!important;align-items:center!important;gap:12px!important;
+   background:#2d2d2d!important;color:#f5f5f5!important;
+   border:0!important;border-bottom:1px solid #484848!important;
+   padding:0 0 7mm!important;margin:0 0 6mm!important;break-inside:avoid!important
+ }
+ body #printable-area .pmdf-report-emblem{display:grid!important;place-items:center!important;background:#393525!important;border:1px solid #d4af37!important;color:#d4af37!important;width:55px!important;height:55px!important;flex-shrink:0!important;border-radius:12px!important}
+ body #printable-area .pmdf-report-kicker,body #printable-area .pmdf-report-footer span:first-child{color:#d4af37!important}
+ body #printable-area .pmdf-report-heading h1{font:700 18pt/1.22 Inter,Arial,sans-serif!important;color:#fff!important;margin:4px 0!important}
+ body #printable-area .pmdf-report-heading p{color:#c6c6c6!important;font-size:10pt!important;margin:0!important}
+ body #printable-area .pmdf-report h2,body #printable-area .pmdf-report h3{color:#f6f6f6!important;border-color:#484848!important;break-after:avoid!important}
+ body #printable-area .pmdf-report p,body #printable-area .pmdf-report li,body #printable-area .pmdf-report td,
+ body #printable-area .pmdf-report .mm-card-title,body #printable-area .pmdf-report .mm-step-text,
+ body #printable-area .pmdf-report .mm-case p,body #printable-area .pmdf-report .mm-compare-row p,
+ body #printable-area .pmdf-report .mm-review-item b{color:#f5f5f5!important;opacity:1!important}
+ body #printable-area .pmdf-report .g-card,body #printable-area .pmdf-report .study-card,
+ body #printable-area .pmdf-report .mm-card,body #printable-area .pmdf-report .mm-hero,
+ body #printable-area .pmdf-report .mm-case,body #printable-area .pmdf-report .mm-step-text,
+ body #printable-area .pmdf-report .mm-review-item,body #printable-area .pmdf-report .mm-compare-row>div{
+   background:#090909!important;color:#f5f5f5!important;border:1px solid #454545!important;
+   border-radius:9px!important;box-shadow:none!important;max-width:100%!important;box-sizing:border-box!important
+ }
+ body #printable-area .pmdf-report .mm-card{border-top:3px solid #d4af37!important}
+ body #printable-area .pmdf-report .g-banner{background:#393525!important;color:#f5f5f5!important;border-left:3px solid #d4af37!important}
+ body #printable-area .pmdf-report .g-banner *{color:#f5f5f5!important}
+ body #printable-area .pmdf-report th{background:#181818!important;color:#e2b941!important;border-color:#484848!important}
+ body #printable-area .pmdf-report td{background:#090909!important;color:#f5f5f5!important;border-color:#484848!important}
+ body #printable-area .pmdf-report .mm-trigger,body #printable-area .pmdf-report .mm-review-item span,body #printable-area .pmdf-report-footer{color:#c6c6c6!important}
+ body #printable-area .mm-root,body #printable-area .mm-root section,body #printable-area .mm-grid,
+ body #printable-area .mm-review-grid,body #printable-area .mm-compare-row{
+   display:block!important;columns:auto!important;overflow:visible!important;
+   break-before:auto!important;break-after:auto!important;min-height:0!important;height:auto!important
+ }
+ body #printable-area .mm-card,body #printable-area .mm-review-item,body #printable-area .mm-compare-row>div{display:block!important;width:100%!important;margin:0 0 5mm!important;break-inside:auto!important}
+ body #printable-area .mm-card-head,body #printable-area .mm-step-text,body #printable-area .mm-case,
+ body #printable-area .mm-review-item{break-inside:avoid!important}
+ body #printable-area table{width:100%!important;table-layout:fixed!important;border-collapse:collapse!important}
+ body #printable-area td,body #printable-area th{overflow-wrap:anywhere!important;word-break:normal!important;padding:5pt!important}
+ body #printable-area thead{display:table-header-group!important}
+ body #printable-area tr{break-inside:avoid!important}
+ body #printable-area .pmdf-report-footer{border-top:1px solid #484848!important;break-inside:avoid!important}
+ body #printable-area .no-print,body #printable-area .mm-nav{display:none!important}
+}
+</style>
 </head>
 <body class="landing-active min-h-screen flex flex-col font-sans antialiased selection:bg-[#D4AF37] selection:text-[#050B16]">
 
