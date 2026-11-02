@@ -5563,7 +5563,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     baseFmt!=='MC'||(Array.isArray(q.options)&&[4,5].includes(q.options.length)&&
                     new Set(q.options.map(x=>String(x).trim())).size===q.options.length&&
                     'ABCDE'.slice(0,q.options.length).includes(q.answer)
-                )));
+                ))));
             }catch(e){return toast('Falha ao preparar questões: '+e.message,'error');}
             if(!pool.length)return toast('Não foram encontrados itens completos e verificáveis neste material. Amplie a fonte ou escolha outra norma.','error');
             const taken=pool.length;
