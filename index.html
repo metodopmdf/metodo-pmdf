@@ -2690,6 +2690,14 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
                 <p class="text-xs text-slate-400">O gerador utiliza o material estudado e não consulta automaticamente bases externas. Para treinar com questões reais, importe a prova e o gabarito; confira a autoria, a licença e a fundamentação.</p>
                 <p id="research-status" class="text-xs text-slate-300" role="status" aria-live="polite">Aguardando início de treino.</p>
                 <details><summary class="cursor-pointer text-xs text-[#E5C158]">Consultar links e fontes de provas</summary><div id="research-results" class="research-results space-y-2 mt-2"></div></details>
+                <div class="flex flex-wrap gap-3">
+                    <label class="cursor-pointer px-3.5 py-2.5 rounded-xl bg-[#0E1B33] border border-[#334155] text-slate-100 text-xs font-semibold">📎 Importar prova (PDF/TXT)<input type="file" accept=".pdf,.txt,application/pdf,text/plain" class="hidden" onchange="importOfficialExamFile(this)"></label>
+                    <label class="cursor-pointer px-3.5 py-2.5 rounded-xl bg-[#0E1B33] border border-[#334155] text-slate-100 text-xs font-semibold">✓ Importar gabarito (TXT)<input type="file" accept=".txt,text/plain" class="hidden" onchange="importOfficialAnswerFile(this)"></label>
+                </div>
+                <label class="block text-xs font-semibold text-[#E5C158]">Prova correspondente ao gabarito
+                    <select id="exam-answer-source" class="block w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="">Importe uma prova primeiro</option></select>
+                </label>
+                <p class="text-xs text-slate-400">Selecione a prova correta antes de anexar o gabarito. O arquivo TXT deve ter uma resposta por linha, por exemplo: 1 A, 2 C, 3 Errado. O sistema não mistura gabaritos de provas diferentes.</p>
             </div>
             <div id="q-panel" class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 hidden" aria-live="polite"></div>
         </section>
@@ -5758,6 +5766,20 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         const EXAM_DOMAINS={Cebraspe:'cebraspe.org.br',FGV:'conhecimento.fgv.br',FCC:'fcc.org.br',Vunesp:'vunesp.com.br',Iades:'iades.com.br',Idecan:'idecan.org.br',AOCP:'institutoaocp.org.br',Cesgranrio:'cesgranrio.org.br',Quadrix:'quadrix.org.br'};
         const IMPORTED_QUESTIONS=[];
         function updateImportedStatus(msg){const p=$('research-status');if(p)p.textContent=msg;}
+        function refreshImportedExamSources(){
+            const select=$('exam-answer-source');if(!select)return;
+            const prior=select.value;
+            const names=[...new Set(IMPORTED_QUESTIONS.map(q=>String(q.law||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+            select.replaceChildren();
+            const placeholder=document.createElement('option');placeholder.value='';
+            placeholder.textContent=names.length?'Selecione a prova à qual pertence o gabarito':'Importe uma prova primeiro';
+            select.appendChild(placeholder);
+            for(const name of names){
+                const option=document.createElement('option');option.value=name;option.textContent=name;
+                select.appendChild(option);
+            }
+            select.value=names.includes(prior)?prior:names.length===1?names[0]:'';
+        }
         function buildExamSearchLinks(board,topic,year){
             const sites=board==='todas'?Object.entries(EXAM_DOMAINS):[[board,EXAM_DOMAINS[board]||'cebraspe.org.br']];
             return [...sites.map(([name,domain])=>({title:'Provas oficiais — '+name,link:'https://www.google.com/search?q='+encodeURIComponent('site:'+domain+' prova gabarito pdf '+topic+' '+year),source:'Pesquisa em domínio oficial'})),
@@ -5805,6 +5827,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         function addOfficialQuestions(items){const seen=new Set(IMPORTED_QUESTIONS.map(q=>q.law+'|'+q.sourceNumber));let added=0;
             for(const q of items){const id=q.law+'|'+q.sourceNumber;if(seen.has(id))continue;IMPORTED_QUESTIONS.push(q);seen.add(id);added++;if(IMPORTED_QUESTIONS.length>=500)break;}
             if(!store.set('exam:imports',JSON.stringify(IMPORTED_QUESTIONS)))toast('Limite de armazenamento atingido. As questões estarão disponíveis nesta sessão, mas não ficarão salvas. Libere espaço e faça backup.', 'error');
+            refreshImportedExamSources();
             $('q-source').value='imported';$('q-format').value=IMPORTED_QUESTIONS.some(q=>q.type==='CE')?'CE':'MC';
             updateImportedStatus(added+' questões extraídas do material público. Total nesta sessão: '+IMPORTED_QUESTIONS.length+'. Para corrigir questões reais, importe o gabarito oficial.');return added;
         }
@@ -5820,9 +5843,30 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         async function importOfficialAnswerFile(inp){const f=inp.files?.[0];if(!f)return;
             try{if(!/\.txt$/i.test(f.name)||f.size>500000)throw Error('Use um gabarito em TXT até 500 KB');const txt=await f.text();
                 const keys=new Map();for(const row of txt.split(/\r?\n/)){const m=row.match(/^\s*(?:Quest[aã]o|Item)?\s*(\d{1,4})\s*[:.\-;) ]+\s*(A|B|C|D|E|Certo|Errado)\b/i);if(m)keys.set(Number(m[1]),/^(certo)$/i.test(m[2])?'C':/^(errado)$/i.test(m[2])?'E':m[2].toUpperCase());}
-                if(!keys.size)throw Error('Nenhum gabarito reconhecido. Use linhas no formato "1 A", "2 C" ou "3 Errado".');let total=0;
-                for(const q of IMPORTED_QUESTIONS){const key=keys.get(q.sourceNumber);if(key&&(q.type==='CE'?['C','E'].includes(key):'ABCDE'.slice(0,q.options?.length||0).includes(key))){q.answer=key;q.explanation='Resposta conforme gabarito informado pelo candidato. Confirme o número da questão e o documento oficial.';total++;}}
-                store.set('exam:imports',JSON.stringify(IMPORTED_QUESTIONS));if(Q_STATE?.items){for(const it of Q_STATE.items){const updated=IMPORTED_QUESTIONS.find(q=>q.law===it.law&&q.sourceNumber===it.sourceNumber);if(updated?.answer){it.answer=updated.answer;it.explanation=updated.explanation;}}saveStudySession();}updateImportedStatus(total+' questões vinculadas a respostas do gabarito importado. Verifique a correspondência prova/caderno.');
+                if(!keys.size)throw Error('Nenhum gabarito reconhecido. Use linhas no formato "1 A", "2 C" ou "3 Errado".');
+                const selected=$('exam-answer-source')?.value||'';
+                if(!selected||!IMPORTED_QUESTIONS.some(q=>q.law===selected))throw Error('Selecione a prova correspondente antes de importar o gabarito. Não é seguro aplicar respostas a todas as provas.');
+                let total=0;
+                for(const q of IMPORTED_QUESTIONS){
+                    if(q.law!==selected)continue;
+                    const key=keys.get(q.sourceNumber);
+                    if(key&&(q.type==='CE'?['C','E'].includes(key):'ABCDE'.slice(0,q.options?.length||0).includes(key))){
+                        q.answer=key;
+                        q.explanation='Resposta conforme gabarito informado pelo candidato para '+selected+'. Confirme o número da questão e o documento oficial.';
+                        total++;
+                    }
+                }
+                if(!total)throw Error('Nenhum número de questão do gabarito corresponde à prova selecionada. Confira prova, caderno e formato.');
+                if(!store.set('exam:imports',JSON.stringify(IMPORTED_QUESTIONS)))toast('Gabarito importado, mas o armazenamento local está cheio. Faça backup antes de sair.','error');
+                if(Q_STATE?.items){
+                    for(const it of Q_STATE.items){
+                        if(it.law!==selected)continue;
+                        const updated=IMPORTED_QUESTIONS.find(q=>q.law===selected&&q.sourceNumber===it.sourceNumber);
+                        if(updated?.answer){it.answer=updated.answer;it.explanation=updated.explanation;}
+                    }
+                    saveStudySession();
+                }
+                updateImportedStatus(total+' respostas vinculadas exclusivamente à prova "'+selected+'". Confirme prova e caderno.');
             }catch(e){toast('Gabarito não importado: '+e.message,'error');}finally{inp.value='';}
         }
         // Cadastro e sessão autenticada. Servidor controla identidade e acesso aos dados.
@@ -5948,6 +5992,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             restoreLastGuide();restoreEssayDraft();restoreEssayLastResult();
             const imported=jget('exam:imports',[]);
             IMPORTED_QUESTIONS.splice(0,IMPORTED_QUESTIONS.length,...(Array.isArray(imported)?imported.slice(0,500):[]));
+            refreshImportedExamSources();
             showQuestionTotals();
             if(localHadNewer)scheduleCloudSave();
         }
@@ -6075,7 +6120,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             ['essay-theme','essay-lines','essay-motiv'].forEach(id=>{const el=$(id);if(el)el.addEventListener('input',saveEssayDraft);});
             restoreEssayDraft();if(window.lucide)lucide.createIcons();restoreLastGuide();
             try{const imported=jget('exam:imports',[]);if(Array.isArray(imported))IMPORTED_QUESTIONS.push(...imported.slice(0,500).filter(q=>q&&['CE','MC'].includes(q.type)&&typeof q.statement==='string'));}catch(e){}
-            refreshWelcome();showQuestionTotals();void bootstrapAccount();
+            refreshImportedExamSources();refreshWelcome();showQuestionTotals();void bootstrapAccount();
             document.addEventListener('visibilitychange',()=>{if(document.hidden&&CLOUD_DIRTY)void flushCloudSave();});
             document.addEventListener('keydown',event=>{if(event.key==='Escape'){closePromptModal();closeModal();}});
             ['prompt-modal','gen-modal'].forEach(id=>{const modal=$(id);if(modal)modal.addEventListener('click',event=>{if(event.target===modal){if(id==='prompt-modal')closePromptModal();else closeModal();}});});
