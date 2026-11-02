@@ -1897,6 +1897,53 @@ body[data-theme="light"] #q-panel,body[data-theme="light"] #anki-panel{
  body #printable-area,body #printable-area > *,body .essay-out{max-width:none!important;color:#000!important;box-shadow:none!important}
  body #printable-area .g-card,body #printable-area .study-card{break-inside:avoid;box-shadow:none!important}
 }
+
+/* Método PMDF · infográfico de fluxo e leitura ergonômica */
+body,body button,body select,body textarea,body input{font-family:Inter,Arial,sans-serif}
+body #printable-area h2,body #printable-area h3{font-family:Inter,Arial,sans-serif!important}
+body #printable-area p,body #printable-area li,body .essay-out p,body #q-panel p{font-size:1rem!important;line-height:1.75!important}
+body #printable-area:not(:has(.mm-root)):not(:has(table)){max-width:860px!important;margin-inline:auto!important}
+body #printable-area:has(.mm-root),body #printable-area:has(table){max-width:100%!important}
+body .mm-root{color:var(--text-primary);font-family:Inter,Arial,sans-serif;max-width:100%;scroll-behavior:smooth}
+body .mm-root section{scroll-margin-top:6rem;margin:1.3rem 0}
+body .mm-nav{display:flex;gap:.5rem;flex-wrap:wrap;position:sticky;top:0;z-index:4;padding:.7rem;background:var(--bg-card);border-radius:14px;border:1px solid var(--border-subtle)}
+body .mm-nav a{color:var(--text-primary);background:var(--bg-raised);border:1px solid var(--border-subtle);padding:.6rem .85rem;border-radius:99px;font-size:.8rem;text-decoration:none}
+body .mm-nav a:hover,body .mm-nav a:focus-visible{border-color:var(--accent);outline:2px solid transparent}
+body .mm-hero{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:18px;padding:1.4rem 1.6rem}
+body .mm-hero>span{letter-spacing:.12em;color:var(--accent);font-size:.75rem;font-weight:750}
+body .mm-hero h2{font-size:clamp(1.5rem,3vw,2.2rem)!important;line-height:1.2!important;margin:.45rem 0}
+body .mm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:1rem}
+body .mm-card{--mm-tone:#60A5FA;background:var(--bg-card);border:1px solid var(--border-subtle);border-top:3px solid var(--mm-tone);border-radius:16px;padding:1rem;min-width:0;break-inside:avoid;overflow-wrap:anywhere}
+body .mm-green{--mm-tone:#34D399}body .mm-amber{--mm-tone:#FBBF24}body .mm-red{--mm-tone:#F87171}
+body .mm-card-head{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap}
+body .mm-number{font-weight:850;color:var(--mm-tone);font-size:1.25rem}
+body .mm-card-title{font-weight:750;flex:1;font-size:1rem}
+body .mm-article{border-radius:99px;background:var(--bg-raised);padding:.2rem .45rem;font-size:.72rem}
+body .mm-trigger{font-weight:650;color:var(--text-secondary);margin:.5rem 0!important}
+body .mm-flow{display:flex;flex-direction:column;align-items:stretch;gap:.1rem;padding:.6rem 0}
+body .mm-step-text{text-align:center;background:var(--bg-raised);border:1px solid var(--border-subtle);border-radius:9px;padding:.55rem .8rem;font-size:.9rem;line-height:1.5}
+body .mm-arrow{text-align:center;color:var(--mm-tone);font-size:1.25rem;line-height:1.15}
+body .mm-marks{display:flex;gap:.3rem;flex-wrap:wrap;padding:.45rem 0}
+body .mm-marks span{font-size:.75rem;border:1px solid var(--mm-tone);color:var(--text-primary);padding:.2rem .5rem;border-radius:99px}
+body .mm-case{background:var(--bg-raised);border-radius:11px;padding:.8rem;margin-top:.7rem;border-left:3px solid var(--mm-tone)}
+body .mm-case strong{font-size:.82rem}body .mm-case p{margin:.4rem 0 0!important}
+body .mm-compare-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin:.7rem 0}
+body .mm-compare-row>div{padding:1rem;background:var(--bg-card);border-radius:12px;border:1px solid var(--border-subtle);overflow-wrap:anywhere}
+body .mm-compare-row>div:first-child{border-left:3px solid #F87171}
+body .mm-compare-row>div:last-child{border-left:3px solid #34D399}
+body .mm-review-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:.6rem}
+body .mm-review-item{display:flex;flex-direction:column;gap:.25rem;border:1px solid var(--border-subtle);border-radius:11px;background:var(--bg-card);padding:1rem;font-size:.85rem}
+body .mm-review-item span{color:var(--text-secondary)}
+body .pmdf-mind-modal .mm-root{max-height:75vh;overflow:auto;scroll-behavior:smooth}
+@media(max-width:640px){body .mm-compare-row{grid-template-columns:1fr}body .mm-nav{position:static}}
+@media print{
+ body .mm-root,body .mm-root *{color:#111!important}
+ body .mm-nav,body .pmdf-mind-actions{display:none!important}
+ body .mm-card,body .mm-compare-row>div,body .mm-review-item,body .mm-hero{background:#fff!important;border:1px solid #999!important;box-shadow:none!important;break-inside:avoid}
+ body .mm-step-text,body .mm-case{background:#f5f5f5!important;border:1px solid #aaa!important}
+ body .mm-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ body .mm-root section{break-before:auto}
+}
 </style>
 </head>
 <body class="landing-active min-h-screen flex flex-col font-sans antialiased selection:bg-[#D4AF37] selection:text-[#050B16]">
@@ -3898,73 +3945,89 @@ body[data-theme="light"] #q-panel,body[data-theme="light"] #anki-panel{
             if(!list.length&&S.centralObjective)append('Ideia central',S.centralObjective,'','Objetivo');
             return list;
         }
+
+        // Modelo universal de fluxo/decisão: entrada local, sem IA externa obrigatória.
+        function pmdfMindShort(s,n=8){
+            return String(s||'').replace(/\s+/g,' ').trim().split(' ').slice(0,n).join(' ');
+        }
+        function pmdfMindTrigger(s){
+            const words=String(s||'').match(/\b(exigir|solicitar|receber|salvo|somente|apenas|nunca|independe|vedado|obrigatório|aumenta|reduz|prazo|pena|dolo|culpa)\b/i);
+            return words?words[0].toUpperCase():pmdfMindShort(s,3);
+        }
+        function pmdfMindNodes(v){
+            const raw=String(v||'').split(/(?<=[.;!?])\s+|;\s*|:\s+|\s+[–—]\s+/).map(t=>t.trim()).filter(Boolean);
+            const segments=raw.flatMap(p=>p.split(/,\s+(?=(?:salvo|quando|desde que|se|exceto|portanto|assim|em caso de)\b)/i));
+            const nodes=[];
+            for(const p of segments){const words=p.trim().split(/\s+/);for(let i=0;i<words.length;i+=8){const part=words.slice(i,i+8).join(' ');if(part)nodes.push(part);}}
+            return nodes.slice(0,8);
+        }
         function pmdfMindPrompt(guide){
-            const g=guide||CUR.guide||{},S=g.executiveSummary||{};
-            const source=pmdfMindEntries(g);
-            const excerpts=source.map((a,i)=>(i+1)+'. '+a.heading+'\nREGRA: '+a.body+
-                (a.example?'\nAPLICAÇÃO: '+a.example:'')).join('\n\n');
+            const g=guide||CUR.guide||{},S=g.executiveSummary||{},source=pmdfMindEntries(g);
+            const title=g.lawName||lawDisplayName()||'Tema selecionado';
+            const content=source.map((x,i)=>String(i+1)+'. '+x.heading+'\nREGRA: '+x.body+(x.example?'\nCASO: '+x.example:'')).join('\n\n');
             return [
-                'PROMPT-MESTRE — MAPA MENTAL INFOGRÁFICO DIDÁTICO',
-                'Atue como designer editorial especializado em mapas visuais de estudo e organização fiel de material jurídico ou acadêmico.',
-                'Use exclusivamente os dados fornecidos abaixo. Produza um infográfico em português, inspirado na linguagem visual dos mapas didáticos do PDF Direito Penal - Outro Turno.',
-                'DIREÇÃO DE ARTE: cartaz vertical de fundo papel marfim claro com textura envelhecida discreta; título enorme em preto e vermelho escuro, letras robustas; pequenos ícones conceituais em estilo gravura; núcleo central com assunto e ilustração simbólica; ramificações numeradas em boxes com bordas desenhadas em preto, vermelho, verde e azul; linhas/setas curvas ligando os temas; quadro comparativo quando houver duas regras contrastantes; legenda final de revisão rápida. Não copiar imagens específicas da apostila.',
-                'ESTRUTURA: cabeçalho com título e pergunta orientadora; núcleo central; quatro blocos numerados por página em grade 2×2; dentro de cada bloco, reproduza fielmente a definição/regra, requisito, consequência e exemplo somente se presentes no texto; abaixo, faixa REVISÃO RÁPIDA com até três conclusões extraídas da fonte. Se houver mais de quatro tópicos, crie páginas adicionais do mesmo modelo.',
-                'ADAPTAÇÃO AO NÍVEL: iniciante = linguagem direta e conceitos; intermediário = requisitos e comparações; avançado = condicionantes e exceções comprovadas na fonte. Aumentar a profundidade pela seleção do conteúdo, jamais inventando dados.',
-                'LEGIBILIDADE OBRIGATÓRIA: textos completos e revisados; nenhuma palavra cortada; sem reticências; letras grandes com bom contraste; prioridade máxima à precisão e ao espaço de leitura; aumente a altura da página se necessário.',
-                'FIDELIDADE: não inventar artigos, prazos, penas, jurisprudência, percentuais, exemplos ou interpretações; excluir itens que não estejam fundamentados no conteúdo enviado; não simular confirmação em fonte oficial.',
-                'TEMA: '+(g.lawName||'Tema selecionado'),
-                'NÍVEL SELECIONADO: '+(LEVELS[LEVEL]?.label||LEVEL),
-                'CONCEITO CENTRAL: '+(S.centralObjective||'Organizar visualmente o material fornecido'),
-                'MATERIAL DA FONTE:\n'+(excerpts||'Insira o texto de origem antes de gerar o mapa.'),
-                'SAÍDA ESPERADA: mapa mental visual diagramado, com ramificações numeradas, setas, caixas completas, revisão rápida e linguagem legível.'
+                'PROMPT MESTRE UNIVERSAL — MAPA MENTAL DE FLUXO E DECISÃO (PADRÃO OUTRO TURNO)',
+                'Atue como designer instrucional de concursos policiais e diagramador jurídico. Transforme SOMENTE o conteúdo fornecido em mapa esquemático, preciso, visual, com pergunta-gatilho e decisões sequenciais.',
+                '1. ZERO PARÁGRAFOS LONGOS: cada nó terá de 3 a 8 palavras (exceto artigos, prazos e denominações indivisíveis). Frases telegráficas. Não cortar um requisito para obedecer ao limite.',
+                '2. CABEÇALHO: tema + artigos de referência efetivamente presentes + pergunta-gatilho central ("O que acontece quando...?" ou outra pergunta adequada ao assunto).',
+                '3. CRIE DE 2 A 5 BLOCOS [1], [2], [3], [4], [5] por seção, com pergunta prática em cada bloco: O que é? Quem pratica? Requisitos? Exceção? Consequência? Cores semânticas: AZUL = regra/conduta; VERDE = requisitos/benefícios/excludentes; ÂMBAR = condições/exceções/frações; VERMELHO = vedações/qualificadoras/agravamento.',
+                '4. MICROFLUXOS VERTICAIS: [Conduta] ↓ [Meio ou condição] ↓ [Consequência]; ✔ regra confirmada; ✘ vedação; ⚠ exceção; ⚖ confronto jurídico. Cada nó deve ser verificável na fonte.',
+                '5. ISOLE EM BOXES: pena (reclusão, detenção, multa), prazo, fração, percentual e aumento/redução SOMENTE quando constarem do material; preserve unidades, condicionantes e referências.',
+                '6. QUADRO ⚡ NÃO CONFUNDA / COMO A BANCA DIFERENCIA: compare institutos próximos em colunas: ⚠ pegadinha vs ✔ regra real. Escreva uma PALAVRA-GATILHO precisa por instituto. Não crie diferenças ausentes na fonte.',
+                '7. RODAPÉ ⏱ REVISÃO EM 15 SEGUNDOS (PARA MEMORIZAR): de 3 a 5 equações [CONCEITO] ➔ [GATILHO] ➔ [EFEITO/PENA], somente quando embasadas. Se não houver base suficiente, sinalize a lacuna.',
+                'FIDELIDADE ABSOLUTA: não inventar legislação, jurisdição, pena, jurisprudência, requisitos, artigos ou citações. Se documento anexado não tiver texto extraível, pedir transcrição, sem simular leitura. Referenciar o dispositivo conforme a fonte.',
+                'ENTRADA ATIVA: '+title,
+                'NÍVEL: '+(LEVELS[LEVEL]?.label||LEVEL),
+                'PERGUNTA PRINCIPAL: '+(S.centralObjective||'Quais regras determinam a consequência jurídica?'),
+                'MATERIAL EXTRAÍDO:\n'+(content||((typeof LAW_FILE_TEXT!=='undefined'&&LAW_FILE_TEXT)?String(LAW_FILE_TEXT).slice(0,12000):'Nenhum trecho extraído; aguarde o carregamento de texto verificável.')),
+                'SAÍDA: mapa vertical responsivo/Markdown com blocos numerados, setas, quadro comparativo e faixa final de memorização.'
             ].join('\n\n');
         }
+        function pmdfMindMarkdown(g){
+            const entries=pmdfMindEntries(g);
+            let out='# '+(g.lawName||'Mapa mental')+'\n\n**PERGUNTA-GATILHO:** Quais condições mudam a consequência?\n\n';
+            entries.forEach((e,i)=>{out+='## ['+(i+1)+'] '+e.heading+'\n';pmdfMindNodes(e.body).forEach((n,j)=>{out+=(j?'↓ ':'✔ ')+n+'\n';});if(e.example)out+='🚓 '+e.example+'\n';out+='\n';});
+            out+='## ⚡ NÃO CONFUNDA\n';
+            safeArray(g.trapsAndJurisprudence?.examTraps).forEach(t=>out+='⚠ '+String(t)+'\n');
+            safeArray(g.trapsAndJurisprudence?.jurisprudence).forEach(t=>out+='✔ '+String(t)+'\n');
+            out+='\n## ⏱ REVISÃO EM 15 SEGUNDOS\n';
+            entries.slice(0,5).forEach(e=>out+='['+pmdfMindShort(e.heading,5)+'] ➔ ['+pmdfMindTrigger(e.body)+'] ➔ ['+pmdfMindShort(e.body,8)+']\n');
+            return out;
+        }
         function pmdfMindHtml(guide,sourceRows){
-            const g=guide||{},S=g.executiveSummary||{},items=pmdfMindEntries(g,sourceRows),max=PMDF_MIND_TEMPLATE.maxBranches;
-            const subject=String(g.lawName||'Tema de estudo');
-            const central=String(S.centralObjective||'Conceitos e relações extraídos do material');
-            const colors=['red','green','blue','ochre'];
-            const icons=['⚖','◈','⌁','✦'];
-            if(!items.length)return '<div class="pmdf-mind-empty">O material não contém trechos suficientes para montar ramificações verificáveis. Cole um texto ou envie um documento com conteúdo.</div>';
-            const sheets=[];
-            for(let offset=0;offset<items.length;offset+=max){
-                const group=items.slice(offset,offset+max),number=1+Math.floor(offset/max);
-                const nodes=group.map((x,i)=>{
-                    const n=offset+i+1,color=colors[i%4];
-                    return '<article class="pmdf-mind-branch mind-node pmdf-mind-'+color+'">'+
-                        '<header class="pmdf-mind-branch-head"><span class="pmdf-mind-num">'+String(n).padStart(2,'0')+'</span>'+
-                        '<span class="pmdf-mind-branch-title">'+esc(x.heading)+'</span><span aria-hidden="true" class="pmdf-mind-icon">'+icons[i%4]+'</span></header>'+
-                        '<div class="pmdf-mind-branch-content"><p>'+esc(x.body)+'</p>'+
-                        (x.example?'<div class="pmdf-mind-example"><strong>APLICAÇÃO NA FONTE</strong><p>'+esc(x.example)+'</p></div>':'')+
-                        (x.tag?'<small class="pmdf-mind-tag">'+esc(x.tag)+'</small>':'')+
-                        '</div></article>';
-                }).join('');
-                const takeaways=group.slice(0,3).map((x,i)=>
-                    '<div class="pmdf-mind-takeaway"><span>'+String(i+1).padStart(2,'0')+'</span>'+
-                    '<strong>'+esc(x.heading)+'</strong></div>').join('');
-                sheets.push('<section class="pmdf-mind-sheet" aria-label="Mapa mental de '+esc(subject)+' · página '+number+'">'+
-                    '<div class="pmdf-mind-paper-top"><div class="pmdf-mind-corner">MÉTODO PMDF <span>• VISUAL</span></div>'+
-                    '<div class="pmdf-mind-title">'+esc(subject)+'</div>'+
-                    '<p class="pmdf-mind-question">QUAIS SÃO AS REGRAS E CONEXÕES ESSENCIAIS?</p></div>'+
-                    '<div class="pmdf-mind-core"><div class="pmdf-mind-core-glyph" aria-hidden="true">⚖</div>'+
-                    '<div><span>IDEIA CENTRAL</span><p>'+esc(central)+'</p></div></div>'+
-                    '<div class="pmdf-mind-branches">'+nodes+'</div>'+
-                    '<div class="pmdf-mind-review"><div class="pmdf-mind-review-title">REVISÃO RÁPIDA <span>✓</span></div>'+
-                    '<div class="pmdf-mind-review-items">'+takeaways+'</div></div>'+
-                    '<footer class="pmdf-mind-footer">MÉTODO PMDF · '+esc(LEVELS[LEVEL]?.label||LEVEL)+' · MAPA '+number+'/'+Math.ceil(items.length/max)+
-                    ' <span>Base: material carregado pelo candidato</span></footer></section>');
-            }
-            return '<div class="pmdf-mind-collection">'+sheets.join('')+'</div>';
+            const g=guide||{},entries=pmdfMindEntries(g,sourceRows),traps=safeArray(g.trapsAndJurisprudence?.examTraps),
+                  jurisprudence=safeArray(g.trapsAndJurisprudence?.jurisprudence),subject=g.lawName||'Tema de estudo';
+            if(!entries.length)return '<p class="pmdf-mind-empty">Nenhum trecho verificável disponível. Carregue texto ou um documento antes de gerar.</p>';
+            const navi=[['overview','01 Visão Geral'],['high','02 Alta Incidência'],['medium','03 Média Incidência'],['compare','04 Não Confunda'],['review','05 Revisão em 15s']];
+            const nav='<nav class="mm-nav no-print" aria-label="Navegação do mapa">'+navi.map(([id,label])=>'<a href="#mm-'+id+'">'+label+'</a>').join('')+'</nav>';
+            const cards=entries.map((x,i)=>{
+                const inc=String(x.tag||'').toLowerCase(),tone=/média|media/.test(inc)?'amber':/baixa|vedad|proib/.test(inc)?'red':/requisit|benef|exclud/.test(inc)?'green':'blue';
+                const words=pmdfMindNodes(x.body);
+                const terms=String(x.body).match(/\b(?:somente|apenas|nunca|salvo|exige|independe|inafiançável|reclusão|detenção|multa)\b|\b\d+(?:[.,/]\d+)?\s*(?:dias?|meses?|anos?|%|horas?)\b|\b\d+\s*\/\s*\d+\b/gi)||[];
+                const marks=[...new Set(terms.map(t=>t.toLowerCase()))].slice(0,8);
+                const nodes=words.map((t,j)=>'<div class="mm-step"><div class="mm-step-text">'+esc(t)+'</div>'+(j<words.length-1?'<div class="mm-arrow" aria-hidden="true">↓</div>':'')+'</div>').join('');
+                const meta=(x.tag?'<span class="mm-article">'+esc(x.tag)+'</span>':'');
+                return '<article class="mm-card mm-'+tone+'" id="mm-card-'+(i+1)+'"><header class="mm-card-head"><span class="mm-number">'+String(i+1).padStart(2,'0')+'</span><span class="mm-card-title">'+esc(x.heading)+'</span>'+meta+'</header><p class="mm-trigger">⚖ '+esc('O que determina '+pmdfMindShort(x.heading,5)+'?')+'</p><div class="mm-flow">'+nodes+'</div>'+(marks.length?'<div class="mm-marks">'+marks.map(m=>'<span>'+esc(m)+'</span>').join('')+'</div>':'')+(x.example?'<aside class="mm-case"><strong>🚓 Caso prático / Consequência</strong><p>'+esc(x.example)+'</p></aside>':'')+'</article>';
+            });
+            const compare=Math.max(traps.length,jurisprudence.length);
+            const comparisons=Array.from({length:compare},(_,i)=>'<div class="mm-compare-row"><div><strong>✘ Pegadinha de prova</strong><p>'+esc(String(traps[i]||'Não informado no material.'))+'</p></div><div><strong>✔ Regra real / Jurisprudência</strong><p>'+esc(String(jurisprudence[i]||'Conferir a literalidade da fonte; não presumir correção.'))+'</p></div></div>').join('');
+            const review=entries.slice(0,5).map(x=>'<div class="mm-review-item"><b>'+esc(pmdfMindShort(x.heading,5))+'</b><span>➔ '+esc(pmdfMindTrigger(x.body))+'</span><span>➔ '+esc(pmdfMindShort(x.body,8))+'</span></div>').join('');
+            return '<div class="mm-root">'+nav+'<section id="mm-overview" class="mm-hero"><span>MÉTODO PMDF · MAPA DE DECISÃO</span><h2>'+esc(subject)+'</h2><p>⚖ Quais condições determinam a consequência jurídica?</p></section>'+
+            '<section id="mm-high"><h3>01–02 · Fluxos e alta incidência</h3><div class="mm-grid">'+cards.slice(0,Math.max(1,Math.ceil(cards.length/2))).join('')+'</div></section>'+
+            '<section id="mm-medium"><h3>03 · Demais dispositivos</h3><div class="mm-grid">'+cards.slice(Math.max(1,Math.ceil(cards.length/2))).join('')+'</div></section>'+
+            '<section id="mm-compare"><h3>⚡ NÃO CONFUNDA · Como a banca diferencia</h3>'+(comparisons||'<p>Sem comparações explícitas na fonte carregada.</p>')+'</section>'+
+            '<section id="mm-review"><h3>⏱ REVISÃO EM 15 SEGUNDOS (PARA MEMORIZAR)</h3><div class="mm-review-grid">'+review+'</div></section></div>';
         }
         function openMindMap(){
             if(!CUR.guide)return toast('Carregue um guia antes de abrir o mapa mental.','error');
             const g=CUR.guide,tree=mmTree(g);
             window._mm=[ascii(tree),mdOut(tree)];
             window._mmPrompt=pmdfMindPrompt(g);
-            openModal('🧭 Mapa mental visual', '<div class="pmdf-mind-modal">'+
-                '<div class="pmdf-mind-actions"><button onclick="copyText(window._mmPrompt)" class="'+BTN+'">Copiar prompt do modelo</button>'+
-                '<button onclick="copyText(window._mm[1])" class="'+BTN+'">Copiar estrutura Markdown</button>'+
-                '<button onclick="copyText(window._mm[0])" class="'+BTN+'">Copiar árvore textual</button></div>'+
+            window._mmOutro=pmdfMindMarkdown(g);
+            openModal('🧠 Mapa mental — Padrão Outro Turno','<div class="pmdf-mind-modal"><div class="pmdf-mind-actions no-print">'+
+                '<button onclick="copyText(window._mmOutro)" class="'+BTN+'">Copiar formato Outro Turno (Markdown)</button>'+
+                '<button onclick="copyText(window._mm[0])" class="'+BTN+'">Copiar árvore</button>'+
+                '<button onclick="window.print()" class="'+BTN+'">Imprimir / Salvar PDF</button></div>'+
                 pmdfMindHtml(g,getVisibleArticleRows(g))+'</div>');
         }
 
@@ -4159,7 +4222,7 @@ const CLOZE_RE = /(\d+\s*(?:dias|dia|anos|ano|meses|mês|horas|hora)|\d+\/\d+|(?
         }
 
         // ---------- Exportação / prompt ----------
-        const DOC_CSS = 'body{font-family:Calibri,Arial,sans-serif;color:#111;font-size:11pt}h1{font-size:18pt}h2{font-size:14pt;border-bottom:1px solid #999;margin-top:18pt}h3{font-size:12pt}.g-card{border:1px solid #bbb;padding:6pt;margin:6pt 0;page-break-inside:avoid}.g-banner{background:#fff3cd;padding:6pt}.g-ex{color:#116644}.mind-node{border:1px solid #999;background:#f7f7f7;border-radius:6pt;padding:7pt;margin:5pt 0;page-break-inside:avoid}.mind-child{border-left:2px solid #aaa;margin-left:12pt;padding-left:8pt;page-break-inside:avoid}.study-card{display:block;width:100%;border:1px solid #999;background:#fff;border-radius:6pt;padding:8pt;margin:6pt 0;color:#111;page-break-inside:avoid}.study-card .front,.study-card .back{display:block!important;color:#111}.study-card .g-tag{display:inline-block;border:1px solid #ccc;background:#eee;color:#333;padding:2pt 4pt}table{border-collapse:collapse;width:100%;table-layout:auto;margin:6pt 0}thead{display:table-header-group}tr{page-break-inside:avoid}td,th{border:1px solid #888;padding:4pt;vertical-align:top;text-align:left}th{background:#eee;font-weight:bold}';
+        const DOC_CSS = 'body{font-family:Calibri,Arial,sans-serif;color:#111;font-size:11pt}h1{font-size:18pt}h2{font-size:14pt;border-bottom:1px solid #999;margin-top:18pt}h3{font-size:12pt}.g-card{border:1px solid #bbb;padding:6pt;margin:6pt 0;page-break-inside:avoid}.g-banner{background:#fff3cd;padding:6pt}.g-ex{color:#116644}.mind-node{border:1px solid #999;background:#f7f7f7;border-radius:6pt;padding:7pt;margin:5pt 0;page-break-inside:avoid}.mind-child{border-left:2px solid #aaa;margin-left:12pt;padding-left:8pt;page-break-inside:avoid}.study-card{display:block;width:100%;border:1px solid #999;background:#fff;border-radius:6pt;padding:8pt;margin:6pt 0;color:#111;page-break-inside:avoid}.study-card .front,.study-card .back{display:block!important;color:#111}.study-card .g-tag{display:inline-block;border:1px solid #ccc;background:#eee;color:#333;padding:2pt 4pt}table{border-collapse:collapse;width:100%;table-layout:auto;margin:6pt 0}thead{display:table-header-group}tr{page-break-inside:avoid}td,th{border:1px solid #888;padding:4pt;vertical-align:top;text-align:left}th{background:#eee;font-weight:bold}.mm-grid{display:table;width:100%}.mm-card{display:inline-block;vertical-align:top;width:45%;border:1px solid #888;border-top:3px solid #666;border-radius:8pt;padding:8pt;margin:4pt;page-break-inside:avoid}.mm-step-text{border:1px solid #ccc;background:#f5f5f5;text-align:center;padding:5pt}.mm-arrow{text-align:center}.mm-compare-row{display:table;width:100%;margin:5pt 0}.mm-compare-row>div{display:table-cell;width:50%;border:1px solid #aaa;padding:6pt}.mm-review-item{display:inline-block;width:28%;border:1px solid #999;padding:5pt;margin:3pt}.mm-nav{display:none}';
         function downloadDoc(title, body) {
             const h = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${DOC_CSS}</style></head><body>${body}</body></html>`;
             const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + h], { type: 'application/msword' }));
@@ -4177,7 +4240,7 @@ const CLOZE_RE = /(\d+\s*(?:dias|dia|anos|ano|meses|mês|horas|hora)|\d+\/\d+|(?
         function openPromptModal() { $('prompt-modal-text').textContent = currentPrompt(); ensurePromptSwitch(); $('prompt-modal').classList.replace('hidden', 'flex'); }
         function ensurePromptSwitch() {
             if ($('ps-btns')) return; const p = $('prompt-modal-text'), d = document.createElement('div'); d.id = 'ps-btns'; d.className = 'flex flex-wrap gap-2 mb-2';
-            d.innerHTML = `<button onclick="$('prompt-modal-text').textContent=currentPrompt()" class="${BTN}">📄 Prompt do guia / redação</button><button onclick="$('prompt-modal-text').textContent=scanPrompt()" class="${BTN}">🔎 Prompt de Varredura de Questões</button>`; p.parentNode.insertBefore(d, p);
+            d.innerHTML = `<button onclick="$('prompt-modal-text').textContent=currentPrompt()" class="${BTN}">📄 Prompt do guia / redação</button><button onclick="$('prompt-modal-text').textContent=scanPrompt()" class="${BTN}">🔎 Prompt de Varredura de Questões</button><button onclick="$('prompt-modal-text').textContent=pmdfMindPrompt(CUR.guide)" class="${BTN}">🧠 Prompt Mapa Mental (Padrão Outro Turno)</button>`; p.parentNode.insertBefore(d, p);
         }
         function closePromptModal() { $('prompt-modal').classList.replace('flex', 'hidden'); }
         function copyPromptFromModal() { navigator.clipboard.writeText($('prompt-modal-text').textContent).then(() => toast('Prompt copiado!', 'ok'), () => toast('Selecione e copie manualmente.', 'error')); }
