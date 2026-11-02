@@ -41,7 +41,7 @@ function createClient(fetchImpl=async()=>({ok:true,status:200,json:async()=>[]})
     code+'\nreturn {BUILTIN_PMDF_GUIDES,questionPool,buildStudyCards,fullQuestionSentences,getCardBox,'+
     'store,accountData,accountFetch,mergeProgressData,applyProgressSnapshot,getSyncMeta,'+
     'startQuestions,answerQuestion,nextQuestion,startAnki,revealAnki,nextAnki,correctEssay,renderResultsChart,'+
-    'setSummaryFormat,renderGuide,guideHtml,exportEssayPdfA4,addOfficialQuestions,analyzeLawText,beginStudies,saveStudySession,readStudySession,'+
+    'setSummaryFormat,renderGuide,guideHtml,exportEssayPdfA4,addOfficialQuestions,importOfficialAnswerFile,refreshImportedExamSources,analyzeLawText,beginStudies,saveStudySession,readStudySession,'+
     'choose(k){CUR={key:k,guide:BUILTIN_PMDF_GUIDES[k],_poolCache:{}}},'+
     'level(l){LEVEL=l},auth(id){AUTH_USER={username:id,displayName:id};saveSbSession({access_token:"jwt",refresh_token:"refresh",expires_in:3600})},'+
     'questionState(){return Q_STATE},ankiState(){return ANKI_STATE},essayReport(){return ESSAY_MD}};'
@@ -211,6 +211,27 @@ student.answerQuestion('A');
 assert.equal(student.questionState().pending,1,'Questão sem gabarito não ficou pendente');
 student.beginStudies(true);
 assert.equal(review.$('q-format').value,'MC','Retomada de sessão usou opção removida');
+
+// Gabaritos importados são vinculados exclusivamente à prova selecionada.
+const scoped=createClient(),exam=scoped.application;
+exam.auth('qa-gabaritos');
+function imported(name,statement){
+    return {law:name,sourceNumber:1,type:'MC',origin:'official-import',
+        topic:'Questão 1',lawBasis:name,statement,
+        options:['Alternativa A','Alternativa B','Alternativa C','Alternativa D'],answer:null};
+}
+exam.addOfficialQuestions([
+    imported('Prova Alfa','Qual é o procedimento cabível diante da situação jurídica examinada e dos elementos expressos no enunciado da prova Alfa?'),
+    imported('Prova Beta','Qual é o procedimento cabível diante da situação jurídica examinada e dos elementos expressos no enunciado da prova Beta?')
+]);
+const select=scoped.$('exam-answer-source');
+exam.refreshImportedExamSources();
+assert.equal(select.value,'','Duas provas exigem seleção explícita');
+select.value='Prova Alfa';
+await exam.importOfficialAnswerFile({files:[{name:'gabarito.txt',size:4,text:async()=> '1 B'}],value:'x'});
+const importedData=JSON.parse(exam.store.get('exam:imports'));
+assert.equal(importedData.find(q=>q.law==='Prova Alfa').answer,'B','Prova selecionada sem resposta');
+assert.equal(importedData.find(q=>q.law==='Prova Beta').answer,null,'Resposta de outra prova foi contaminada');
 
 // Redação: resultado é estimativa, não correção oficial.
 primary.$('essay-theme').value='Policiamento e direitos fundamentais';
