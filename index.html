@@ -1633,6 +1633,271 @@
   #tab-redacao textarea,#account-form input{width:100%;max-width:100%}
 }
 </style>
+<style id="pmdf-clean-ui">
+/* UI clean · Tokens temáticos locais (sem classes Tailwind adicionais) */
+:root{
+ color-scheme:dark;
+ --bg-main:#090D16;--bg-card:#111827;--bg-raised:#1E293B;--bg-hover:#273449;
+ --border-subtle:rgba(255,255,255,.08);--border-strong:rgba(255,255,255,.17);
+ --accent:#EAB308;--accent-bright:#FACC15;--accent-soft:rgba(234,179,8,.12);
+ --text-primary:#F8FAFC;--text-secondary:#94A3B8;--text-inverse:#090D16;
+ --shadow-card:0 8px 30px rgba(0,0,0,.09);--shadow-floating:0 18px 55px rgba(0,0,0,.32);
+}
+body[data-theme="light"]{
+ color-scheme:light;
+ --bg-main:#F8FAFC;--bg-card:#FFFFFF;--bg-raised:#F1F5F9;--bg-hover:#E2E8F0;
+ --border-subtle:#E2E8F0;--border-strong:#CBD5E1;
+ --accent:#B45309;--accent-bright:#92400E;--accent-soft:rgba(180,83,9,.08);
+ --text-primary:#0F172A;--text-secondary:#475569;--text-inverse:#FFFFFF;
+ --shadow-card:0 6px 24px rgba(15,23,42,.045);--shadow-floating:0 20px 60px rgba(15,23,42,.13);
+}
+body,body button,body input,body select,body textarea,
+body h2,body h3,body #printable-area,body .essay-out{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif!important}
+body .welcome-heading,body header h1{font-family:Cinzel,Georgia,serif!important}
+body{background:var(--bg-main)!important;color:var(--text-primary)!important}
+body main{max-width:1400px!important;padding-top:1.1rem!important;padding-bottom:3.5rem!important}
+body #printable-area,body #tab-leis > section,body #export-toolbar,
+body #q-panel,body #anki-panel,body .g-card,body .study-card,
+body #loading-panel,body #results-chart,body #results-time{
+ background:var(--bg-card)!important;color:var(--text-primary)!important;
+ border:1px solid var(--border-subtle)!important;border-radius:14px!important;
+ box-shadow:var(--shadow-card)!important;
+}
+body #printable-area,body #q-panel,body #anki-panel{box-shadow:none!important}
+body .g-card,body .study-card{padding:1.25rem 1.5rem!important;transition:transform .18s,box-shadow .18s,border-color .18s}
+@media(hover:hover){body .g-card:hover,body .study-card:hover{transform:translateY(-1px);box-shadow:var(--shadow-floating)!important;border-color:var(--border-strong)!important}}
+body #printable-area{padding:clamp(1.1rem,3.2vw,3rem)!important;line-height:1.75!important}
+body #printable-area > *{max-width:880px;margin-inline:auto}
+body #printable-area p,body #printable-area li,body .essay-out p,body .essay-out li,body #q-panel p,body #anki-panel p{
+ font-size:1rem!important;line-height:1.75!important;color:var(--text-primary)!important;
+}
+body #printable-area h2,body #printable-area h3,body .essay-out h2,body .essay-out h3{
+ font-family:Inter,ui-sans-serif,system-ui,sans-serif!important;font-weight:700!important;
+ color:var(--text-primary)!important;letter-spacing:-.015em;line-height:1.3;
+}
+body #printable-area h2{margin-top:1.7rem;margin-bottom:.65rem}
+body #printable-area h3{margin-top:1.25rem;margin-bottom:.5rem}
+body p,body li,body h1,body h2,body h3,body label,body button{overflow-wrap:break-word}
+body [class*="text-[10px]"],body [class*="text-[11px]"]{font-size:.75rem!important;line-height:1.5!important}
+body button,body label,body select,body summary{font-size:max(.8125rem,13px)!important}
+body .text-slate-400,body .text-slate-500{color:var(--text-secondary)!important}
+body label,body select,body input,body textarea{min-width:0;max-width:100%}
+body input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+body select,body textarea{
+ background:var(--bg-raised)!important;border:1px solid var(--border-subtle)!important;
+ color:var(--text-primary)!important;border-radius:10px!important;
+ transition:border-color .16s,box-shadow .16s;
+}
+body input::placeholder,body textarea::placeholder{color:var(--text-secondary)!important;opacity:.8}
+body :is(input,textarea,select,button,summary,a):focus-visible{outline:2px solid var(--accent)!important;outline-offset:2px!important}
+body button{transition:background .16s,border-color .16s,transform .16s,box-shadow .16s}
+body button:not(:disabled):active{transform:scale(.99)}
+body #welcome-screen{background:var(--bg-main)!important;color:var(--text-primary)!important}
+body #account-form{background:var(--bg-card)!important;color:var(--text-primary)!important;border-color:var(--border-subtle)!important}
+
+/* Header: identidade compacta, cronômetro pílula, tema, conta. */
+body header.pmdf-app-header{
+ background:var(--bg-card)!important;border:0!important;border-bottom:1px solid var(--border-subtle)!important;
+ box-shadow:none!important;position:sticky;top:0;z-index:45;backdrop-filter:blur(16px);
+}
+body .pmdf-header-inner{padding-block:.65rem!important;max-width:1400px!important;gap:1rem!important}
+body .pmdf-brand-mark{width:44px!important;height:44px!important;min-width:44px;background:var(--bg-main)!important;border:1px solid var(--border-subtle)!important;border-radius:11px!important;box-shadow:none!important}
+body .pmdf-brand-svg{width:36px!important;height:36px!important}
+body header h1{font-size:1.04rem!important;letter-spacing:.09em!important;line-height:1.3!important}
+body header h1 span{color:var(--accent)!important}
+body header p{color:var(--text-secondary)!important;font-size:.75rem!important}
+body header .pmdf-header-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:.5rem;min-width:0}
+body header .pmdf-header-actions > button,body header .pmdf-account-menu > summary{
+ display:inline-flex;align-items:center;justify-content:center;gap:.4rem;min-height:38px;
+ background:var(--bg-raised)!important;color:var(--text-primary)!important;
+ border:1px solid var(--border-subtle)!important;border-radius:999px!important;
+ padding:.48rem .8rem!important;box-shadow:none!important;font-weight:600!important;
+}
+body header .pmdf-header-actions > button:hover,body header .pmdf-account-menu > summary:hover{
+ border-color:var(--border-strong)!important;background:var(--bg-hover)!important;
+}
+body header #pomo{display:inline-flex;align-items:center;gap:.3rem;min-height:38px;padding:.2rem .45rem!important;border:1px solid var(--border-subtle)!important;border-radius:999px!important;background:var(--bg-raised)!important}
+body header #pomo-mode{font-size:.72rem!important;letter-spacing:.07em;color:var(--accent)!important}
+body header #pomo-time{font-size:.85rem!important;min-width:3rem;text-align:center;color:var(--text-primary)!important}
+body header #pomo button{min-height:30px;width:30px;height:30px;padding:0!important;border:0!important;border-radius:999px!important;display:grid;place-items:center}
+body header #pomo-btn{background:var(--accent)!important;color:var(--text-inverse)!important}
+body header #pomo button:not(#pomo-btn){background:transparent!important;color:var(--text-secondary)!important}
+body header #cloud-save-status{font-size:.75rem!important;color:var(--text-secondary)!important;white-space:normal;max-width:170px;line-height:1.2}
+body header .pmdf-account-menu{position:relative;z-index:50}
+body header .pmdf-account-menu > summary{list-style:none;cursor:pointer;user-select:none}
+body header .pmdf-account-menu > summary::-webkit-details-marker{display:none}
+body header .pmdf-account-popover{
+ position:absolute;top:calc(100% + .6rem);right:0;display:flex;flex-direction:column;gap:.3rem;
+ width:min(245px,calc(100vw - 2rem));padding:.6rem;background:var(--bg-card);
+ border:1px solid var(--border-subtle);border-radius:13px;box-shadow:var(--shadow-floating);
+}
+body header .pmdf-account-popover button{
+ display:block;width:100%;text-align:left;padding:.7rem .9rem!important;
+ border:1px solid transparent!important;border-radius:9px!important;
+ background:transparent!important;color:var(--text-primary)!important;box-shadow:none!important;
+}
+body header .pmdf-account-popover button:hover{background:var(--bg-raised)!important}
+body header .pmdf-account-popover button[onclick*="showTab('resultados')"]{display:none!important}
+
+/* Segmented control; active classes injected by showTab() remain untouched. */
+body nav.pmdf-app-tabs{
+ display:flex;align-items:stretch;gap:4px!important;padding:4px!important;margin-bottom:1.35rem;
+ background:var(--bg-card)!important;border:1px solid var(--border-subtle)!important;
+ border-radius:14px!important;box-shadow:var(--shadow-card);overflow-x:auto;scrollbar-width:thin;
+}
+body nav.pmdf-app-tabs > button{
+ flex:1 0 auto;justify-content:center;display:inline-flex;align-items:center;
+ min-height:43px;padding:.7rem .9rem!important;border:1px solid transparent!important;
+ border-radius:10px!important;background:transparent!important;color:var(--text-secondary)!important;
+ box-shadow:none!important;font-weight:600!important;white-space:nowrap!important;
+}
+body nav.pmdf-app-tabs > button:hover{background:var(--accent-soft)!important;color:var(--text-primary)!important}
+body nav.pmdf-app-tabs > button:not(.text-slate-400){
+ background:var(--bg-raised)!important;color:var(--text-primary)!important;
+ box-shadow:0 2px 8px rgba(0,0,0,.1)!important;border-color:var(--border-subtle)!important;position:relative;
+}
+body nav.pmdf-app-tabs > button:not(.text-slate-400)::after{
+ content:"";position:absolute;bottom:2px;left:22%;right:22%;height:2px;border-radius:20px;background:var(--accent);
+}
+
+/* Six core laws + twenty in a searchable drawer. */
+body .pmdf-law-selector{display:flex;align-items:center;justify-content:flex-end;gap:.6rem;flex-wrap:wrap;max-width:100%}
+body .pmdf-core-laws{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:.4rem}
+body .pmdf-core-laws > span{font-size:.75rem!important;color:var(--text-secondary)!important}
+body .law-shortcut-btn{
+ display:inline-flex;align-items:center;justify-content:center;min-height:37px;padding:.45rem .72rem!important;
+ border-radius:999px!important;background:var(--bg-raised)!important;border:1px solid var(--border-subtle)!important;
+ color:var(--text-primary)!important;box-shadow:none!important;font-size:.78rem!important;font-weight:600!important;
+ white-space:normal!important;overflow-wrap:anywhere;text-align:center;
+}
+body .law-shortcut-btn:hover{background:var(--accent-soft)!important;border-color:var(--accent)!important}
+body .pmdf-core-laws #btn-law-cpm{background:var(--accent-soft)!important;border-color:var(--accent)!important}
+body .more-laws-drawer{position:relative;z-index:6;max-width:100%}
+body .more-laws-drawer > summary{
+ display:flex;align-items:center;justify-content:space-between;gap:.6rem;cursor:pointer;list-style:none;
+ min-height:37px;padding:.44rem .85rem;background:var(--accent-soft);
+ border:1px solid var(--border-subtle);border-radius:999px;color:var(--accent);font-weight:700!important;
+}
+body .more-laws-drawer > summary::-webkit-details-marker{display:none}
+body .more-laws-drawer[open] > summary{border-radius:12px 12px 0 0;border-color:var(--border-strong)}
+body .pmdf-drawer-action{font-size:.75rem;color:var(--text-secondary);font-weight:500}
+body .pmdf-more-laws-body{
+ position:absolute;z-index:11;right:0;top:calc(100% - 1px);
+ width:min(660px,calc(100vw - 2rem));max-height:min(55vh,520px);overflow:auto;
+ background:var(--bg-card);border:1px solid var(--border-strong);border-radius:0 0 14px 14px;
+ box-shadow:var(--shadow-floating);padding:1rem;
+}
+body .pmdf-more-laws-search{display:block;color:var(--text-secondary)!important;margin-bottom:.8rem}
+body .pmdf-more-laws-search input{display:block;margin-top:.4rem;width:100%;padding:.7rem .85rem}
+body .pmdf-more-laws-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.45rem}
+body .pmdf-more-laws-grid .law-shortcut-btn{width:100%;min-height:43px;border-radius:9px!important}
+body .pmdf-more-laws-grid .law-shortcut-btn[hidden]{display:none!important}
+
+/* Configuration drawer and compact 4-column parameter grid. */
+body .pmdf-parameters{margin-top:.4rem;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:13px}
+body .pmdf-parameters > summary{
+ display:flex;align-items:center;justify-content:space-between;gap:.4rem;
+ list-style:none;cursor:pointer;padding:.82rem 1rem;background:var(--bg-raised);
+ border-radius:12px;color:var(--text-primary);font-weight:700!important;
+}
+body .pmdf-parameters > summary::-webkit-details-marker{display:none}
+body .pmdf-parameters[open] > summary{border-bottom:1px solid var(--border-subtle);border-radius:12px 12px 0 0}
+body .pmdf-params-hint{color:var(--text-secondary);font-weight:500;font-size:.75rem!important}
+body .pmdf-parameter-grid{
+ display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+ gap:1rem!important;padding:1.15rem;
+}
+body .pmdf-parameter-grid > *{grid-column:1/-1!important;min-width:0}
+body .pmdf-parameter-grid > .pmdf-param-role,body .pmdf-parameter-grid > .pmdf-param-board,
+body .pmdf-parameter-grid > .pmdf-param-level,body .pmdf-parameter-grid > .pmdf-param-summary{
+ grid-column:span 1!important;
+}
+body .pmdf-param-level #level-group{display:grid!important;grid-template-columns:1fr!important;gap:.3rem!important}
+body .pmdf-param-level .lvl-btn{width:100%;min-height:34px;padding:.36rem .5rem!important;text-align:left;border-radius:8px!important;font-size:.78rem!important}
+body .pmdf-param-level #level-desc{font-size:.75rem!important;line-height:1.4;color:var(--text-secondary)!important}
+body .pmdf-param-role label,body .pmdf-param-board label,body .pmdf-param-level > label,
+body .pmdf-param-summary label{min-height:2.25em;display:block;margin-bottom:.55rem;line-height:1.25}
+body .pmdf-param-role select,body .pmdf-param-board select,body .pmdf-param-summary select{width:100%;min-height:43px}
+
+/* One primary export button, secondary actions restrained. */
+body #export-toolbar{display:flex;align-items:center;gap:1rem;padding:.85rem 1rem!important}
+body #export-toolbar > div:first-child{min-width:0;flex:1}
+body #export-toolbar #current-doc-title{color:var(--text-primary)!important;overflow-wrap:anywhere}
+body #export-toolbar button,body #export-toolbar select{
+ min-height:39px!important;border-radius:10px!important;
+ background:var(--bg-raised)!important;color:var(--text-primary)!important;
+ border:1px solid var(--border-subtle)!important;box-shadow:none!important;font-size:.8rem!important;
+}
+body #export-toolbar button:hover{background:var(--bg-hover)!important;border-color:var(--border-strong)!important}
+body #export-toolbar button[onclick="exportToWordDoc()"]{
+ background:var(--accent)!important;color:var(--text-inverse)!important;border-color:transparent!important;
+}
+
+/* Reading and practice: legible, complete text and accessible touch targets. */
+body #q-panel .q-choice{
+ width:100%;min-height:53px;padding:.9rem 1.15rem!important;
+ background:var(--bg-raised)!important;color:var(--text-primary)!important;
+ border:1px solid var(--border-subtle)!important;border-radius:12px!important;
+ font-size:.95rem!important;font-weight:500!important;
+ white-space:normal!important;overflow-wrap:anywhere!important;text-align:left!important;
+}
+body #q-panel .q-choice:not(:disabled):hover{background:var(--bg-hover)!important;border-color:var(--accent)!important}
+body #q-panel .q-choice.border-emerald-500{border-color:#10B981!important;box-shadow:inset 3px 0 #10B981!important}
+body #q-panel .q-choice.border-red-500{border-color:#EF4444!important;box-shadow:inset 3px 0 #EF4444!important}
+body #anki-panel .anki-fulltext{background:var(--bg-raised)!important;border-color:var(--border-subtle)!important;border-radius:12px!important}
+body #anki-panel button[onclick="revealAnki()"],body #anki-panel button[onclick="nextAnki()"],
+body #tab-leis #generate-btn{background:var(--accent)!important;color:var(--text-inverse)!important;border-color:transparent!important;border-radius:11px!important;box-shadow:none!important}
+body #q-panel p,body #anki-panel p,body #printable-area p,body .essay-out p{
+ white-space:normal!important;max-height:none!important;overflow:visible!important;
+ -webkit-line-clamp:unset!important;text-overflow:clip!important;overflow-wrap:anywhere!important;
+}
+body #q-panel button,body #anki-panel button{min-height:43px}
+body[data-theme="light"] #q-panel .q-choice,body[data-theme="light"] #anki-panel .anki-fulltext,
+body[data-theme="light"] #results-chart,body[data-theme="light"] #results-time{
+ background:var(--bg-raised)!important;color:var(--text-primary)!important
+}
+body[data-theme="light"] header.pmdf-app-header{background:var(--bg-card)!important}
+body[data-theme="light"] #printable-area,body[data-theme="light"] .g-card,body[data-theme="light"] .study-card,
+body[data-theme="light"] #q-panel,body[data-theme="light"] #anki-panel{
+ background:var(--bg-card)!important;color:var(--text-primary)!important;
+}
+@media(max-width:1160px){
+ body .pmdf-header-inner{align-items:flex-start!important}
+ body .pmdf-header-actions{justify-content:flex-start!important}
+ body .pmdf-law-selector,body .pmdf-core-laws{justify-content:flex-start}
+ body .pmdf-parameter-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ body .pmdf-more-laws-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:720px){
+ body .pmdf-header-inner{display:flex!important;flex-direction:column!important;align-items:stretch!important}
+ body .pmdf-header-actions{justify-content:space-between!important;gap:.45rem}
+ body .pmdf-header-actions #cloud-save-status{flex:1 1 100%;order:10;max-width:none}
+ body header h1{font-size:1rem!important}
+ body .pmdf-parameter-grid{grid-template-columns:1fr!important;padding:.85rem!important}
+ body .pmdf-more-laws-grid{grid-template-columns:1fr}
+ body .pmdf-more-laws-body{position:static;width:100%;max-height:320px}
+ body .more-laws-drawer{flex:1 1 100%;width:100%}
+ body nav.pmdf-app-tabs > button{flex:0 0 auto;padding:.7rem .85rem!important}
+ body #export-toolbar{align-items:stretch!important;flex-direction:column!important}
+ body #export-toolbar > div:last-child{display:flex;flex-wrap:wrap;gap:.5rem}
+ body #printable-area{padding:1.1rem!important}
+ body .g-card,body .study-card{padding:1rem!important}
+}
+@media(max-width:430px){
+ body .pmdf-header-actions #theme-label{display:none}
+ body header #cloud-save-status{font-size:.71rem!important}
+ body .pmdf-app-tabs{margin-inline:-.25rem}
+}
+@media(prefers-reduced-motion:reduce){
+ body .g-card,body .study-card,body button,body input,body select,body textarea{transition:none!important}
+ body .g-card:hover,body .study-card:hover{transform:none!important}
+}
+@media print{
+ body{background:#fff!important;color:#000!important}
+ body #printable-area,body #printable-area > *,body .essay-out{max-width:none!important;color:#000!important;box-shadow:none!important}
+ body #printable-area .g-card,body #printable-area .study-card{break-inside:avoid;box-shadow:none!important}
+}
+</style>
 </head>
 <body class="landing-active min-h-screen flex flex-col font-sans antialiased selection:bg-[#D4AF37] selection:text-[#050B16]">
 
