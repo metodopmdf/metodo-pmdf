@@ -1632,15 +1632,15 @@
      <label id="account-display-wrap" class="block text-slate-300 text-xs font-semibold hidden">Nome do candidato
        <input id="account-display" autocomplete="name" maxlength="70" class="mt-1 w-full rounded-xl bg-[#040912] border border-[#334155] text-white p-3" placeholder="Nome para identificação" />
      </label>
-     <label class="block text-slate-300 text-xs font-semibold">Usuário (sem espaços)
-       <input id="account-name" autocomplete="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9._-]{3,32}" class="mt-1 w-full rounded-xl bg-[#040912] border border-[#334155] text-white p-3" placeholder="seu_usuario" />
+     <label class="block text-slate-300 text-xs font-semibold">E-mail
+       <input id="account-name" type="email" autocomplete="email" required maxlength="254" class="mt-1 w-full rounded-xl bg-[#040912] border border-[#334155] text-white p-3" placeholder="voce@exemplo.com" />
      </label>
      <label class="block text-slate-300 text-xs font-semibold">Senha
-       <input id="account-password" type="password" autocomplete="current-password" required minlength="6" maxlength="72" class="mt-1 w-full rounded-xl bg-[#040912] border border-[#334155] text-white p-3" placeholder="Mínimo de 6 caracteres" />
+       <input id="account-password" type="password" autocomplete="current-password" required minlength="12" maxlength="72" class="mt-1 w-full rounded-xl bg-[#040912] border border-[#334155] text-white p-3" placeholder="Mínimo de 12 caracteres" />
      </label>
-     <label id="account-consent-wrap" class="hidden flex gap-2 text-slate-300 text-xs items-start"><input type="checkbox" id="account-consent" class="mt-1" /> <span>Concordo com o armazenamento do meu nome, minhas respostas, redações e progresso para uso da plataforma, conforme a <a class='underline text-[#E5C158]' href='/privacidade' rel='noopener' target='_blank'>Política de Privacidade</a>.</span></label>
+     <label id="account-consent-wrap" class="hidden flex gap-2 text-slate-300 text-xs items-start"><input type="checkbox" id="account-consent" class="mt-1" /> <span>Concordo com o armazenamento do meu nome, minhas respostas, redações e progresso para uso da plataforma, conforme a <a class='underline text-[#E5C158]' href='privacidade.html' rel='noopener' target='_blank'>Política de Privacidade</a>.</span></label>
      <div class="flex flex-wrap gap-2 items-center"><button id="account-submit" type="submit" class="welcome-primary" style="padding:12px 20px">Entrar</button><button type="button" onclick="switchAccountMode()" id="account-switch" class="welcome-secondary" style="padding:12px 20px">Criar conta gratuita</button></div>
-     <p id="account-msg" role="status" aria-live="polite" class="text-xs text-slate-300">Verificando disponibilidade da conta online...</p><button id="account-retry" type="button" onclick="retryAccountConnection()" class="text-xs underline text-[#E5C158]" style="margin-top:8px">Verificar conexão do cadastro</button>
+     <p id="account-msg" role="status" aria-live="polite" class="text-xs text-slate-300">Verificando disponibilidade da conta online...</p><button id="account-retry" type="button" onclick="retryAccountConnection()" class="text-xs underline text-[#E5C158]" style="margin-top:8px">Verificar conexão do cadastro</button> <button type="button" onclick="recoverAccountPassword()" class="text-xs underline text-[#E5C158]" style="margin-left:12px">Esqueci minha senha</button>
    </form>
    <div id="account-ready" class="hidden text-sm text-[#E5C158] font-semibold">✅ <span id="account-who"></span> · <button type="button" onclick="logoutAccount()" class="underline">Sair da conta</button> · <button type="button" onclick="confirmDeleteAccount()" class="underline text-rose-300">Excluir conta e dados</button></div>
    <div class="welcome-actions" id="welcome-study-actions" hidden>
@@ -1652,7 +1652,7 @@
      <label class="welcome-secondary" style="display:grid;place-items:center;padding:10px 8px;border-radius:12px;font-weight:700;cursor:pointer">Importar backup<input type="file" accept=".json,application/json" class="hidden" onchange="importProgress(this)" /></label>
    </div>
    <div id="welcome-progress" class="welcome-progress" role="status" aria-live="polite"></div>
-   <p class="welcome-privacy">Ao entrar, seu histórico é armazenado no servidor Netlify e neste navegador para acesso contínuo. Não compartilhe sua senha; o serviço não oferece recuperação automática de senha por email.</p>
+   <p class="welcome-privacy">Ao entrar, seu histórico de estudos é sincronizado pelo Supabase e pode permanecer armazenado neste navegador. Não compartilhe sua senha. Em caso de esquecimento, use a recuperação por e-mail.</p>
   </div>
 </section>
 
@@ -3186,7 +3186,7 @@
         function cloudStatus(message,issue=false){const t=$('cloud-save-status');if(t){t.textContent=message;t.classList.toggle('text-rose-300',issue);}const m=$('account-msg');if(m&&issue&&AUTH_USER)m.textContent=message;}
         function scheduleCloudSave(){if(!AUTH_USER)return;CLOUD_DIRTY=true;cloudStatus('◌ Alterações pendentes');clearTimeout(CLOUD_SAVE_TIMER);CLOUD_SAVE_TIMER=setTimeout(flushCloudSave,5000);}
         async function flushCloudSave(){if(!AUTH_USER||CLOUD_SAVE_BUSY)return;clearTimeout(CLOUD_SAVE_TIMER);CLOUD_SAVE_BUSY=true;CLOUD_DIRTY=false;cloudStatus('↻ Sincronizando...');
-          try{const r=await accountFetch('progresso',{method:'PUT',headers:{'Content-Type':'application/json','X-PMDF-Request':'1'},body:JSON.stringify({data:accountData()})});if(!r.ok)throw Error('HTTP '+r.status);CLOUD_LAST_ERROR='';cloudStatus('✓ Progresso salvo na nuvem');}
+          try{const r=await accountFetch('progresso',{method:'PUT',headers:{'Content-Type':'application/json','X-PMDF-Request':'1'},body:JSON.stringify({data:accountData()})});if(!r.ok){const d=await r.json().catch(()=>({}));throw Error(d.error||'HTTP '+r.status);}CLOUD_LAST_ERROR='';cloudStatus('✓ Progresso salvo na nuvem');}
           catch(e){CLOUD_DIRTY=true;CLOUD_LAST_ERROR=e.message;cloudStatus('⚠ Não sincronizado. Dados locais preservados.',true);}
           finally{CLOUD_SAVE_BUSY=false;if(CLOUD_DIRTY&&AUTH_USER)CLOUD_SAVE_TIMER=setTimeout(flushCloudSave,12000);}}
         const LEVELS_SAFE_LEVEL = v => ['iniciante','intermediario','avancado'].includes(v) ? v : 'intermediario';
@@ -4699,48 +4699,68 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             $('account-switch').textContent=ACCOUNT_MODE==='register'?'Já tenho uma conta':'Criar conta gratuita';
             $('account-submit').textContent=ACCOUNT_MODE==='register'?'Cadastrar':'Entrar';
             $('account-display-wrap').classList.toggle('hidden',ACCOUNT_MODE!=='register');$('account-consent-wrap').classList.toggle('hidden',ACCOUNT_MODE!=='register');
-            $('account-password').autocomplete=ACCOUNT_MODE==='register'?'new-password':'current-password';$('account-password').minLength=6;
+            $('account-password').autocomplete=ACCOUNT_MODE==='register'?'new-password':'current-password';$('account-password').minLength=12;
         }
-        // A conta depende de funções de servidor: não armazenar senhas no HTML ou localStorage.
-        // Tenta o redirecionamento amigável e o endpoint nativo do Netlify, ambos no MESMO domínio.
-        let ACCOUNT_API_ROOT=null;
-        async function accountFetch(endpoint,options={}){
-            const candidates=[ACCOUNT_API_ROOT,'/api','/.netlify/functions'].filter((v,i,a)=>v&&a.indexOf(v)===i);
-            let unavailable='';
-            for(const root of candidates){
-                const controller=new AbortController();
-                const timer=setTimeout(()=>controller.abort(),12000);
-                try{
-                    const res=await fetch(root+'/'+endpoint,{credentials:'same-origin',...options,signal:controller.signal});
-                    const type=res.headers.get('content-type')||'';
-                    // Sites publicados apenas como HTML retornam 404 ou index.html para /api.
-                    if(res.status===404||!type.toLowerCase().includes('application/json')){
-                        unavailable='O servidor de cadastro não foi publicado com as funções Netlify.';
-                        continue;
-                    }
-                    ACCOUNT_API_ROOT=root;
-                    return res;
-                }catch(err){
-                    unavailable=err?.name==='AbortError'?'A conexão com o servidor de cadastro demorou demais.':'Não foi possível conectar ao servidor de cadastro.';
-                }finally{clearTimeout(timer);}
-            }
-            throw new Error((unavailable||'Servidor de cadastro indisponível.')+' Publique o projeto completo com as funções Netlify e confira a configuração do site.');
+        // Supabase Auth + PostgREST; somente a chave PUBLICÁVEL aparece no frontend.
+        const SB_URL='https://wskuhkvgipqwykbnuspk.supabase.co';
+        const SB_KEY='sb_publishable_GD37Y7cVTTKo74Vg5_5U1g_lyoqwcvH';
+        const SB_SESSION_KEY='pmdf:supabase:session:v1';
+        let SB_SESSION=null,SB_REFRESH=null;
+        const sbHeaders=(token)=>({'apikey':SB_KEY,'Authorization':'Bearer '+(token||SB_KEY),'Content-Type':'application/json'});
+        function saveSbSession(session){
+            SB_SESSION=session?.access_token?session:null;
+            try{if(SB_SESSION)localStorage.setItem(SB_SESSION_KEY,JSON.stringify(SB_SESSION));else localStorage.removeItem(SB_SESSION_KEY);}catch(e){}
         }
-        async function accountRequest(action,payload={}){
-            const r=await accountFetch('conta?action='+encodeURIComponent(action),{method:'POST',headers:{'Content-Type':'application/json','X-PMDF-Request':'1'},body:JSON.stringify(payload)});
+        async function sbCall(path,options={},token){
+            const r=await fetch(SB_URL+path,{...options,headers:{...sbHeaders(token),...(options.headers||{})}});
             const data=await r.json().catch(()=>({}));
-            if(!r.ok)throw Error(data.error||'Cadastro indisponível (HTTP '+r.status+').');
+            if(!r.ok)throw Error(data.msg||data.error_description||data.message||data.error||('Supabase HTTP '+r.status));
             return data;
         }
-        async function retryAccountConnection(){
-            const button=$('account-retry');button.disabled=true;$('account-msg').textContent='Verificando funções do servidor...';
+        async function refreshSbSession(){
+            if(SB_REFRESH)return SB_REFRESH;
+            SB_REFRESH=(async()=>{
+                if(!SB_SESSION?.refresh_token)throw Error('Sessão expirada. Entre novamente.');
+                const data=await sbCall('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:JSON.stringify({refresh_token:SB_SESSION.refresh_token})});
+                saveSbSession(data);return SB_SESSION;
+            })();
+            try{return await SB_REFRESH;}finally{SB_REFRESH=null;}
+        }
+        async function sbToken(){
+            if(!SB_SESSION?.access_token)throw Error('Faça login para sincronizar.');
+            if(SB_SESSION.expires_at && Date.now()/1000>SB_SESSION.expires_at-90)await refreshSbSession();
+            return SB_SESSION.access_token;
+        }
+        async function sbAuthed(path,options={}){
+            let token=await sbToken();
+            try{return await sbCall(path,options,token);}
+            catch(e){if(/jwt expired|invalid jwt|token.*expired/i.test(e.message)){await refreshSbSession();return sbCall(path,options,SB_SESSION.access_token);}throw e;}
+        }
+        function sbUser(user){return {username:user.id,displayName:user.user_metadata?.display_name||user.email||'Candidato',email:user.email};}
+        async function accountFetch(endpoint,options={}){
+            if(endpoint!=='progresso')throw Error('Rota não suportada.');
+            const uid=AUTH_USER?.username;if(!uid)throw Error('Entre na sua conta.');
             try{
-                const r=await accountFetch('conta?action=me');
-                if(r.status===401){$('account-msg').textContent='Servidor conectado. Entre ou crie uma conta.';cloudStatus('✓ Cadastro online disponível');}
-                else if(r.ok){const d=await r.json();AUTH_USER=d.user;await finishAccountSignIn();}
-                else{const d=await r.json().catch(()=>({}));throw Error(d.error||'Servidor indisponível (HTTP '+r.status+').');}
-            }catch(e){$('account-msg').textContent=e.message;cloudStatus('⚠ Cadastro online indisponível',true);}
-            finally{button.disabled=false;}
+                if(options.method==='PUT'){
+                    const payload=JSON.parse(options.body||'{}');
+                    await sbAuthed('/rest/v1/pmdf_progress?on_conflict=user_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({user_id:uid,data:payload.data||{},updated_at:new Date().toISOString()})});
+                    return {ok:true,status:204,json:async()=>({})};
+                }
+                const rows=await sbAuthed('/rest/v1/pmdf_progress?user_id=eq.'+encodeURIComponent(uid)+'&select=data',{method:'GET'});
+                return {ok:true,status:200,json:async()=>({data:rows[0]?.data||{}})};
+            }catch(e){return {ok:false,status:503,json:async()=>({error:e.message})};}
+        }
+        async function retryAccountConnection(){
+            const b=$('account-retry');b.disabled=true;
+            try{await sbCall('/auth/v1/settings');$('account-msg').textContent='Supabase conectado. Entre ou crie sua conta.';cloudStatus('✓ Cadastro online disponível');}
+            catch(e){$('account-msg').textContent='Falha na conexão: '+e.message;}
+            finally{b.disabled=false;}
+        }
+        async function recoverAccountPassword(){
+            const email=$('account-name').value.trim();
+            if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return $('account-msg').textContent='Informe seu e-mail no campo acima antes de recuperar a senha.';
+            try{await sbCall('/auth/v1/recover',{method:'POST',body:JSON.stringify({email})});$('account-msg').textContent='Se o e-mail estiver cadastrado, você receberá instruções de recuperação.';}
+            catch(e){$('account-msg').textContent=e.message;}
         }
         async function finishAccountSignIn(){
             // Cadastro pode ter dado certo mesmo quando a leitura do histórico está temporariamente fora do ar.
@@ -4775,49 +4795,46 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         async function bootstrapAccount(){
             if(AUTH_INITIALIZED)return;AUTH_INITIALIZED=true;
             try{
-                const r=await accountFetch('conta?action=me');
-                if(r.status===401){$('account-msg').textContent='Servidor conectado. Faça login ou crie seu acesso gratuito.';return;}
-                if(!r.ok){const d=await r.json().catch(()=>({}));throw Error(d.error||'Servidor indisponível (HTTP '+r.status+').');}
-                const body=await r.json();AUTH_USER=body.user;await finishAccountSignIn();
-            }catch(e){$('account-msg').textContent=e.message;cloudStatus('⚠ Servidor de cadastro indisponível',true);}
+                const hash=new URLSearchParams(location.hash.replace(/^#/,''));
+                if(hash.get('access_token')&&hash.get('refresh_token')){
+                    saveSbSession({access_token:hash.get('access_token'),refresh_token:hash.get('refresh_token'),expires_at:Math.floor(Date.now()/1000)+Number(hash.get('expires_in')||3600)});
+                    history.replaceState(null,'',location.pathname+location.search);
+                }else{try{saveSbSession(JSON.parse(localStorage.getItem(SB_SESSION_KEY)||'null'));}catch(e){saveSbSession(null);}}
+                if(!SB_SESSION){$('account-msg').textContent='Entre com seu e-mail ou crie uma conta gratuita.';return;}
+                const user=await sbAuthed('/auth/v1/user');AUTH_USER=sbUser(user);await finishAccountSignIn();
+            }catch(e){saveSbSession(null);AUTH_USER=null;$('account-msg').textContent='Sessão expirada. Entre novamente.';}
         }
         async function submitAccount(event){
-            event.preventDefault();
-            const button=$('account-submit'),status=$('account-msg');
-            if(button.disabled)return;
-            const name=$('account-name').value.trim(),password=$('account-password').value;
-            if(!/^[a-zA-Z0-9._-]{3,32}$/.test(name)){status.textContent='O usuário deve ter de 3 a 32 caracteres, sem espaços.';return;}
-            if(password.length<6||password.length>72){status.textContent='Informe uma senha de 6 a 72 caracteres.';return;}
+            event.preventDefault();const button=$('account-submit'),status=$('account-msg');if(button.disabled)return;
+            const email=$('account-name').value.trim(),password=$('account-password').value;
+            if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){status.textContent='Informe um e-mail válido.';return;}
+            if(password.length<12||password.length>72){status.textContent='Informe uma senha de 12 a 72 caracteres.';return;}
             button.disabled=true;status.textContent='Aguarde: autenticando...';
             try{
-                const payload={username:name,password};
+                let result;
                 if(ACCOUNT_MODE==='register'){
-                    if(!$('account-consent').checked)throw Error('Para criar a conta, confirme a Política de Privacidade.');
-                    payload.displayName=$('account-display').value.trim();payload.privacyConsent=true;
-                }
-                const data=await accountRequest(ACCOUNT_MODE,payload);
-                AUTH_USER=data.user;
-                $('account-password').value='';
-                await finishAccountSignIn();
-            }catch(e){status.textContent=e.message;}
-            finally{button.disabled=false;}
+                    if(!$('account-consent').checked)throw Error('Confirme a Política de Privacidade.');
+                    result=await sbCall('/auth/v1/signup',{method:'POST',body:JSON.stringify({email,password,data:{display_name:$('account-display').value.trim(),privacy_consent:true}})});
+                    if(!result.access_token){status.textContent='Cadastro solicitado. Confirme seu e-mail para ativar a conta e depois faça login.';switchAccountMode();return;}
+                }else result=await sbCall('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password})});
+                saveSbSession(result);AUTH_USER=sbUser(result.user);$('account-password').value='';await finishAccountSignIn();
+            }catch(e){status.textContent=e.message;}finally{button.disabled=false;}
         }
         function confirmDeleteAccount(){
-            openModal('Excluir conta e histórico','<p class="text-sm text-slate-200">Esta ação exclui seu cadastro e o histórico armazenado no servidor. Não pode ser desfeita. Faça backup antes de continuar.</p><label class="block text-xs mt-3">Digite sua senha para confirmar<input id="delete-confirm-password" type="password" autocomplete="current-password" class="mt-1 rounded-xl bg-[#040912] border border-[#334155] text-slate-100 p-3 w-full" /></label><button type="button" onclick="deleteAccountSubmit()" class="mt-3 rounded-xl bg-rose-800 text-white px-4 py-2 font-bold">Excluir permanentemente</button>');
+            openModal('Excluir meus dados','<p class="text-sm text-slate-200">É possível excluir seu histórico de estudos. A exclusão permanente da conta de autenticação requer um processo administrativo seguro no servidor. Nunca compartilhe sua senha com terceiros.</p><button type="button" onclick="deleteAccountSubmit()" class="mt-3 rounded-xl bg-rose-800 text-white px-4 py-2 font-bold">Excluir meu histórico online</button>');
         }
         async function deleteAccountSubmit(){
-            const password=$('delete-confirm-password')?.value||'';if(!password)return toast('Informe sua senha.','error');
-            try{await accountRequest('delete',{password});clearTimeout(CLOUD_SAVE_TIMER);const username=AUTH_USER.username,prefix='pmdf:account:'+username+':';
-              for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k?.startsWith(prefix))localStorage.removeItem(k);}
-              AUTH_USER=null;APP_STARTED=false;Q_STATE=null;ANKI_STATE=null;CLOUD_DIRTY=false;IMPORTED_QUESTIONS.length=0;ESSAY_MD='';
-              closeModal();document.body.classList.add('landing-active');if(ACCOUNT_MODE!=='login')switchAccountMode();$('account-name').value='';$('account-password').value='';showAccountReady();toast('Conta e progresso online excluídos.','ok');
-            }catch(e){toast('Não foi possível excluir: '+e.message,'error');}
+            if(!AUTH_USER)return;
+            try{await sbAuthed('/rest/v1/pmdf_progress?user_id=eq.'+encodeURIComponent(AUTH_USER.username),{method:'DELETE'});
+                const prefix='pmdf:account:'+AUTH_USER.username+':';for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k?.startsWith(prefix))localStorage.removeItem(k);}
+                closeModal();toast('Histórico excluído. A conta de login permanece ativa.','ok');
+            }catch(e){toast('Erro ao excluir histórico: '+e.message,'error');}
         }
         async function logoutAccount(){
             if(APP_STARTED)backToHome();if(CLOUD_SAVE_TIMER)clearTimeout(CLOUD_SAVE_TIMER);
             if(CLOUD_DIRTY)await flushCloudSave();
-            try{await accountRequest('logout');}catch(e){}
-            AUTH_USER=null;APP_STARTED=false;Q_STATE=null;ANKI_STATE=null;CLOUD_DIRTY=false;IMPORTED_QUESTIONS.length=0;ESSAY_MD='';
+            try{if(SB_SESSION)await sbAuthed('/auth/v1/logout',{method:'POST'});}catch(e){}
+            saveSbSession(null);AUTH_USER=null;APP_STARTED=false;Q_STATE=null;ANKI_STATE=null;CLOUD_DIRTY=false;IMPORTED_QUESTIONS.length=0;ESSAY_MD='';
             ['essay-theme','essay-lines','essay-motiv','essay-text'].forEach(id=>{if($(id))$(id).value='';});$('essay-result')?.classList.add('hidden');$('essay-out').replaceChildren();$('q-panel')?.classList.add('hidden');$('anki-panel')?.classList.add('hidden');
             document.body.classList.add('landing-active');if(ACCOUNT_MODE!=='login')switchAccountMode();$('account-name').value='';$('account-password').value='';showAccountReady();$('account-msg').textContent='Sessão encerrada. Entre novamente para recuperar seu histórico.';
         }
