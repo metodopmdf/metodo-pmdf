@@ -1638,18 +1638,15 @@
    <p class="welcome-lead">Mapeamento estratégico de normas, simulados comentados, flashcards e redações. Seu progresso é sincronizado com sua conta online.</p>
    <form id="account-form" onsubmit="submitAccount(event)" class="space-y-3 rounded-2xl p-4 border border-[#D4AF37]/40 bg-[#0A1426] text-left" autocomplete="on">
      <h2 id="account-title" class="text-[#E5C158] text-lg font-bold">Acessar meus estudos</h2>
-     <label id="account-display-wrap" class="block text-slate-300 text-xs font-semibold hidden">Nome do candidato
-       <input id="account-display" autocomplete="name" maxlength="70" class="mt-1 w-full rounded-xl bg-[#040912] border border-[#334155] text-white p-3" placeholder="Nome para identificação" />
-     </label>
-     <label class="block text-slate-300 text-xs font-semibold">E-mail
-       <input id="account-name" type="email" autocomplete="email" required maxlength="254" class="mt-1 w-full rounded-xl bg-[#040912] border border-[#334155] text-white p-3" placeholder="voce@exemplo.com" />
+     <label class="block text-slate-300 text-xs font-semibold">Nome de usuário
+       <input id="account-name" type="text" autocomplete="username" required minlength="3" maxlength="24" pattern="[A-Za-z0-9._-]{3,24}" autocapitalize="none" spellcheck="false" class="mt-1 w-full rounded-xl bg-[#040912] border border-[#334155] text-white p-3" placeholder="Ex.: candidato_pmdf" />
      </label>
      <label class="block text-slate-300 text-xs font-semibold">Senha
        <input id="account-password" type="password" autocomplete="current-password" required minlength="6" maxlength="72" class="mt-1 w-full rounded-xl bg-[#040912] border border-[#334155] text-white p-3" placeholder="Mínimo de 6 caracteres" />
      </label>
-     <label id="account-consent-wrap" class="hidden flex gap-2 text-slate-300 text-xs items-start"><input type="checkbox" id="account-consent" class="mt-1" /> <span>Concordo com o armazenamento do meu nome, minhas respostas, redações e progresso para uso da plataforma, conforme a <a class='underline text-[#E5C158]' href='privacidade.html' rel='noopener' target='_blank'>Política de Privacidade</a>.</span></label>
+     <p class="text-xs text-slate-400 leading-relaxed">Seus estudos serão associados ao usuário escolhido. Leia a <a class="underline text-[#E5C158]" href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>. Sem e-mail de recuperação, perder a senha pode tornar a conta inacessível.</p>
      <div class="flex flex-wrap gap-2 items-center"><button id="account-submit" type="submit" class="welcome-primary" style="padding:12px 20px">Entrar</button><button type="button" onclick="switchAccountMode()" id="account-switch" class="welcome-secondary" style="padding:12px 20px">Criar conta gratuita</button></div>
-     <p id="account-msg" role="status" aria-live="polite" class="text-xs text-slate-300">Verificando disponibilidade da conta online...</p><button id="account-retry" type="button" onclick="retryAccountConnection()" class="text-xs underline text-[#E5C158]" style="margin-top:8px">Verificar conexão do cadastro</button> <button type="button" onclick="recoverAccountPassword()" class="text-xs underline text-[#E5C158]" style="margin-left:12px">Esqueci minha senha</button>
+     <p id="account-msg" role="status" aria-live="polite" class="text-xs text-slate-300">Verificando disponibilidade da conta online...</p><button id="account-retry" type="button" onclick="retryAccountConnection()" class="text-xs underline text-[#E5C158]" style="margin-top:8px">Verificar conexão do cadastro</button>
    </form>
    <div id="account-ready" class="hidden text-sm text-[#E5C158] font-semibold">✅ <span id="account-who"></span> · <button type="button" onclick="logoutAccount()" class="underline">Sair da conta</button> · <button type="button" onclick="confirmDeleteAccount()" class="underline text-rose-300">Excluir conta e dados</button></div>
    <div class="welcome-actions" id="welcome-study-actions" hidden>
@@ -2011,9 +2008,6 @@
                     </label>
                     <label class="text-xs text-[#E5C158] font-semibold">Banca para busca automática
                         <select id="q-board" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option>Cebraspe</option><option>FGV</option><option>FCC</option><option>Vunesp</option><option>Iades</option><option>Idecan</option><option>AOCP</option><option>Cesgranrio</option><option>Quadrix</option><option value="todas">Todas</option></select>
-                    </label>
-                    <label class="text-xs text-[#E5C158] font-semibold">Assunto específico
-                        <input id="q-topic" maxlength="100" placeholder="Opcional: tema, disciplina ou artigo" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"/>
                     </label>
                     <label class="text-xs text-[#E5C158] font-semibold">Ano inicial das provas
                         <input id="q-year" type="number" min="2000" max="2030" value="2024" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"/>
@@ -4548,7 +4542,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             toast('Filtros do mapeador limpos.','ok');
         }
         function clearQuestionFilters(){
-            $('q-source').value='current';$('q-format').value='CE';$('q-level').value='intermediario';$('q-count').value='30';$('q-board').value='Cebraspe';$('q-year').value='2024';$('q-topic').value='';
+            $('q-source').value='current';$('q-format').value='CE';$('q-level').value='intermediario';$('q-count').value='30';$('q-board').value='Cebraspe';$('q-year').value='2024';
             $('q-status').textContent='Filtros limpos.';$('q-panel').classList.add('hidden');Q_STATE=null;
         }
         function clearAnkiFilters(){
@@ -4588,7 +4582,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             }catch(e){return toast('Não foi possível gerar questões: '+e.message,'error');}
             // Busca automática: consulta fontes após aplicar filtros, sem controles manuais de pesquisa.
             // Só acrescenta enunciados externos com permissão documentada e gabarito validado.
-            try{const extras=location.hostname.endsWith('.github.io')?[]:await fetchAutoQuestions({board:$('q-board').value,topic:$('q-topic').value.trim()||guides[0]?.lawName||'legislação policial',year:Number($('q-year').value),format:fmt,limit:value});
+            try{const extras=location.hostname.endsWith('.github.io')?[]:await fetchAutoQuestions({board:$('q-board').value,topic:guides[0]?.lawName||'legislação policial',year:Number($('q-year').value),format:fmt,limit:value});
                 if(!imported)pool=shuffle(uniqueQuestions([...extras.filter(q=>q.difficulty===lvl),...pool].filter(questionIsComplete)));
                 // Os itens importados de fontes externas sem conteúdo integral são descartados.
             }catch(e){$('research-status').textContent='Pesquisa externa indisponível. Exercícios locais continuam funcionando.';}
@@ -4797,13 +4791,18 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             $('account-title').textContent=ACCOUNT_MODE==='register'?'Criar conta gratuita':'Acessar meus estudos';
             $('account-switch').textContent=ACCOUNT_MODE==='register'?'Já tenho uma conta':'Criar conta gratuita';
             $('account-submit').textContent=ACCOUNT_MODE==='register'?'Cadastrar':'Entrar';
-            $('account-display-wrap').classList.toggle('hidden',ACCOUNT_MODE!=='register');$('account-consent-wrap').classList.toggle('hidden',ACCOUNT_MODE!=='register');
             $('account-password').autocomplete=ACCOUNT_MODE==='register'?'new-password':'current-password';$('account-password').minLength=6;
         }
         // Supabase Auth + PostgREST; somente a chave PUBLICÁVEL aparece no frontend.
         const SB_URL='https://wskuhkvgipqwykbnuspk.supabase.co';
         const SB_KEY='sb_publishable_GD37Y7cVTTKo74Vg5_5U1g_lyoqwcvH';
         const SB_SESSION_KEY='pmdf:supabase:session:v1';
+        // Identificador interno determinístico: não envia nem utiliza e-mail real.
+        // O domínio .invalid é reservado; nunca recebe e-mail de confirmação/recuperação.
+        const PMDF_USER_DOMAIN='users.metodopmdf.invalid';
+        const normalizeUsername=v=>String(v||'').trim().toLowerCase();
+        const usernameIsValid=v=>/^[a-z0-9][a-z0-9._-]{2,23}$/.test(v);
+        const usernameToLoginEmail=v=>normalizeUsername(v)+'@'+PMDF_USER_DOMAIN;
         const SB_REDIRECT_URL='https://caioveloso.github.io/metodo-pmdf/';
         let SB_SESSION=null,SB_REFRESH=null;
         const PMDF_RELEASE='2026-11-02-r2';
@@ -4837,7 +4836,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             try{return await sbCall(path,options,token);}
             catch(e){if(/jwt expired|invalid jwt|token.*expired/i.test(e.message)){await refreshSbSession();return sbCall(path,options,SB_SESSION.access_token);}throw e;}
         }
-        function sbUser(user){return {username:user.id,displayName:user.user_metadata?.display_name||user.email||'Candidato',email:user.email};}
+        function sbUser(user){const internalName=user.user_metadata?.username||(user.email||'').split('@')[0];return {username:user.id,displayName:internalName||'Candidato',email:null};}
         async function accountFetch(endpoint,options={}){
             if(endpoint!=='progresso')throw Error('Rota não suportada.');
             const uid=AUTH_USER?.username;if(!uid)throw Error('Entre na sua conta.');
@@ -4856,12 +4855,6 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             try{await sbCall('/auth/v1/settings');$('account-msg').textContent='Supabase conectado. Entre ou crie sua conta.';cloudStatus('✓ Cadastro online disponível');}
             catch(e){$('account-msg').textContent='Falha na conexão: '+e.message;}
             finally{b.disabled=false;}
-        }
-        async function recoverAccountPassword(){
-            const email=$('account-name').value.trim();
-            if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return $('account-msg').textContent='Informe seu e-mail no campo acima antes de recuperar a senha.';
-            try{await sbCall('/auth/v1/recover?redirect_to='+encodeURIComponent(SB_REDIRECT_URL),{method:'POST',body:JSON.stringify({email})});$('account-msg').textContent='Se o e-mail estiver cadastrado, você receberá instruções de recuperação.';}
-            catch(e){$('account-msg').textContent=e.message;}
         }
         async function finishAccountSignIn(){
             // Cadastro pode ter dado certo mesmo quando a leitura do histórico está temporariamente fora do ar.
@@ -4902,7 +4895,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 const authError=hash.get('error_description')||query.get('error_description')||hash.get('error')||query.get('error');
                 if(authError){
                     history.replaceState(null,'',location.pathname);
-                    message.textContent='Não foi possível confirmar o e-mail: '+authError+'. Solicite um novo link de confirmação, se necessário.';
+                    message.textContent='Não foi possível concluir a autenticação: '+authError+'. Solicite um novo link de confirmação, se necessário.';
                     return;
                 }
                 const tokenHash=query.get('token_hash'),type=query.get('type');
@@ -4913,7 +4906,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     if(result.access_token&&result.refresh_token){
                         saveSbSession(result);
                     }else{
-                        message.textContent='E-mail confirmado. Faça login com seu e-mail e senha.';
+                        message.textContent='Conta confirmada. Faça login com seu usuário e senha.';
                         return;
                     }
                 }else if(hash.get('access_token')&&hash.get('refresh_token')){
@@ -4924,7 +4917,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     catch(e){saveSbSession(null);}
                 }
                 if(!SB_SESSION){
-                    message.textContent='Cadastro online disponível. Entre com seu e-mail ou crie uma conta gratuita.';
+                    message.textContent='Cadastro online disponível. Entre com seu usuário e senha ou crie uma conta gratuita.';
                     return;
                 }
                 const user=await sbAuthed('/auth/v1/user');
@@ -4933,24 +4926,36 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             }catch(e){
                 saveSbSession(null);AUTH_USER=null;
                 history.replaceState(null,'',location.pathname);
-                message.textContent='Falha ao validar confirmação: '+(e.message||'Erro desconhecido')+'. Verifique o link ou entre com sua senha caso o e-mail já esteja confirmado.';
+                message.textContent='Falha ao validar o acesso: '+(e.message||'Erro desconhecido')+'. Verifique o link ou entre com sua senha caso o e-mail já esteja confirmado.';
             }
         }
         async function submitAccount(event){
-            event.preventDefault();const button=$('account-submit'),status=$('account-msg');if(button.disabled)return;
-            const email=$('account-name').value.trim(),password=$('account-password').value;
-            if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){status.textContent='Informe um e-mail válido.';return;}
+            event.preventDefault();
+            const button=$('account-submit'),status=$('account-msg');
+            if(button.disabled)return;
+            const username=normalizeUsername($('account-name').value),password=$('account-password').value;
+            if(!usernameIsValid(username)){status.textContent='Use de 3 a 24 caracteres: letras sem acento, números, ponto, hífen ou sublinhado; comece por letra ou número.';return;}
             if(password.length<6||password.length>72){status.textContent='Informe uma senha de 6 a 72 caracteres.';return;}
-            button.disabled=true;status.textContent='Aguarde: autenticando...';
+            button.disabled=true;status.textContent='Conectando ao cadastro online...';
+            const internalEmail=usernameToLoginEmail(username);
             try{
                 let result;
                 if(ACCOUNT_MODE==='register'){
-                    if(!$('account-consent').checked)throw Error('Confirme a Política de Privacidade.');
-                    result=await sbCall('/auth/v1/signup?redirect_to='+encodeURIComponent(SB_REDIRECT_URL),{method:'POST',body:JSON.stringify({email,password,data:{display_name:$('account-display').value.trim(),privacy_consent:true}})});
-                    if(!result.access_token){status.textContent='Cadastro solicitado. Confirme seu e-mail para ativar a conta e depois faça login.';switchAccountMode();return;}
-                }else result=await sbCall('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password})});
-                saveSbSession(result);AUTH_USER=sbUser(result.user);$('account-password').value='';await finishAccountSignIn();
-            }catch(e){status.textContent=e.message;}finally{button.disabled=false;}
+                    result=await sbCall('/auth/v1/signup',{method:'POST',body:JSON.stringify({email:internalEmail,password,data:{username,display_name:username}})});
+                    if(!result.access_token||!result.user)throw Error('O Supabase está exigindo confirmação de e-mail. Desative Confirm email em Authentication → Sign In / Providers → Email e tente novamente. Nenhum e-mail de confirmação pode ser entregue a contas com identificador interno.');
+                }else{
+                    result=await sbCall('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email:internalEmail,password})});
+                }
+                if(!result.user?.id||!result.access_token)throw Error('Não foi possível obter uma sessão autenticada.');
+                saveSbSession(result);AUTH_USER=sbUser(result.user);$('account-password').value='';
+                await finishAccountSignIn();
+            }catch(e){
+                let msg=e.message||'Falha no cadastro.';
+                if(/invalid email|email address is invalid|email not valid/i.test(msg))msg='O provedor não aceitou o identificador interno sem e-mail. Será necessário configurar autenticação própria no servidor.';
+                else if(/user already registered|already been registered/i.test(msg))msg='Este nome de usuário já está cadastrado. Escolha outro ou faça login.';
+                else if(/invalid login credentials/i.test(msg))msg='Usuário ou senha incorretos.';
+                status.textContent=msg;
+            }finally{button.disabled=false;}
         }
         function confirmDeleteAccount(){
             openModal('Excluir meus dados','<p class="text-sm text-slate-200">É possível excluir seu histórico de estudos. A exclusão permanente da conta de autenticação requer um processo administrativo seguro no servidor. Nunca compartilhe sua senha com terceiros.</p><button type="button" onclick="deleteAccountSubmit()" class="mt-3 rounded-xl bg-rose-800 text-white px-4 py-2 font-bold">Excluir meu histórico online</button>');
