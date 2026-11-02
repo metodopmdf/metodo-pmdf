@@ -2655,9 +2655,7 @@ body .pmdf-more-laws-grid .law-shortcut-btn.pmdf-law-selected{
                     <label class="text-xs text-[#E5C158] font-semibold">Ano inicial das provas
                         <input id="q-year" type="number" min="2000" max="2030" value="2024" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"/>
                     </label>
-                    <label class="text-xs text-[#E5C158] font-semibold">Quantidade de questões (até 500)
-                        <input id="q-count" type="number" min="1" max="500" step="1" value="500" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]" />
-                    </label>
+                    
                 </div>
                 <div class="flex gap-2 flex-wrap"><button type="button" onclick="startQuestions()" class="px-5 py-2.5 rounded-xl bg-[#D4AF37] text-[#050B16] font-extrabold">Gerar e iniciar questões</button>
                     <button type="button" onclick="clearQuestionFilters()" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">↺ Limpar filtros</button>
@@ -2681,8 +2679,7 @@ body .pmdf-more-laws-grid .law-shortcut-btn.pmdf-law-selected{
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <label class="text-xs text-[#E5C158] font-semibold">Material / lei
                         <select id="anki-source" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="current">Conteúdo selecionado / enviado</option><option value="all">Todas as leis cadastradas</option></select></label>
-                    <label class="text-xs text-[#E5C158] font-semibold">Máximo de cartões por sessão
-                        <input id="anki-count" type="number" min="1" max="300" value="20" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"/></label>
+                    
                     <label class="text-xs text-[#E5C158] font-semibold">Tipo de revisão
                         <select id="anki-mode" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="due">Vencidos e novos</option><option value="all">Todos (treino livre)</option></select></label>
                 </div>
@@ -5512,8 +5509,6 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         async function startQuestions(){
             if(!AUTH_USER)return toast('Faça login para gerar questões.','error');
             const imported=$('q-source').value==='imported';const guides=imported?[]:pickStudyGuides('q');if(!imported&&!guides.length)return toast('Selecione uma norma ou envie conteúdo para gerar questões.','error');
-            const value=Number($('q-count').value);
-            if(!Number.isInteger(value)||value<1||value>500)return toast('Informe uma quantidade inteira entre 1 e 500.','error');
             const fmt=$('q-format').value,lvl=LEVELS_SAFE_LEVEL($('q-level').value),baseFmt=fmt==='CE'?'CE':'MC';
             let pool=[];
             try {
@@ -5535,9 +5530,9 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                   'Não há trechos completos para montar questões.';
                 return toast(message,'error');
             }
-            const taken=Math.min(value,pool.length);
+            const taken=pool.length;
             Q_STATE={items:pool.slice(0,taken),index:0,hits:0,wrong:0,blank:0,pending:0,answered:false,questionStart:Date.now()};saveStudySession();
-            $('q-status').textContent=(taken<value?'Foram encontradas '+taken+' questões distintas; o banco local não inventa itens extras. ':'')+'Fonte: '+(imported?'Provas importadas':guides.length===1?guides[0].lawName:guides.length+' leis')+' · '+taken+' questões · Nível: '+LEVELS[lvl].label+' · Critério: '+EXAMINER_RUBRIC[lvl].label+'.';
+            $('q-status').textContent=''+'Fonte: '+(imported?'Provas importadas':guides.length===1?guides[0].lawName:guides.length+' leis')+' · '+taken+' questões · Nível: '+LEVELS[lvl].label+' · Critério: '+EXAMINER_RUBRIC[lvl].label+'.';
             $('q-panel').classList.remove('hidden');drawQuestions();
             // O resultado externo já foi integrado antes de começar a sessão.
         }
@@ -5575,15 +5570,13 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         let ANKI_STATE=null;
         function startAnki(){
             const guides=pickStudyGuides('anki');if(!guides.length)return toast('Selecione um guia ou envie um conteúdo antes de revisar.','error');
-            const count=Number($('anki-count').value);
-            if(!Number.isInteger(count)||count<1||count>300)return toast('Informe de 1 a 300 cartões.','error');
             let cards=[];for(const g of guides){for(const card of buildStudyCards(g))cards.push({...card,law:g.lawName});}
             cards=[...new Map(cards.map(c=>[c.id,c])).values()];
             if($('anki-mode').value==='due')cards=cards.filter(c=>{const state=getCardBox(c.id);return !state.due||Date.now()>=state.due;});
             cards.sort((x,y)=>getCardBox(x.id).due-getCardBox(y.id).due);
-            ANKI_STATE={cards:cards.slice(0,count),index:0,seen:0,back:false,graded:null,correct:0,wrong:0};
+            ANKI_STATE={cards:cards,index:0,seen:0,back:false,graded:null,correct:0,wrong:0};
             saveStudySession();$('anki-panel').classList.remove('hidden');
-            $('anki-status').textContent=ANKI_STATE.cards.length+' cartões nesta revisão · '+LEVELS[LEVEL].label+' · Ao visualizar o verso e avançar, a próxima revisão é agendada automaticamente.';
+            $('anki-status').textContent='Revisão pronta · '+LEVELS[LEVEL].label+' · Avance para acompanhar o progresso dos cartões.';
             if(!ANKI_STATE.cards.length){$('anki-panel').innerHTML='<div class="g-card"><h3 class="font-bold text-[#E5C158]">Nenhum cartão vencido</h3><p class="mt-2 text-slate-300">Você está em dia. Se quiser continuar praticando, selecione “Todos (treino livre)”.</p></div>';return;}
             drawAnki();
         }
