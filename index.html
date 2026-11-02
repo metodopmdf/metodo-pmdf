@@ -5217,7 +5217,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                         // Uma associação propositalmente equivocada entre artigo e proposição.
                         const choice=item.head+' — '+other.sentence;
                         if(!seenOpts.has(choice)){seenOpts.add(choice);choices.push({text:choice,correct:false});}
-                        if(choices.length===5)break;
+                        if(choices.length>=requestedCount)break;
                     }
                 }
                 // Distratores por associação cruzada: outras regras verdadeiras do mesmo guia
@@ -5496,11 +5496,11 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             toast('Filtros do mapeador limpos.','ok');
         }
         function clearQuestionFilters(){
-            $('q-source').value='current';$('q-format').value='CE';$('q-level').value='intermediario';$('q-count').value='30';$('q-board').value='Cebraspe';$('q-year').value='2024';
+            $('q-source').value='current';$('q-format').value='CE';$('q-level').value='intermediario';$('q-board').value='Cebraspe';
             $('q-status').textContent='Filtros limpos.';$('q-panel').classList.add('hidden');Q_STATE=null;
         }
         function clearAnkiFilters(){
-            $('anki-source').value='current';$('anki-count').value='20';$('anki-mode').value='due';
+            $('anki-source').value='current';$('anki-mode').value='due';
             $('anki-status').textContent='Filtros limpos.';$('anki-panel').classList.add('hidden');ANKI_STATE=null;
         }
         function questionIsComplete(q){
