@@ -5526,7 +5526,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         }
         function uniqueQuestions(qs){
             const used=new Set();return qs.filter(q=>{
-                const sig=q.type+'|'+q.statement.trim();if(used.has(sig))return false;used.add(sig);return true;
+                const sig=q.type+'|'+q.statement.trim()+'|'+(q.type==='MC'?String(q.lawBasis||'')+'|'+(q.options||[]).slice().sort().join('¦'):'');if(used.has(sig))return false;used.add(sig);return true;
             });
         }
         function toFour(q){
