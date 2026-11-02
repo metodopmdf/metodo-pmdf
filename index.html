@@ -1945,6 +1945,8 @@ body .pmdf-mind-modal .mm-root{max-height:75vh;overflow:auto;scroll-behavior:smo
  body .mm-root section{break-before:auto}
 }
 </style>
+    <!-- Segurança real: controle de gravação no GitHub e permissões no Supabase; não é possível impedir cópia do HTML público. -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
 </head>
 <body class="landing-active min-h-screen flex flex-col font-sans antialiased selection:bg-[#D4AF37] selection:text-[#050B16]">
 
@@ -2268,10 +2270,7 @@ body .pmdf-mind-modal .mm-root{max-height:75vh;overflow:auto;scroll-behavior:smo
 
             <!-- Botões de Ação -->
             <div class="mt-5 pt-4 border-t border-[#172642] flex flex-wrap items-center justify-between gap-3">
-                <button onclick="openPromptModal()" class="px-4 py-2.5 rounded-xl bg-[#0E1B33] hover:bg-[#162646] text-slate-200 font-semibold text-xs sm:text-sm flex items-center gap-2 transition border border-[#1E2E4F]">
-                    <i data-lucide="terminal" class="w-4 h-4 text-[#E5C158]"></i>
-                    Ver / Copiar Prompt Pronto
-                </button>
+                
 
                 <button id="generate-btn" onclick="generateStrategicGuide()" class="px-6 py-2.5 rounded-xl font-extrabold text-sm flex items-center gap-2.5 transition transform active:scale-95 bg-gradient-to-r from-[#D4AF37] via-[#E5C158] to-[#C59B27] text-[#050B16] font-extrabold shadow-lg shadow-[#D4AF37]/15 hover:brightness-110">
                     <i data-lucide="sparkles" class="w-4 h-4 stroke-[2.5]"></i>
@@ -2449,7 +2448,7 @@ body .pmdf-mind-modal .mm-root{max-height:75vh;overflow:auto;scroll-behavior:smo
                 </details>
                 <label class="flex items-start gap-2 text-xs text-slate-400"><input id="essay-lt" type="checkbox" class="mt-0.5 accent-[#D4AF37]"><span>Opcional: consultar o LanguageTool online (serviço independente de terceiro). Ao ativar, você autoriza o envio da redação ao serviço externo; desmarcado, o processamento é local. A disponibilidade do serviço não é garantida.</span></label>
                 <div class="pt-4 border-t border-[#172642] flex flex-wrap justify-between gap-3">
-                    <button onclick="openPromptModal()" class="px-4 py-2.5 rounded-xl bg-[#0E1B33] hover:bg-[#162646] text-slate-200 font-semibold text-sm flex items-center gap-2 border border-[#1E2E4F]"><i data-lucide="terminal" class="w-4 h-4 text-[#E5C158]"></i>Ver / Copiar Prompt Pronto</button>
+                    
                     <button id="essay-btn" onclick="correctEssay()" class="px-6 py-2.5 rounded-xl font-extrabold text-sm flex items-center gap-2.5 transition active:scale-95 bg-gradient-to-r from-[#D4AF37] via-[#E5C158] to-[#C59B27] text-[#050B16] font-extrabold shadow-lg shadow-[#D4AF37]/15 hover:brightness-110"><i data-lucide="check-check" class="w-4 h-4"></i><span>Corrigir Redação</span></button>
                     <div id="essay-loading" class="hidden w-full text-sm text-[#E5C158] animate-pulse">⏳ Analisando a redação no padrão Cebraspe...</div>
                 </div>
@@ -4515,6 +4514,27 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 trapsAndJurisprudence:{examTraps:['Trocar o rol legal por uma avaliação subjetiva de gravidade: a classificação depende de previsão normativa.','Confundir crimes hediondos em sentido estrito com os equiparados (tortura, tráfico e terrorismo).','Art. 2º: a vedação à fiança não equivale, automaticamente, à proibição de toda liberdade provisória.','Prisão temporária: prazo de 30 dias, prorrogável por mais 30 dias em caso de extrema e comprovada necessidade.','Afirmar que o regime inicial fechado pode ser imposto automaticamente e sem fundamentação individualizada — observar a orientação constitucional do STF.'],jurisprudence:['STF: a imposição automática de regime inicial fechado aos condenados por crimes hediondos/equiparados, sem consideração individualizada das circunstâncias judiciais, não se compatibiliza com a individualização da pena.','A lei foi alterada em 2025; conferir a redação atual do art. 1º, inclusive a inclusão de hipóteses de lesões graves contra agentes públicos e outras categorias legalmente protegidas.']},
                 essayRepertoire:[{legalDevice:'Art. 5º, XLIII, da Constituição Federal e Lei nº 8.072/1990',themes:'Política criminal, proteção de agentes públicos, prevenção da violência e proporcionalidade das sanções.',modelSentence:'O tratamento jurídico dos crimes hediondos e equiparados deve articular a resposta penal reforçada prevista na Constituição e na Lei nº 8.072/1990 com as garantias do devido processo e da individualização da pena.'}]
             }
+        });
+
+
+        // Gavetas de seleção: retornam ao estado recolhido após a escolha.
+        // Preserva os onclicks existentes e a navegação por teclado.
+        document.addEventListener('click', function(e) {
+            const target=e.target;
+            if(!(target instanceof Element))return;
+            const choice=target.closest('.more-laws-drawer .law-shortcut-btn, .pmdf-account-menu button, .pmdf-account-menu a');
+            if(choice){
+                const drawer=choice.closest('details');
+                if(drawer)drawer.open=false;
+            }
+            document.querySelectorAll('.more-laws-drawer[open], .pmdf-account-menu[open]').forEach(drawer=>{
+                if(!drawer.contains(target))drawer.open=false;
+            });
+        });
+        document.addEventListener('keydown',function(e){
+            if(e.key==='Escape')document.querySelectorAll('.more-laws-drawer[open], .pmdf-account-menu[open]').forEach(drawer=>{
+                drawer.open=false;const summary=drawer.querySelector('summary');if(summary)summary.focus();
+            });
         });
 
         function setSourceMode(mode) {
