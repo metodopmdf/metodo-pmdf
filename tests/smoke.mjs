@@ -25,13 +25,14 @@ function createClient(fetchImpl=async()=>({ok:true,status:200,json:async()=>[]})
     if(!elements.has(id))elements.set(id,{
       id,value:defaults[id]??'',innerHTML:'',textContent:'',className:'',disabled:false,hidden:false,style:{},
       classList:{add(){},remove(){},toggle(){},contains(){return false}},
-      replaceChildren(){},scrollIntoView(){},addEventListener(){},setAttribute(){},append(){},
+      replaceChildren(){},scrollIntoView(){},addEventListener(){},setAttribute(){},append(){},appendChild(){},remove(){},
     });
     return elements.get(id);
   }
   const document={
     getElementById:$,addEventListener(){},querySelectorAll(){return []},
-    body:{classList:{add(){},remove(){},contains(){return false}},dataset:{}},
+    createElement(tag){return {tagName:tag,setAttribute(){},remove(){},textContent:'',className:'',style:{},appendChild(){},append(){}};},
+    body:{classList:{add(){},remove(){},contains(){return false}},dataset:{},appendChild(){}},
     documentElement:{style:{}}
   };
   const win={};
