@@ -3836,13 +3836,44 @@ body .pmdf-mind-modal .mm-root{max-height:75vh;overflow:auto;scroll-behavior:smo
 
         // ---------- Seleção e geração ----------
         function markShortcut(key) {
-            document.querySelectorAll('.law-shortcut-btn').forEach(b => { const on = b.id === 'btn-law-' + key;
-                b.className = 'law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg transition border ' + (on ? 'bg-[#D4AF37] text-[#050B16] font-bold border-[#E5C158]' : 'bg-[#0E1B33] text-slate-300 font-medium border-[#1E2E4F] hover:border-[#D4AF37]/60'); });
+            document.querySelectorAll('.law-shortcut-btn').forEach(b => {
+                const active=b.id==='btn-law-'+key;
+                b.classList.toggle('pmdf-law-selected',active);
+                b.classList.toggle('font-bold',active);
+                b.classList.toggle('font-medium',!active);
+                b.classList.toggle('bg-[#D4AF37]',active);
+                b.classList.toggle('text-[#050B16]',active);
+                b.classList.toggle('border-[#E5C158]',active);
+                b.classList.toggle('bg-[#0E1B33]',!active);
+                b.classList.toggle('text-slate-300',!active);
+                b.classList.toggle('border-[#1E2E4F]',!active);
+                b.setAttribute('aria-pressed',String(active));
+            });
         }
         function selectAndLoadLaw(key,url){
-            setSourceMode('url');$('law-input').value=url||lawUrlForKey(key);$('filter-input').value='';markShortcut(key);
-            if(BUILTIN_PMDF_GUIDES[key]){CUR={key,guide:BUILTIN_PMDF_GUIDES[key],_poolCache:Object.create(null)};store.set('lastKey',key);renderGuide(CUR.guide);saveStudySession();}
-            else{toast('Esta lei não está no banco interno: vou tentar baixar o texto pelo link e analisá-lo.');generateStrategicGuide();}
+            setSourceMode('url');
+            const chosen=url||lawUrlForKey(key);
+            $('law-input').value=chosen;
+            $('law-input').dispatchEvent(new Event('change',{bubbles:true}));
+            $('filter-input').value='';
+            markShortcut(key);
+            const drawer=document.querySelector('.more-laws-drawer');
+            if(drawer)drawer.open=false;
+            if($('q-source'))$('q-source').value='current';
+            if($('anki-source'))$('anki-source').value='current';
+            if($('q-panel'))$('q-panel').classList.add('hidden');
+            if($('q-status'))$('q-status').textContent='Norma selecionada: '+(BUILTIN_PMDF_GUIDES[key]?.lawName||key)+'. Gere um novo simulado.';
+            Q_STATE=null;
+            if(BUILTIN_PMDF_GUIDES[key]){
+                CUR={key,guide:BUILTIN_PMDF_GUIDES[key],_poolCache:Object.create(null)};
+                store.set('lastKey',key);
+                renderGuide(CUR.guide);
+                markShortcut(key);
+                saveStudySession();
+            }else{
+                toast('Buscando conteúdo da norma selecionada...');
+                generateStrategicGuide();
+            }
         }
         // ---------- Modal genérico ----------
         function openModal(t, h) { $('gen-title').textContent = t; $('gen-body').innerHTML = h; $('gen-modal').classList.replace('hidden', 'flex'); if(window.lucide)lucide.createIcons(); }
@@ -4848,12 +4879,15 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                         if(choices.length===5)break;
                     }
                 }
-                if(choices.length===5){
-                    const options=shuffle(choices),answer='ABCDE'[options.findIndex(x=>x.correct)];
+                // São aceitas 4 ou 5 opções fundamentadas, nunca distratores artificiais.
+                // O enunciado associativo identifica a correspondência dispositivo/conteúdo.
+                if(choices.length>=4){
+                    const options=shuffle(choices.slice(0,5)),answer='ABCDE'[options.findIndex(x=>x.correct)];
                     mc.push({...base,type:'MC',statement:examItemStyle(level,'MC',bank,item.head,true),
-                       options:options.map(x=>x.text),answer,
-                       explanation:'Gabarito '+answer+'. A associação correta identifica '+item.head+'. As alternativas incorretas modificam a proposição ou associam a afirmação a outro dispositivo. '+explanation(item,null),
-                       easyTip:'Compare dispositivo, conteúdo e eventuais mudanças de sentido.'});
+                        options:options.map(x=>x.text),answer,
+                        explanation:'Gabarito '+answer+'. A correspondência correta é '+item.head+
+                        '. As demais opções alteram um elemento do texto ou associam a proposição a outro dispositivo. '+explanation(item,null),
+                        easyTip:'Compare a referência legal com a proposição e confira a literalidade da norma.'});
                 }
             }
             return fmt==='MC'?mc:ce;
@@ -5128,7 +5162,25 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 pool=shuffle(uniqueQuestions(pool.filter(questionIsComplete)));
             }catch(e){return toast('Não foi possível gerar questões: '+e.message,'error');}
             // A hospedagem estática trabalha com questões locais e provas importadas.
-            if(fmt==='MC4')pool=pool.map(toFour);if(imported&&fmt!=='CE')pool=pool.filter(q=>Array.isArray(q.options)&&q.options.length===(fmt==='MC4'?4:5));
+            if(fmt==='MC4')pool=pool.map(toFour);
+            if(!imported&&baseFmt==='MC')pool=pool.filter(q=>q.type==='MC'&&Array.isArray(q.options)&&(fmt==='MC4'?q.options.length===4:q.options.length===5));
+            if(imported&&fmt!=='CE')pool=pool.filter(q=>Array.isArray(q.options)&&q.options.length===(fmt==='MC4'?4:5));
+            if(!imported&&!pool.length&&baseFmt==='MC'){
+                const four=[];
+                for(const g of guides)four.push(...questionPool(g,'MC',lvl).filter(q=>q.options.length===4).map(q=>({...q,law:g.lawName})));
+                if(four.length){
+                    pool=shuffle(uniqueQuestions(four.filter(questionIsComplete)));
+                    if($('q-format'))$('q-format').value='MC4';
+                    toast('Esta norma possui 4 alternativas fundamentadas por questão. Formato ajustado automaticamente.','ok');
+                }else{
+                    for(const g of guides)pool.push(...questionPool(g,'CE',lvl).map(q=>({...q,law:g.lawName})));
+                    pool=shuffle(uniqueQuestions(pool.filter(questionIsComplete)));
+                    if(pool.length){
+                        if($('q-format'))$('q-format').value='CE';
+                        toast('Não há alternativas verificáveis suficientes; iniciando Certo/Errado sem inventar distratores.','ok');
+                    }
+                }
+            }
             if(!pool.length)return toast(imported?'Nenhuma questão importada no formato escolhido. Importe prova ou altere o filtro.':baseFmt==='MC'?'Não foi possível construir 5 alternativas verificáveis para esta norma. Tente Certo/Errado ou “Todas as leis”.':'O material não possui trechos completos para gerar questões.','error');
             const taken=Math.min(value,pool.length);
             Q_STATE={items:pool.slice(0,taken),index:0,hits:0,wrong:0,blank:0,pending:0,answered:false,questionStart:Date.now()};saveStudySession();
