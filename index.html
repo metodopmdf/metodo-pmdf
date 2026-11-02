@@ -4566,8 +4566,8 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             }catch(e){return toast('Não foi possível gerar questões: '+e.message,'error');}
             // Busca automática: consulta fontes após aplicar filtros, sem controles manuais de pesquisa.
             // Só acrescenta enunciados externos com permissão documentada e gabarito validado.
-            try{const extras=await fetchAutoQuestions({board:$('q-board').value,topic:$('q-topic').value.trim()||guides[0]?.lawName||'legislação policial',year:Number($('q-year').value),format:fmt,limit:value});
-                if(!imported)pool=shuffle(uniqueQuestions([...extras,...pool].filter(questionIsComplete)));
+            try{const extras=location.hostname.endsWith('.github.io')?[]:await fetchAutoQuestions({board:$('q-board').value,topic:$('q-topic').value.trim()||guides[0]?.lawName||'legislação policial',year:Number($('q-year').value),format:fmt,limit:value});
+                if(!imported)pool=shuffle(uniqueQuestions([...extras.filter(q=>q.difficulty===lvl),...pool].filter(questionIsComplete)));
                 // Os itens importados de fontes externas sem conteúdo integral são descartados.
             }catch(e){$('research-status').textContent='Pesquisa externa indisponível. Exercícios locais continuam funcionando.';}
             if(fmt==='MC4')pool=pool.map(toFour);if(imported&&fmt!=='CE')pool=pool.filter(q=>Array.isArray(q.options)&&q.options.length===(fmt==='MC4'?4:5));
