@@ -18,7 +18,7 @@ function createClient(fetchImpl=async()=>({ok:true,status:200,json:async()=>[]})
     removeItem:k=>map.delete(k),key:i=>[...map.keys()][i],get length(){return map.size}
   };
   const defaults={
-    'q-source':'current','q-format':'CE','q-level':'intermediario','q-count':'5','q-board':'Cebraspe','q-year':'2024',
+    'q-source':'current','q-format':'CE','q-level':'intermediario','q-count':'500','q-board':'Cebraspe','q-year':'2024',
     'anki-source':'current','anki-count':'5','anki-mode':'due','results-topic':'*','essay-lines':'30'
   };
   function $(id){
