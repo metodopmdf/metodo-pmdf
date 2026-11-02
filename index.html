@@ -3854,10 +3854,118 @@ body[data-theme="light"] #q-panel,body[data-theme="light"] #anki-panel{
         }
         const ascii = (n, p = '', top = true) => (top ? n.t + '\n' : '') + n.c.map((c, i) => { const l = i === n.c.length - 1; return p + (l ? '└── ' : '├── ') + c.t + '\n' + ascii(c, p + (l ? '    ' : '│   '), false); }).join('');
         const mdOut = (n, d = 0) => (d ? '  '.repeat(d - 1) + '- ' + n.t + '\n' : '# ' + n.t + '\n') + n.c.map(c => mdOut(c, d + 1)).join('');
+        // Mapa mental editorial baseado nas características visíveis do PDF de referência.
+        // Não existe prompt embutido no PDF: o texto abaixo reconstrói seu padrão visual.
+        const PMDF_MIND_TEMPLATE=Object.freeze({
+            name:'Mapa de estudo em infográfico',
+            source:'Referência visual: Direito Penal - Outro Turno.pdf',
+            layout:'Cartaz de leitura vertical, núcleo central, ramos numerados e síntese final.',
+            maxBranches:4
+        });
+        function pmdfMindEntries(guide,sourceRows){
+            const g=guide||{},S=g.executiveSummary||{},X=g.structuralXRay||{},A=g.articlesMapping||{};
+            const rows=Array.isArray(sourceRows)?sourceRows:[
+                ...safeArray(A.highIncidence),...safeArray(A.mediumIncidence),...safeArray(A.lowIncidence)
+            ];
+            const list=[],used=new Set();
+            const plain=v=>String(v??'').replace(/\s+/g,' ').trim();
+            const append=(heading,body,example,tag)=>{
+                const title=plain(heading),content=plain(body),hint=plain(example);
+                if(content.length<25)return;
+                const key=(title+'|'+content).toLocaleLowerCase('pt-BR');
+                if(used.has(key))return;used.add(key);
+                list.push({heading:title||'Conceito fundamental',body:content,example:hint,tag:plain(tag)});
+            };
+            for(const row of rows){
+                append(row.article||row.title||row.topic||row.name,
+                    row.plainExplanation||row.explanation||row.reason||row.content,
+                    row.practicalExample||row.example,row.incidence||row.priority);
+            }
+            if(list.length<3){
+                for(const x of [...safeArray(X.highPriority),...safeArray(X.secondaryPriority)]){
+                    if(typeof x==='string')append('Ponto-chave',x,'','Tema prioritário');
+                    else append(x.title||x.article,x.reason||x.explanation||x.description,'','Tema prioritário');
+                }
+            }
+            if(list.length<3)for(const [i,x] of safeArray(S.keyConcepts).entries())
+                append('Conceito '+(i+1),x,'','Conceito');
+            if(!list.length){
+                const raw=plain(g.sourceText||g.rawText||g.fullText||g.originalText||
+                    $('law-text')?.value||$('law-file-preview')?.value||S.centralObjective);
+                const parts=raw.split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ0-9])/).filter(t=>t.length>=30);
+                for(const [i,p] of parts.entries())append('Ponto '+(i+1),p,'','Texto fornecido');
+            }
+            if(!list.length&&S.centralObjective)append('Ideia central',S.centralObjective,'','Objetivo');
+            return list;
+        }
+        function pmdfMindPrompt(guide){
+            const g=guide||CUR.guide||{},S=g.executiveSummary||{};
+            const source=pmdfMindEntries(g);
+            const excerpts=source.map((a,i)=>(i+1)+'. '+a.heading+'\nREGRA: '+a.body+
+                (a.example?'\nAPLICAÇÃO: '+a.example:'')).join('\n\n');
+            return [
+                'PROMPT-MESTRE — MAPA MENTAL INFOGRÁFICO DIDÁTICO',
+                'Atue como designer editorial especializado em mapas visuais de estudo e organização fiel de material jurídico ou acadêmico.',
+                'Use exclusivamente os dados fornecidos abaixo. Produza um infográfico em português, inspirado na linguagem visual dos mapas didáticos do PDF Direito Penal - Outro Turno.',
+                'DIREÇÃO DE ARTE: cartaz vertical de fundo papel marfim claro com textura envelhecida discreta; título enorme em preto e vermelho escuro, letras robustas; pequenos ícones conceituais em estilo gravura; núcleo central com assunto e ilustração simbólica; ramificações numeradas em boxes com bordas desenhadas em preto, vermelho, verde e azul; linhas/setas curvas ligando os temas; quadro comparativo quando houver duas regras contrastantes; legenda final de revisão rápida. Não copiar imagens específicas da apostila.',
+                'ESTRUTURA: cabeçalho com título e pergunta orientadora; núcleo central; quatro blocos numerados por página em grade 2×2; dentro de cada bloco, reproduza fielmente a definição/regra, requisito, consequência e exemplo somente se presentes no texto; abaixo, faixa REVISÃO RÁPIDA com até três conclusões extraídas da fonte. Se houver mais de quatro tópicos, crie páginas adicionais do mesmo modelo.',
+                'ADAPTAÇÃO AO NÍVEL: iniciante = linguagem direta e conceitos; intermediário = requisitos e comparações; avançado = condicionantes e exceções comprovadas na fonte. Aumentar a profundidade pela seleção do conteúdo, jamais inventando dados.',
+                'LEGIBILIDADE OBRIGATÓRIA: textos completos e revisados; nenhuma palavra cortada; sem reticências; letras grandes com bom contraste; prioridade máxima à precisão e ao espaço de leitura; aumente a altura da página se necessário.',
+                'FIDELIDADE: não inventar artigos, prazos, penas, jurisprudência, percentuais, exemplos ou interpretações; excluir itens que não estejam fundamentados no conteúdo enviado; não simular confirmação em fonte oficial.',
+                'TEMA: '+(g.lawName||'Tema selecionado'),
+                'NÍVEL SELECIONADO: '+(LEVELS[LEVEL]?.label||LEVEL),
+                'CONCEITO CENTRAL: '+(S.centralObjective||'Organizar visualmente o material fornecido'),
+                'MATERIAL DA FONTE:\n'+(excerpts||'Insira o texto de origem antes de gerar o mapa.'),
+                'SAÍDA ESPERADA: mapa mental visual diagramado, com ramificações numeradas, setas, caixas completas, revisão rápida e linguagem legível.'
+            ].join('\n\n');
+        }
+        function pmdfMindHtml(guide,sourceRows){
+            const g=guide||{},S=g.executiveSummary||{},items=pmdfMindEntries(g,sourceRows),max=PMDF_MIND_TEMPLATE.maxBranches;
+            const subject=String(g.lawName||'Tema de estudo');
+            const central=String(S.centralObjective||'Conceitos e relações extraídos do material');
+            const colors=['red','green','blue','ochre'];
+            const icons=['⚖','◈','⌁','✦'];
+            if(!items.length)return '<div class="pmdf-mind-empty">O material não contém trechos suficientes para montar ramificações verificáveis. Cole um texto ou envie um documento com conteúdo.</div>';
+            const sheets=[];
+            for(let offset=0;offset<items.length;offset+=max){
+                const group=items.slice(offset,offset+max),number=1+Math.floor(offset/max);
+                const nodes=group.map((x,i)=>{
+                    const n=offset+i+1,color=colors[i%4];
+                    return '<article class="pmdf-mind-branch mind-node pmdf-mind-'+color+'">'+
+                        '<header class="pmdf-mind-branch-head"><span class="pmdf-mind-num">'+String(n).padStart(2,'0')+'</span>'+
+                        '<span class="pmdf-mind-branch-title">'+esc(x.heading)+'</span><span aria-hidden="true" class="pmdf-mind-icon">'+icons[i%4]+'</span></header>'+
+                        '<div class="pmdf-mind-branch-content"><p>'+esc(x.body)+'</p>'+
+                        (x.example?'<div class="pmdf-mind-example"><strong>APLICAÇÃO NA FONTE</strong><p>'+esc(x.example)+'</p></div>':'')+
+                        (x.tag?'<small class="pmdf-mind-tag">'+esc(x.tag)+'</small>':'')+
+                        '</div></article>';
+                }).join('');
+                const takeaways=group.slice(0,3).map((x,i)=>
+                    '<div class="pmdf-mind-takeaway"><span>'+String(i+1).padStart(2,'0')+'</span>'+
+                    '<strong>'+esc(x.heading)+'</strong></div>').join('');
+                sheets.push('<section class="pmdf-mind-sheet" aria-label="Mapa mental de '+esc(subject)+' · página '+number+'">'+
+                    '<div class="pmdf-mind-paper-top"><div class="pmdf-mind-corner">MÉTODO PMDF <span>• VISUAL</span></div>'+
+                    '<div class="pmdf-mind-title">'+esc(subject)+'</div>'+
+                    '<p class="pmdf-mind-question">QUAIS SÃO AS REGRAS E CONEXÕES ESSENCIAIS?</p></div>'+
+                    '<div class="pmdf-mind-core"><div class="pmdf-mind-core-glyph" aria-hidden="true">⚖</div>'+
+                    '<div><span>IDEIA CENTRAL</span><p>'+esc(central)+'</p></div></div>'+
+                    '<div class="pmdf-mind-branches">'+nodes+'</div>'+
+                    '<div class="pmdf-mind-review"><div class="pmdf-mind-review-title">REVISÃO RÁPIDA <span>✓</span></div>'+
+                    '<div class="pmdf-mind-review-items">'+takeaways+'</div></div>'+
+                    '<footer class="pmdf-mind-footer">MÉTODO PMDF · '+esc(LEVELS[LEVEL]?.label||LEVEL)+' · MAPA '+number+'/'+Math.ceil(items.length/max)+
+                    ' <span>Base: material carregado pelo candidato</span></footer></section>');
+            }
+            return '<div class="pmdf-mind-collection">'+sheets.join('')+'</div>';
+        }
         function openMindMap(){
             if(!CUR.guide)return toast('Carregue um guia antes de abrir o mapa mental.','error');
-            const tree=mmTree(CUR.guide);window._mm=[ascii(tree),mdOut(tree)];
-            openModal('🌳 Mapa mental em árvore',`<pre class="bg-[#040912] border border-[#172642] rounded-xl p-3 text-xs overflow-x-auto whitespace-pre font-mono">${esc(window._mm[0])}</pre><div class="flex flex-wrap gap-2"><button onclick="copyText(_mm[0])" class="${BTN}">Copiar árvore</button><button onclick="copyText(_mm[1])" class="${BTN}">Copiar Markdown (Notion / XMind)</button></div>`);
+            const g=CUR.guide,tree=mmTree(g);
+            window._mm=[ascii(tree),mdOut(tree)];
+            window._mmPrompt=pmdfMindPrompt(g);
+            openModal('🧭 Mapa mental visual', '<div class="pmdf-mind-modal">'+
+                '<div class="pmdf-mind-actions"><button onclick="copyText(window._mmPrompt)" class="'+BTN+'">Copiar prompt do modelo</button>'+
+                '<button onclick="copyText(window._mm[1])" class="'+BTN+'">Copiar estrutura Markdown</button>'+
+                '<button onclick="copyText(window._mm[0])" class="'+BTN+'">Copiar árvore textual</button></div>'+
+                pmdfMindHtml(g,getVisibleArticleRows(g))+'</div>');
         }
 
         // ---------- 5. Simulador Certo/Errado + Caderno de Erros ----------
@@ -4726,9 +4834,8 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             }else if(SUMMARY_FORMAT==='table'){
                 body=intro+wrap('Quadro Sinótico — Regra, prazo, sanção e exceções','<div style="overflow-x:auto"><table><thead><tr><th>Dispositivo/Tópico</th><th>Regra Central / Conduta</th><th>Prazos / Quantitativos / Sanções</th><th>Exceções e Termos Restritivos</th></tr></thead><tbody>'+rows.map(a=>'<tr><td>'+esc(a.article)+'</td><td>'+esc(firstSentences(a.plainExplanation,280))+'</td><td>'+esc([...(a.plainExplanation.match(PRAZO)||[]),...(a.plainExplanation.match(PENA)||[])].join('; ')||'—')+'</td><td>'+esc(uniq(a.plainExplanation.match(RESTR)||[]).join('; ')||'—')+'</td></tr>').join('')+'</tbody></table></div>');
             }else if(SUMMARY_FORMAT==='mind'){
-                const branches=rows.map(a=>'<div class="mind-child"><div class="mind-node"><b>'+esc(a.article)+'</b><p>'+esc(firstSentences(a.plainExplanation,220))+'</p><span class="g-tag">Regra / '+a.incidence+'</span><div class="mind-child"><div class="mind-node"><b>Exemplo / alerta</b><p>'+esc(a.practicalExample)+'</p><p class="g-ex">'+esc(uniq(a.plainExplanation.match(RESTR)||[]).join(', ')||'Sem termo restritivo detectado no bloco')+'</p></div></div></div></div>').join('');
-                const tree=[g.lawName,...rows.map(a=>'  ├─ '+a.article+'\n  │  ├─ Regra: '+firstSentences(a.plainExplanation,150)+'\n  │  └─ Alerta: '+(uniq(a.plainExplanation.match(RESTR)||[]).join(', ')||'verificar exceções'))].join('\n');
-                body=intro+wrap('Mapa Mental Estruturado','<div class="mind-node text-center"><b>🎯 '+esc(g.lawName)+'</b><p>'+esc(firstSentences(S.centralObjective,240))+'</p></div>'+branches+'<h3>Árvore textual (ASCII)</h3><pre class="whitespace-pre-wrap text-xs">'+esc(tree)+'</pre>');
+                body=wrap('Mapa Mental Visual — Infográfico Editorial',pmdfMindHtml(g,rows)+
+                    (interactive?'<div class="pmdf-mind-actions no-print"><button type="button" onclick="copyText(pmdfMindPrompt(CUR.guide))" class="'+BTN+'">📋 Copiar prompt do mapa mental</button><button type="button" onclick="openMindMap()" class="'+BTN+'">Abrir mapa ampliado</button></div>':''));
             }else if(SUMMARY_FORMAT==='flash'){
                 const cards=buildStudyCards(g), cardHtml=cards.map((c,i)=>interactive?'<button type="button" onclick="flipStudyCard(this)" class="study-card text-left" data-card-id="'+esc(c.id)+'"><span class="g-tag">Card '+(i+1)+' · Toque para virar</span><span class="front"><b>FRENTE</b><p>'+esc(c.front)+'</p></span><span class="back"><b>VERSO / FUNDAMENTO</b><p>'+esc(c.back)+'</p><span class="g-tag">Caixa Leitner: '+getCardBox(c.id).box+'</span></span></button>':'<div class="g-card"><b>Frente:</b><p>'+esc(c.front)+'</p><b>Verso:</b><p>'+esc(c.back)+'</p></div>').join('');
                 body=intro+wrap('Flashcards de Estudo Ativo','<p>Toque em cada cartão para revelar resposta e fundamento. Os cartões são organizados em frente e verso, com dificuldade adaptada ao nível selecionado.</p>'+(interactive?'<div class="flex flex-wrap gap-2 no-print mb-3"><button onclick="startLeitner()" class="'+BTN+'">▶ Iniciar sessão Leitner</button></div>':'')+'<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">'+cardHtml+'</div>');
