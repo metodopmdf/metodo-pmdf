@@ -4703,6 +4703,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         const SB_URL='https://wskuhkvgipqwykbnuspk.supabase.co';
         const SB_KEY='sb_publishable_GD37Y7cVTTKo74Vg5_5U1g_lyoqwcvH';
         const SB_SESSION_KEY='pmdf:supabase:session:v1';
+        const SB_REDIRECT_URL='https://caioveloso.github.io/metodo-pmdf/';
         let SB_SESSION=null,SB_REFRESH=null;
         const PMDF_RELEASE='2026-11-02-r2';
         const sbHeaders=(token)=>({'apikey':SB_KEY,'Authorization':'Bearer '+(token||SB_KEY),'Content-Type':'application/json'});
@@ -4758,7 +4759,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         async function recoverAccountPassword(){
             const email=$('account-name').value.trim();
             if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return $('account-msg').textContent='Informe seu e-mail no campo acima antes de recuperar a senha.';
-            try{await sbCall('/auth/v1/recover',{method:'POST',body:JSON.stringify({email})});$('account-msg').textContent='Se o e-mail estiver cadastrado, você receberá instruções de recuperação.';}
+            try{await sbCall('/auth/v1/recover?redirect_to='+encodeURIComponent(SB_REDIRECT_URL),{method:'POST',body:JSON.stringify({email})});$('account-msg').textContent='Se o e-mail estiver cadastrado, você receberá instruções de recuperação.';}
             catch(e){$('account-msg').textContent=e.message;}
         }
         async function finishAccountSignIn(){
@@ -4813,7 +4814,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 let result;
                 if(ACCOUNT_MODE==='register'){
                     if(!$('account-consent').checked)throw Error('Confirme a Política de Privacidade.');
-                    result=await sbCall('/auth/v1/signup',{method:'POST',body:JSON.stringify({email,password,data:{display_name:$('account-display').value.trim(),privacy_consent:true}})});
+                    result=await sbCall('/auth/v1/signup?redirect_to='+encodeURIComponent(SB_REDIRECT_URL),{method:'POST',body:JSON.stringify({email,password,data:{display_name:$('account-display').value.trim(),privacy_consent:true}})});
                     if(!result.access_token){status.textContent='Cadastro solicitado. Confirme seu e-mail para ativar a conta e depois faça login.';switchAccountMode();return;}
                 }else result=await sbCall('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password})});
                 saveSbSession(result);AUTH_USER=sbUser(result.user);$('account-password').value='';await finishAccountSignIn();
