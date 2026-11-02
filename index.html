@@ -2,9 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-<!-- This site is hosted on Netlify. Anyone can build and deploy a site
-     like this one for free: https://netlify.new/?utm_campaign=loops&utm_source=ai-legible&utm_medium=owned&utm_content=comment&utm_id=05332a23-fb82-4583-a026-e30266d536c0
-     Netlify hosting facts for this site: static/SSR served via Netlify Edge. -->
+<!-- Método PMDF: GitHub Pages + Supabase Auth/PostgREST; versão 2026-11-02-r2 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Método PMDF — Mapeador de Leis · 26 normas</title>
     <!-- CSS de produção gerado localmente; não depende do Tailwind CDN. -->
@@ -1626,7 +1624,7 @@
                     </svg></div>
    <span class="welcome-kicker">PLATAFORMA GRATUITA DE PREPARAÇÃO POLICIAL</span>
    <h1 class="welcome-heading">MÉTODO <span>PMDF</span></h1>
-   <p class="welcome-lead">Mapeamento estratégico de normas, simulados comentados, flashcards e redações. Seu progresso fica salvo neste navegador.</p>
+   <p class="welcome-lead">Mapeamento estratégico de normas, simulados comentados, flashcards e redações. Seu progresso é sincronizado com sua conta online.</p>
    <form id="account-form" onsubmit="submitAccount(event)" class="space-y-3 rounded-2xl p-4 border border-[#D4AF37]/40 bg-[#0A1426] text-left" autocomplete="on">
      <h2 id="account-title" class="text-[#E5C158] text-lg font-bold">Acessar meus estudos</h2>
      <label id="account-display-wrap" class="block text-slate-300 text-xs font-semibold hidden">Nome do candidato
@@ -4706,9 +4704,10 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         const SB_KEY='sb_publishable_GD37Y7cVTTKo74Vg5_5U1g_lyoqwcvH';
         const SB_SESSION_KEY='pmdf:supabase:session:v1';
         let SB_SESSION=null,SB_REFRESH=null;
+        const PMDF_RELEASE='2026-11-02-r2';
         const sbHeaders=(token)=>({'apikey':SB_KEY,'Authorization':'Bearer '+(token||SB_KEY),'Content-Type':'application/json'});
         function saveSbSession(session){
-            SB_SESSION=session?.access_token?session:null;
+            SB_SESSION=session?.access_token?{...session,expires_at:session.expires_at||Math.floor(Date.now()/1000)+Number(session.expires_in||3600)}:null;
             try{if(SB_SESSION)localStorage.setItem(SB_SESSION_KEY,JSON.stringify(SB_SESSION));else localStorage.removeItem(SB_SESSION_KEY);}catch(e){}
         }
         async function sbCall(path,options={},token){
@@ -4800,7 +4799,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     saveSbSession({access_token:hash.get('access_token'),refresh_token:hash.get('refresh_token'),expires_at:Math.floor(Date.now()/1000)+Number(hash.get('expires_in')||3600)});
                     history.replaceState(null,'',location.pathname+location.search);
                 }else{try{saveSbSession(JSON.parse(localStorage.getItem(SB_SESSION_KEY)||'null'));}catch(e){saveSbSession(null);}}
-                if(!SB_SESSION){$('account-msg').textContent='Entre com seu e-mail ou crie uma conta gratuita.';return;}
+                if(!SB_SESSION){$('account-msg').textContent='Cadastro Supabase ativo ('+PMDF_RELEASE+'). Entre com seu e-mail ou crie uma conta gratuita.';return;}
                 const user=await sbAuthed('/auth/v1/user');AUTH_USER=sbUser(user);await finishAccountSignIn();
             }catch(e){saveSbSession(null);AUTH_USER=null;$('account-msg').textContent='Sessão expirada. Entre novamente.';}
         }
@@ -4930,5 +4929,4 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
     </script>
 </body>
 </html>
-<script async src="/.netlify/scripts/ar" data-netlify-deploy-id="6ae8b18babdbc474d3aca75d" data-netlify-site-id="05332a23-fb82-4583-a026-e30266d536c0" data-agent-runner-id="6ae8b1439031db036fe49507"></script>
-<script async src="/.netlify/scripts/hud?variant=public" data-nf-variant="public" data-netlify-site-id="05332a23-fb82-4583-a026-e30266d536c0" data-app-host="app.netlify.com" data-account-tier="free"></script>
+
