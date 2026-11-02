@@ -35,19 +35,19 @@ function createClient(fetchImpl=async()=>({ok:true,status:200,json:async()=>[]})
     body:{classList:{add(){},remove(){},contains(){return false}},dataset:{},appendChild(){}},
     documentElement:{style:{}}
   };
-  const win={scrollTo(){}};
+  const win={scrollTo(){},_lastPrintHtml:'',open(){return {document:{readyState:'complete',open(){},write(value){win._lastPrintHtml=value},close(){}},focus(){},print(){},addEventListener(){}}}};
   const application=new Function(
     'document','window','localStorage','location','navigator','setInterval','setTimeout','clearTimeout','fetch',
     code+'\nreturn {BUILTIN_PMDF_GUIDES,questionPool,buildStudyCards,fullQuestionSentences,getCardBox,'+
     'store,accountData,accountFetch,mergeProgressData,applyProgressSnapshot,getSyncMeta,'+
     'startQuestions,answerQuestion,nextQuestion,startAnki,revealAnki,nextAnki,correctEssay,renderResultsChart,'+
-    'setSummaryFormat,renderGuide,addOfficialQuestions,beginStudies,saveStudySession,readStudySession,'+
+    'setSummaryFormat,renderGuide,guideHtml,exportEssayPdfA4,addOfficialQuestions,beginStudies,saveStudySession,readStudySession,'+
     'choose(k){CUR={key:k,guide:BUILTIN_PMDF_GUIDES[k],_poolCache:{}}},'+
     'level(l){LEVEL=l},auth(id){AUTH_USER={username:id,displayName:id};saveSbSession({access_token:"jwt",refresh_token:"refresh",expires_in:3600})},'+
     'questionState(){return Q_STATE},ankiState(){return ANKI_STATE},essayReport(){return ESSAY_MD}};'
   )(document,win,localStorage,{hostname:'metodopmdf.github.io',href:'https://metodopmdf.github.io/metodo-pmdf/'},{},
     ()=>0,(cb,ms)=>{if(ms<100)queueMicrotask(cb);return 0},()=>{},fetchImpl);
-  return {application,$,localStorage};
+  return {application,$,localStorage,win};
 }
 
 const primary=createClient(),app=primary.application;
@@ -83,6 +83,33 @@ for(const level of ['iniciante','intermediario','avancado']){
   assert(ceTotal>=70&&cardsTotal>=100,'Banco de questões C/E ou flashcards insuficiente');
   counts[level]={ce:ceTotal,mc:mcTotal,flashcards:cardsTotal};
 }
+// Validação estrutural dos controles que o usuário realmente utiliza.
+const staticMarkup=html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'');
+const staticIds=[...staticMarkup.matchAll(/\bid=(["'])([^"']+)\1/g)].map(m=>m[2]);
+assert.equal(new Set(staticIds).size,staticIds.length,'IDs duplicados no HTML');
+assert(!staticMarkup.includes('value="MC5"'),'Seletor de MC5 antigo reapareceu');
+assert(!staticMarkup.includes('id="q-count"'),'Controle antigo de quantidade voltou');
+assert(!staticMarkup.includes('id="anki-count"'),'Limite manual antigo de flashcards voltou');
+assert(!staticMarkup.includes('id="q-year"'),'Filtro de ano removido reapareceu');
+
+// Resumos: todas as 26 leis devem renderizar nos seis formatos, em três níveis.
+const summaryFormats=['full','bullets','table','mind','flash','traps'];
+let renderedSummaries=0;
+for(const level of ['iniciante','intermediario','avancado']){
+  for(const [key,g] of Object.entries(app.BUILTIN_PMDF_GUIDES)){
+    app.choose(key);app.level(level);
+    for(const format of summaryFormats){
+      primary.$('summary-format-toolbar').value=format;
+      // A função de renderização usa o formato global escolhido.
+      app.setSummaryFormat(format);
+      const markup=app.guideHtml(g,false);
+      assert(markup.includes(g.lawName),'Resumo sem identificação: '+key+' / '+level+' / '+format);
+      renderedSummaries++;
+    }
+  }
+}
+assert.equal(renderedSummaries,468,'Cobertura de resumos incompleta');
+
 // Regressão real da aba Questões: cada lei e nível deve iniciar MC
 // sem ser descartada pelo validador de enunciados.
 app.auth('qa-multipla');
@@ -178,6 +205,12 @@ for(const level of ['iniciante','intermediario','avancado']){
   assert(app.essayReport().includes('NPD (Nota Final)'),'Relatório de redação incompleto: '+level);
 }
 
+// A impressão da redação não deve imprimir o guia jurídico que estiver aberto.
+app.exportEssayPdfA4();
+assert(primary.win._lastPrintHtml.includes('MÉTODO PMDF · CORRETOR DE REDAÇÃO'),'PDF da redação incorreto');
+assert(primary.win._lastPrintHtml.includes('NPD (Nota Final)'),'PDF não contém a correção');
+assert(primary.win._lastPrintHtml.includes('size:A4 portrait'),'PDF não está configurado em A4');
+
 // Dois dispositivos simulados: merge por chave, exclusão e CAS após alteração remota.
 const remote=new Map();
 let forceConflict=false,offline=false;
@@ -214,5 +247,5 @@ assert((await b.accountFetch('progresso',{method:'PUT'})).ok,'CAS não resolveu 
 a.store.set('note:offline','mantido no aparelho');offline=true;
 assert(!(await a.accountFetch('progresso',{method:'PUT'})).ok,'Falha de rede não sinalizada');
 assert.equal(a.store.get('note:offline'),'mantido no aparelho');
-console.log('PASSOU: 26 normas, três níveis, redação, flashcards, gráfico e sincronização simulada.');
+console.log('PASSOU: 26 normas, 3 níveis, 468 resumos, questões MC/CE, importação, redação A4, flashcards e sincronização simulada.');
 console.log(JSON.stringify({counts,walkthrough},null,2));
