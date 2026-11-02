@@ -4252,8 +4252,32 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             if(condition)return {text:clean.slice(0,condition.index)+'independentemente de'+clean.slice(condition.index+condition[0].length)+'.',hint:'A alteração indevida elimina ou modifica requisito, condição ou exceção.'};
             return null; // Não criar complexidade artificial sem elementos na fonte.
         }
+        // Rubrica de elaboração determinística com critérios de banca.
+        // Trabalha apenas com proposições verificáveis da fonte; não simula IA externa.
+        const EXAMINER_RUBRIC={
+          iniciante:{label:'Literalidade e conceitos',focus:'identificação da regra principal'},
+          intermediario:{label:'Aplicação e requisitos',focus:'hipótese, condição e consequência jurídica'},
+          avancado:{label:'Exceções e alcance',focus:'condicionantes, ressalvas e distinções normativas'}
+        };
+        function examItemStyle(level,kind,bank,head){
+          const ce=kind==='CE',fgv=/fgv/i.test(bank||'');
+          if(level==='iniciante')return ce?'Com fundamento em '+head+', julgue a assertiva: ':'De acordo com a regra expressa em '+head+', assinale a opção correta.';
+          if(level==='intermediario')return ce?'Considerando os requisitos e efeitos previstos em '+head+', julgue o item: ':fgv?'À luz de '+head+', assinale a aplicação juridicamente compatível com o dispositivo.':'Com relação aos pressupostos de '+head+', assinale a alternativa correta.';
+          return ce?'Considerando as condições, as exceções e o alcance de '+head+', julgue a assertiva: ':fgv?'A respeito das condições e ressalvas legais de '+head+', assinale a interpretação adequada.':'Identifique a única alternativa compatível com os limites normativos de '+head+'.';
+        }
+        function examSourceQuality(t,level){
+          if(!fullQuestionSentences(t).length)return false;
+          if(level==='iniciante')return t.length<=650;
+          const cond=/\b(?:deve|pode|compete|cabe|condição|requisito|sanção|pena|prazo|mediante|quando|desde que|exige|constitui|prevê|veda|salvo|exceto|somente|apenas|até|mínimo|máximo)\b/i.test(t);
+          if(level==='intermediario')return cond;
+          return cond&&/\b(?:salvo|exceto|somente|apenas|desde que|mediante|depende|independe|prazo|mínimo|máximo|até|não|vedado|proibido|competência|ressalvado)\b|\d+\s*(?:dias|anos|meses|horas|%)/i.test(t);
+        }
+        function examExplanation(level,head,sentence,mutated){
+          return (mutated?'ERRADO. '+mutated.hint+' ':'CERTO de acordo com o trecho do guia. ')+'Fundamento: '+head+'. Trecho-base: "'+sentence+'". Foco de cobrança: '+EXAMINER_RUBRIC[level].focus+'. Consulte a norma oficial para validação.';
+        }
         function questionPool(g, fmt, lvl) {
             const level=LEVELS_SAFE_LEVEL(lvl), A=g.articlesMapping||{},rows=[];
+            const bank=$('q-board')?.value||'Cebraspe';
             const add=(arr,inc)=>safeArray(arr).forEach(a=>rows.push({a,inc}));
             add(A.highIncidence,'Alta Incidência');
             if(level!=='iniciante')add(A.mediumIncidence,'Média Incidência');
@@ -4272,21 +4296,19 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 return {options:options.map(x=>x.text),answer:'ABCDE'[options.findIndex(x=>x.correct)]};
             };
             for(const {a,inc} of rows){
-                const head=artHead(a.article),ss=fullQuestionSentences(a.plainExplanation);
+                const head=artHead(a.article),ss=fullQuestionSentences(a.plainExplanation).filter(v=>examSourceQuality(v,level));
                 const base={topic:head,incidence:inc,lawBasis:head+' — '+lawShort(g),law};
                 for(const sentence of ss){
-                    const pre=level==='iniciante'?'De acordo com o conteúdo estudado ('+head+'), considere a seguinte afirmação: ':
-                        level==='intermediario'?'Considerando os pressupostos e os efeitos previstos em '+head+', examine a assertiva: ':
-                        'À luz da disciplina normativa de '+head+', analise rigorosamente o alcance e as condições da proposição: ';
+                    const pre=examItemStyle(level,'CE',bank,head);
                     const sourceInfo='Trecho de referência: '+sentence+' Fundamento indicado no guia: '+head+'.';
-                    ce.push({...base,type:'CE',difficulty:level,options:[],statement:pre+sentence,answer:'C',explanation:'CERTO segundo o material de estudo. '+sourceInfo,easyTip:a.practicalExample||'Confira a fonte oficial.'});
+                    ce.push({...base,type:'CE',difficulty:level,options:[],statement:pre+sentence,answer:'C',explanation:examExplanation(level,head,sentence,null),easyTip:a.practicalExample||'Confira a fonte oficial.'});
                     const mutated=qualifiedQuestionMutation(sentence,level);
                     if(mutated&&fullQuestionSentences(mutated.text).length){
-                        ce.push({...base,type:'CE',difficulty:level,options:[],statement:pre+mutated.text,answer:'E',explanation:'ERRADO: '+mutated.hint+' '+sourceInfo,easyTip:'Compare cada condição e expressão restritiva com a norma.'});
+                        ce.push({...base,type:'CE',difficulty:level,options:[],statement:pre+mutated.text,answer:'E',explanation:examExplanation(level,head,sentence,mutated),easyTip:'Compare cada condição e expressão restritiva com a norma.'});
                     }
                     if(level!=='avancado'||/(?:salvo|exceto|somente|apenas|desde que|mediante|quando|se|até|prazo|competência|deve|pode|veda|proíbe|exige)/i.test(sentence)){
                         const option=completeOpts(sentence,head);
-                        if(option)mc.push({...base,type:'MC',difficulty:level,statement:level==='iniciante'?'Assinale a alternativa compatível com o texto estudado ('+head+').':level==='intermediario'?'Considerando os requisitos e consequências jurídicas associados a '+head+', assinale a alternativa correta.':'Examine os elementos normativos, limites e possíveis inversões de sentido em '+head+' e selecione a única assertiva compatível com o material.',...option,explanation:'Gabarito '+option.answer+'. '+sourceInfo,easyTip:'Confronte todos os qualificadores das alternativas com o texto oficial.'});
+                        if(option)mc.push({...base,type:'MC',difficulty:level,statement:examItemStyle(level,'MC',bank,head),...option,explanation:'Gabarito '+option.answer+'. '+examExplanation(level,head,sentence,null),easyTip:'Confronte todos os qualificadores das alternativas com o texto oficial.'});
                     }
                 }
             }
@@ -4574,7 +4596,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             if(!pool.length)return toast(imported?'Nenhuma questão importada no formato escolhido. Importe prova ou altere o filtro.':'O material não possui trechos suficientes para gerar questões.','error');
             const taken=Math.min(value,pool.length);
             Q_STATE={items:pool.slice(0,taken),index:0,hits:0,wrong:0,blank:0,pending:0,answered:false,questionStart:Date.now()};saveStudySession();
-            $('q-status').textContent=(taken<value?'Foram encontradas '+taken+' questões distintas; o banco local não inventa itens extras. ':'')+'Fonte: '+(imported?'Provas importadas':guides.length===1?guides[0].lawName:guides.length+' leis')+' · '+taken+' questões · Nível: '+LEVELS[lvl].label+'.';
+            $('q-status').textContent=(taken<value?'Foram encontradas '+taken+' questões distintas; o banco local não inventa itens extras. ':'')+'Fonte: '+(imported?'Provas importadas':guides.length===1?guides[0].lawName:guides.length+' leis')+' · '+taken+' questões · Nível: '+LEVELS[lvl].label+' · Critério: '+EXAMINER_RUBRIC[lvl].label+'.';
             $('q-panel').classList.remove('hidden');drawQuestions();
             // O resultado externo já foi integrado antes de começar a sessão.
         }
