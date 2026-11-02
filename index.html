@@ -4638,14 +4638,9 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 if(imported){pool=IMPORTED_QUESTIONS.filter(q=>q.type===baseFmt).map(q=>({...q}));}else for(const g of guides){const found=questionPool(g,baseFmt,lvl);pool.push(...found.map(q=>({ ...q,law:g.lawName })));}
                 pool=shuffle(uniqueQuestions(pool.filter(questionIsComplete)));
             }catch(e){return toast('Não foi possível gerar questões: '+e.message,'error');}
-            // Busca automática: consulta fontes após aplicar filtros, sem controles manuais de pesquisa.
-            // Só acrescenta enunciados externos com permissão documentada e gabarito validado.
-            try{const extras=location.hostname.endsWith('.github.io')?[]:await fetchAutoQuestions({board:$('q-board').value,topic:guides[0]?.lawName||'legislação policial',year:Number($('q-year').value),format:fmt,limit:value});
-                if(!imported)pool=shuffle(uniqueQuestions([...extras.filter(q=>q.difficulty===lvl),...pool].filter(questionIsComplete)));
-                // Os itens importados de fontes externas sem conteúdo integral são descartados.
-            }catch(e){$('research-status').textContent='Pesquisa externa indisponível. Exercícios locais continuam funcionando.';}
+            // A hospedagem estática trabalha com questões locais e provas importadas.
             if(fmt==='MC4')pool=pool.map(toFour);if(imported&&fmt!=='CE')pool=pool.filter(q=>Array.isArray(q.options)&&q.options.length===(fmt==='MC4'?4:5));
-            if(!pool.length)return toast(imported?'Nenhuma questão importada no formato escolhido. Importe prova ou altere o filtro.':'O material não possui trechos suficientes para gerar questões.','error');
+            if(!pool.length)return toast(imported?'Nenhuma questão importada no formato escolhido. Importe prova ou altere o filtro.':baseFmt==='MC'?'Não foi possível construir 5 alternativas verificáveis para esta norma. Tente Certo/Errado ou “Todas as leis”.':'O material não possui trechos completos para gerar questões.','error');
             const taken=Math.min(value,pool.length);
             Q_STATE={items:pool.slice(0,taken),index:0,hits:0,wrong:0,blank:0,pending:0,answered:false,questionStart:Date.now()};saveStudySession();
             $('q-status').textContent=(taken<value?'Foram encontradas '+taken+' questões distintas; o banco local não inventa itens extras. ':'')+'Fonte: '+(imported?'Provas importadas':guides.length===1?guides[0].lawName:guides.length+' leis')+' · '+taken+' questões · Nível: '+LEVELS[lvl].label+' · Critério: '+EXAMINER_RUBRIC[lvl].label+'.';
@@ -4783,30 +4778,21 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 const d=document.createElement('div');d.className='g-card';
                 const a=document.createElement('a');a.href=uri.href;a.target='_blank';a.rel='noopener noreferrer';a.textContent=(item.title||'Prova pública').slice(0,170);
                 const label=document.createElement('p');label.className='text-xs text-slate-400';label.textContent=item.source||uri.hostname;d.append(a,label);
-                if(/\.pdf(?:$|[?#])/i.test(uri.href)&&/^(www\.)?(cebraspe\.org\.br|cdn\.cebraspe\.org\.br|conhecimento\.fgv\.br|fgv\.br|vunesp\.com\.br|fcc\.org\.br|pciconcursos\.com\.br)$/i.test(uri.hostname)){
-                  const b=document.createElement('button');b.type='button';b.textContent='Importar PDF público';b.addEventListener('click',()=>importOfficialExamUrl(uri.href));d.appendChild(b);
-                }box.appendChild(d);
+                if(uri.pathname.toLowerCase().endsWith('.pdf'))a.textContent='Abrir PDF (baixar e importar): '+a.textContent;
+                box.appendChild(d);
             }catch(e){} }
             if(!box.childElementCount)box.textContent='Nenhum link público disponível nesta consulta.';
         }
         let SEARCH_BUSY=false,LAST_SEARCH_KEY='',LAST_SEARCH_AT=0;
         async function searchOfficialExams(){
             const board=$('research-board').value,topic=($('research-topic').value.trim()||CUR.guide?.lawName||'legislação policial').slice(0,100);
-            const year=Number($('research-year').value);if(!Number.isInteger(year)||year<2000||year>new Date().getFullYear()+1)return toast('Informe um ano inicial válido.','error');
-            const searchKey=JSON.stringify([board,topic,year]);
-            if(SEARCH_BUSY || (searchKey===LAST_SEARCH_KEY&&Date.now()-LAST_SEARCH_AT<90000))return;
-            SEARCH_BUSY=true;LAST_SEARCH_KEY=searchKey;LAST_SEARCH_AT=Date.now();
-            const btn=$('research-btn');btn.disabled=true;updateImportedStatus('Buscando provas públicas recentes...');
-            const fallback=buildExamSearchLinks(board,topic,year);
+            const year=Number($('research-year').value);
+            if(!Number.isInteger(year)||year<2000||year>new Date().getFullYear()+1)return toast('Informe um ano inicial válido.','error');
+            const btn=$('research-btn');btn.disabled=true;
             try{
-                const qs=new URLSearchParams({board,topic,year:String(year)});
-                const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),12000);
-                let result;try{const resp=await fetch('/api/provas?'+qs,{signal:ctl.signal,headers:{Accept:'application/json'}});if(!resp.ok)throw new Error('Pesquisa indisponível');result=await resp.json();}finally{clearTimeout(timer);}
-                if(!Array.isArray(result.items))throw new Error('Resposta de busca inválida');
-                renderExamLinks([...result.items,...fallback]);
-                updateImportedStatus(result.items.length+' referências públicas encontradas pelo serviço de pesquisa. Consulte a prova e importe o PDF para extrair questões.');
-            }catch(e){renderExamLinks(fallback);updateImportedStatus('Busca automática não disponível nesta hospedagem ou indisponível no momento. Foram exibidos links de pesquisa nas fontes oficiais e repositórios.');}
-            finally{btn.disabled=false;SEARCH_BUSY=false;}
+                renderExamLinks(buildExamSearchLinks(board,topic,year));
+                updateImportedStatus('Links de pesquisa exibidos. Abra a fonte, baixe o PDF/TXT e importe o arquivo pelo formulário. O GitHub Pages não dispõe de API de busca própria.');
+            }finally{btn.disabled=false;}
         }
         function parseOfficialExam(text,source){
             const clean=String(text||'').replace(/\r/g,'').slice(0,600000);
@@ -4834,11 +4820,10 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             try{if(!/\.(pdf|txt)$/i.test(f.name))throw Error('Somente PDF e TXT.');const t=await readFileText(f);const items=parseOfficialExam(t,f.name);if(!items.length)throw Error('Nenhum item foi reconhecido. Confira se o PDF contém questões selecionáveis e numeração “Questão 1” ou “Item 1”.');addOfficialQuestions(items);}
             catch(e){toast('Falha na extração da prova: '+e.message,'error');updateImportedStatus('Falha na importação: '+e.message);}finally{inp.value='';}
         }
-        async function importOfficialExamUrl(url){updateImportedStatus('Baixando prova pública...');
-            try{const response=await fetch('/api/prova-arquivo?url='+encodeURIComponent(url));if(!response.ok)throw Error('Servidor não conseguiu acessar a prova ('+response.status+').');const blob=await response.blob();if(blob.size>12*1024*1024)throw Error('PDF excedeu 12 MB');
-                const fname=(new URL(url)).pathname.split('/').pop()||'prova.pdf',file=new File([blob],fname,{type:'application/pdf'}),t=await readFileText(file);const qs=parseOfficialExam(t,url);
-                if(!qs.length)throw Error('PDF não continha itens com numeração reconhecível.');addOfficialQuestions(qs);
-            }catch(e){updateImportedStatus('Não foi possível importar automaticamente: '+e.message+'. Baixe a prova no site da banca e importe o PDF manualmente.');}
+        async function importOfficialExamUrl(url){
+            updateImportedStatus('Abra e baixe o PDF em outra aba. Depois use “Importar prova (PDF/TXT)” para carregar os itens.');
+            try{const u=new URL(url);if(u.protocol==='https:')window.open(u.href,'_blank','noopener,noreferrer');}
+            catch(e){toast('Link de prova inválido.','error');}
         }
         async function importOfficialAnswerFile(inp){const f=inp.files?.[0];if(!f)return;
             try{if(!/\.txt$/i.test(f.name)||f.size>500000)throw Error('Use um gabarito em TXT até 500 KB');const txt=await f.text();
@@ -4867,9 +4852,9 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         const normalizeUsername=v=>String(v||'').trim().toLowerCase();
         const usernameIsValid=v=>/^[a-z0-9][a-z0-9._-]{2,23}$/.test(v);
         const usernameToLoginEmail=v=>normalizeUsername(v)+'@'+PMDF_USER_DOMAIN;
-        const SB_REDIRECT_URL='https://caioveloso.github.io/metodo-pmdf/';
+        const SB_REDIRECT_URL='https://metodopmdf.github.io/metodo-pmdf/';
         let SB_SESSION=null,SB_REFRESH=null;
-        const PMDF_RELEASE='2026-11-02-usuario-senha';
+        const PMDF_RELEASE='2026-11-02-qa-melhorias';
         const sbHeaders=(token)=>({'apikey':SB_KEY,'Authorization':'Bearer '+(token||SB_KEY),'Content-Type':'application/json'});
         function saveSbSession(session){
             SB_SESSION=session?.access_token?{...session,expires_at:session.expires_at||Math.floor(Date.now()/1000)+Number(session.expires_in||3600)}:null;
@@ -5033,21 +5018,10 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         }
         // Busca automática: apenas questões com licença compatível e gabarito validado
         // são adicionadas. Provas descobertas sem licença permanecem como referências.
-        async function fetchAutoQuestions(filter){
-            const target=$('research-status'),urls=$('research-results');target.textContent='Consultando fontes públicas para a banca e o assunto...';urls.replaceChildren();
-            const params=new URLSearchParams({board:filter.board,topic:filter.topic.slice(0,100),year:String(filter.year||2024),format:filter.format,limit:String(filter.limit)});
-            const abort=new AbortController(),time=setTimeout(()=>abort.abort(),10500);
-            try{
-                const r=await fetch('/api/questoes-abertas?'+params,{signal:abort.signal,headers:{Accept:'application/json'}});
-                if(!r.ok)throw Error('Consulta indisponível');const obj=await r.json();
-                const links=Array.isArray(obj.sources)?obj.sources.slice(0,20):[];
-                for(const item of links){if(!/^https:\/\//.test(item.url))continue;const a=document.createElement('a');a.href=item.url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=(item.title||'Fonte pública').slice(0,130);a.className='block underline text-xs text-[#E5C158] break-words';urls.appendChild(a);}
-                const questions=Array.isArray(obj.questions)?obj.questions.slice(0,500):[];
-                const verified=questions.filter(q=>q&&['CE','MC'].includes(q.type)&&typeof q.statement==='string'&&q.statement.length<2000&&typeof q.answer==='string'&&q.license&&q.sourceUrl&&/^https:\/\//.test(q.sourceUrl));
-                target.textContent=verified.length+' questões externas com gabarito e licença verificados adicionadas automaticamente. '+links.length+' referência(s) pesquisadas. '+(verified.length?'':'Sem itens autorizados para cópia neste resultado; mantendo exercícios locais.');
-                return verified;
-            }catch(e){target.textContent='Fontes externas indisponíveis. Exercícios locais continuam normalmente.';return [];}
-            finally{clearTimeout(time);}
+        async function fetchAutoQuestions(){
+            const status=$('research-status');
+            if(status)status.textContent='Sem API própria: importe uma prova e o gabarito no formulário.';
+            return [];
         }
         // Log granular separado para gráficos e histórico; sem inventar pontuação para questões sem gabarito.
         function recordQuestionResult(q,correct,seconds){
