@@ -2699,7 +2699,7 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
                     <div class="min-w-0 flex-1">
                         <p class="qstudio-eyebrow">MÉTODO PMDF · BANCO INTELIGENTE</p>
                         <h2 class="text-xl sm:text-2xl font-extrabold text-white">Elaborador Inteligente de Questões</h2>
-                        <p class="text-sm text-slate-400 mt-1">Transforme leis e documentos em questões de concursos. Use o Gemini por servidor seguro, sem exigir GPU, ou continue estudando com o gerador tradicional gratuito.</p>
+                        <p class="text-sm text-slate-400 mt-1">Transforme leis e documentos em questões de concursos. Use o motor neural local leve, sem GPU ou API externa, ou continue com o gerador tradicional.</p>
                     </div>
                 </div>
 
@@ -2736,10 +2736,10 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
                             <span class="qstudio-engine-symbol"><i data-lucide="list-checks"></i></span>
                             <span><strong class="block text-sm">Tradicional</strong><span class="block text-xs text-slate-400 mt-1">Questões elaboradas por regras locais, sem baixar modelos.</span></span>
                         </button>
-                        <button id="q-engine-gemini" type="button" class="qstudio-engine text-left" aria-pressed="false" onclick="setQuestionEngine('gemini')">
-                            <span class="qstudio-engine-symbol"><i data-lucide="brain-circuit"></i></span>
-                            <span><strong class="block text-sm">Gemini · IA na nuvem</strong><span class="block text-xs text-slate-400 mt-1">Geração interpretativa por servidor seguro, sem WebGPU ou download de modelos.</span></span>
-                        </button>
+                        <button id="q-engine-neural" type="button" class="qstudio-engine text-left" aria-pressed="false" onclick="setQuestionEngine('neural')">
+<span class="qstudio-engine-symbol"><i data-lucide="brain-circuit"></i></span>
+<span><strong class="block text-sm">Motor neural · local</strong><span class="block text-xs text-slate-400 mt-1">Rede 6–8–3 e regras textuais, sem GPU, API ou downloads pesados.</span></span>
+</button>
                     </div>
                 </div>
 
@@ -2747,7 +2747,7 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
                     <h3 class="font-bold text-white text-sm"><i data-lucide="sliders-horizontal" class="inline w-4 h-4 mr-1"></i> Configurações da prova</h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                         <label class="text-xs text-[#E5C158] font-semibold">Tipo de questão
-                            <select id="q-format" class="qstudio-input w-full mt-1"><option value="CE">Certo / Errado</option><option value="MC">Múltipla escolha</option></select>
+                            <select id="q-format" class="qstudio-input w-full mt-1" onchange="updateNeuralFormatUI()"><option value="CE">Certo / Errado</option><option value="MC">Múltipla escolha</option><option value="MIX">Misto (motor neural)</option></select>
                         </label>
                         <label class="text-xs text-[#E5C158] font-semibold">Nível
                             <select id="q-level" class="qstudio-input w-full mt-1"><option value="iniciante">Iniciante</option><option value="intermediario" selected>Intermediário</option><option value="avancado">Avançado</option></select>
@@ -2762,48 +2762,29 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
                         </label>
                         <p class="text-xs text-slate-400 flex-1">O gerador tradicional usa trechos verificáveis e respeita as limitações da fonte.</p>
                     </div>
-                    <div id="q-ai-settings" class="hidden space-y-3">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <label class="text-xs font-semibold text-[#E5C158]">Mecanismo de geração
-                                <select id="q-ai-backend" class="qstudio-input block w-full mt-1" onchange="refreshAIModeUI()">
-                                    <option selected value="gemini">Gemini · elaboração inteligente (necessita ativação no servidor)</option>
-                                    <option value="safe">Modo seguro · regras locais, sem IA externa</option>
-                                </select>
-                            </label>
-                            <label class="text-xs font-semibold text-[#E5C158]">Meta acumulada de questões
-                                <select id="q-ai-target" class="qstudio-input block w-full mt-1">
-                                    <option value="30">Até 30 questões</option>
-                                    <option value="50">Até 50 questões</option>
-                                    <option value="100" selected>Meta de 100 questões (em lotes)</option>
-                                    <option value="150">Até 150 questões</option>
-                                    <option value="200">Até 200 questões</option>
-                                </select>
-                            </label>
-                        </div>
-                        <div class="qstudio-ai-info rounded-xl p-3">
-                            <p class="text-xs text-slate-200"><i data-lucide="info" class="inline w-4 h-4 mr-1"></i> <strong>Gemini:</strong> o texto selecionado é enviado ao servidor Supabase e processado pelo Google para gerar questões, gabaritos e justificativas. O dispositivo não usa GPU. Disponibilidade sujeita à ativação da API e às cotas gratuitas. <strong>Modo seguro:</strong> usa regras locais, sem enviar texto à IA, mas com menor capacidade interpretativa. Sempre confira a legislação vigente.</p>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <button type="button" id="q-ai-load" class="qstudio-secondary" onclick="prepareQuestionAI()">Verificar conexão Gemini</button>
-                            <button type="button" id="q-ai-stop" class="qstudio-danger hidden" onclick="stopQuestionAI()">Interromper geração</button>
-                            <span id="q-ai-compat" class="text-xs text-slate-400" role="status">Verifique se o Gemini está ativado no servidor antes de gerar.</span>
-                            <p id="q-ai-diagnostic" class="text-xs text-slate-400 basis-full" role="status" aria-live="polite"></p>
-                        </div>
-                        <div id="q-ai-progress-wrap" class="hidden space-y-1">
-                            <div class="qstudio-meter" role="progressbar" aria-label="Progresso da geração com IA" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="q-ai-progress"><span id="q-ai-progress-fill" style="width:0%"></span></div>
-                            <p id="q-ai-progress-text" class="text-xs text-slate-300" role="status" aria-live="polite">Pronto.</p>
-                        </div>
-                    </div>
+                    <div id="q-neural-settings" class="hidden space-y-3">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<label class="text-xs font-semibold text-[#E5C158]">Questões por lote
+<select id="q-neural-target" class="qstudio-input block w-full mt-1"><option value="15">15</option><option value="30" selected>30</option><option value="50">50</option><option value="100">100</option><option value="150">150</option><option value="200">200</option></select></label>
+<label id="q-neural-command-wrap" class="text-xs font-semibold text-[#E5C158]">Comando de múltipla escolha
+<select id="q-neural-command" class="qstudio-input block w-full mt-1"><option value="correta">Assinale a CORRETA</option><option value="incorreta">Assinale a INCORRETA</option></select></label>
+</div>
+<p class="text-xs text-slate-400">Rede neural leve para classificação e regras de mutação textual para elaborar questões. Não é IA generativa nem valida a legislação atual. Lotes limitados ao número de itens distintos que o material sustenta.</p>
+<button type="button" class="qstudio-secondary" onclick="stopQuestionAI()">Interromper geração</button>
+<p id="q-neural-status" class="text-xs text-slate-300" role="status" aria-live="polite">Motor neural pronto.</p>
+</div>
                 </div>
 
                 <div class="qstudio-audit rounded-xl p-3 flex items-start gap-2">
                     <i data-lucide="shield-check" class="w-5 h-5 shrink-0 text-emerald-400"></i>
-                    <div><p class="text-sm font-bold text-white">Auditoria de questões</p><p class="text-xs text-slate-400 mt-1">Validação estrutural, citação literal da fonte, gabaritos e duplicidades. Mesmo o Gemini pode produzir erros de interpretação: confira a norma vigente antes de confiar na resposta.</p></div>
+                    <div><p class="text-sm font-bold text-white">Auditoria de questões</p><p class="text-xs text-slate-400 mt-1">Verificação de estrutura, cinco alternativas distintas e rastreabilidade à fonte. Confira gabaritos e vigência jurídica: o motor neural não compreende normas como uma IA generativa.</p></div>
                 </div>
 
                 <div class="flex flex-wrap gap-2 items-center">
                     <button type="button" id="q-generate-button" onclick="startQuestions()" class="qstudio-primary text-sm font-extrabold">Gerar e iniciar questões</button>
                     <button type="button" id="q-next-button" onclick="startQuestions(true)" class="qstudio-secondary">Próximo lote inédito</button>
+<button type="button" id="q-neural-save" onclick="saveNeuralQuestions()" class="qstudio-secondary hidden">Salvar lote no Supabase</button>
+<button type="button" id="q-neural-json" onclick="exportNeuralQuestions()" class="qstudio-secondary hidden">Exportar JSON</button>
                     <button type="button" onclick="resetQuestionCycle()" class="qstudio-secondary">Reiniciar cobertura</button>
                     <button type="button" onclick="clearQuestionFilters()" class="qstudio-secondary">Limpar filtros</button>
                     <button type="button" onclick="openErrors()" class="qstudio-secondary">Caderno de erros</button>
@@ -2927,7 +2908,7 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
     </footer>
 
 
-    <script defer src="assets/pmdf-question-ai.js?v=20261103-gemini-v1"></script>
+    <script defer src="assets/pmdf-neural-questions.js?v=20261103-neural-v1"></script>
         <script>
         // ============================================================================
         // BASE DE CONHECIMENTO TÁTICA INTEGRADA (AS 5 LEIS PRINCIPAIS DA PMDF)
@@ -5820,84 +5801,38 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         let Q_STATE=null;
 
 
-        // Ponte entre o simulador existente e o gateway autenticado Gemini.
-        let QUESTION_ENGINE='local', SAFE_FALLBACK_ACTIVE=false;
-        const AI_MEMORY_BANKS=Object.create(null);
+        // Integração com motor neural local, preservando gerador tradicional.
+        let QUESTION_ENGINE='local',SAFE_FALLBACK_ACTIVE=false;
         function setQuestionEngine(mode){
-            if(mode==='webllm')mode='gemini'; // compatibilidade com sessões e testes antigos
-            if(mode!=='local'&&mode!=='gemini')return;
+            if(!['local','neural'].includes(mode))return;
             if(QUESTION_ENGINE!==mode)stopQuestionAI();
             QUESTION_ENGINE=mode;
-            for(const value of ['local','gemini']){
-                const el=$('q-engine-'+value);
-                if(el){el.classList.toggle('active',mode===value);el.setAttribute('aria-pressed',String(mode===value));}
-            }
-            $('q-ai-settings')?.classList.toggle('hidden',mode!=='gemini');
-            $('q-local-settings')?.classList.toggle('hidden',mode==='gemini');
-            if($('q-generate-button'))$('q-generate-button').textContent=mode==='gemini'?'Gerar com Gemini':'Gerar e iniciar questões';
-            if($('q-next-button'))$('q-next-button').textContent=mode==='gemini'?'Gerar mais com Gemini':'Próximo lote inédito';
-            refreshQuestionStudio();
-            if(mode==='gemini')refreshAIModeUI();
+            for(const item of ['local','neural']){const button=$('q-engine-'+item);
+                if(button){button.classList.toggle('active',mode===item);button.setAttribute('aria-pressed',String(mode===item));}}
+            $('q-neural-settings')?.classList.toggle('hidden',mode!=='neural');
+            $('q-local-settings')?.classList.toggle('hidden',mode==='neural');
+            $('q-neural-save')?.classList.toggle('hidden',mode!=='neural');
+            $('q-neural-json')?.classList.toggle('hidden',mode!=='neural');
+            if(mode==='local'&&$('q-format')?.value==='MIX')$('q-format').value='CE';
+            if($('q-generate-button'))$('q-generate-button').textContent=mode==='neural'?'Gerar com motor neural':'Gerar e iniciar questões';
+            if($('q-next-button'))$('q-next-button').textContent=mode==='neural'?'Próximo lote neural':'Próximo lote inédito';
+            updateNeuralFormatUI();refreshQuestionStudio();
         }
-        function refreshAIModeUI(){
-            const remote=$('q-ai-backend')?.value==='gemini';
-            $('q-ai-load')?.classList.toggle('hidden',!remote);
-            if($('q-generate-button')&&QUESTION_ENGINE==='gemini')
-                $('q-generate-button').textContent=remote?'Gerar com Gemini':'Gerar questões (modo seguro)';
-            if($('q-next-button')&&QUESTION_ENGINE==='gemini')
-                $('q-next-button').textContent=remote?'Gerar mais com Gemini':'Próximo lote (modo seguro)';
-            if(!remote){
-                stopQuestionAI();
-                if($('q-ai-compat'))$('q-ai-compat').textContent='Modo seguro ativo: regras locais, sem GPU ou serviços externos.';
-                $('q-ai-progress-wrap')?.classList.add('hidden');
-            }else void window.PMDFQuestionAI?.checkCompatibility?.();
-        }
+        function updateNeuralFormatUI(){$('q-neural-command-wrap')?.classList.toggle('hidden',QUESTION_ENGINE!=='neural'||$('q-format')?.value!=='MC');}
         function refreshQuestionStudio(){
             const selected=$('q-source')?.value,el=$('q-document-indicator');
             if(el)el.textContent=selected==='imported'?'Provas importadas: utilize o modo Tradicional':
                 selected==='all'?'Catálogo inteiro (guias didáticos, não leis integrais)':
                 CUR.guide?'Fonte: '+CUR.guide.lawName:'Nenhum documento selecionado';
         }
-        function aiBankKey(guides,fmt,level){
-            const sources=guides.map(g=>g.lawName+'|'+['highIncidence','mediumIncidence','lowIncidence'].flatMap(k=>
-                safeArray(g.articlesMapping?.[k]).map(a=>String(a.article||'')+'='+String(a.sourceText||a.plainExplanation||''))).join('¦')).join('§');
-            return 'q:ai:bank:v1:'+(hash(sources+'|'+fmt+'|'+level+'|'+($('q-board')?.value||'')+'|'+($('q-ai-model')?.value||''))>>>0).toString(36);
+        function stopQuestionAI(){window.PMDFNeuralQuestions?.stop?.();}
+        function startNeuralQuestions(more=false){
+            if(!window.PMDFNeuralQuestions)return toast('Motor neural não carregado. Recarregue a página.','error');
+            return window.PMDFNeuralQuestions.start(Boolean(more));
         }
-        function stopQuestionAI(){window.PMDFQuestionAI?.stop?.();}
-        function prepareQuestionAI(){return window.PMDFQuestionAI?.prepare?.();}
-        async function startSafeQuestions(more=false,reason=''){
-            if(!AUTH_USER)return toast('Faça login para gerar questões.','error');
-            const format=$('q-format')?.value==='MC'?'MC':'CE';
-            const before=Q_STATE,previousBatch=$('q-batch')?.value;
-            if($('q-source')?.value==='imported')return toast('Provas importadas ficam no modo Tradicional.','error');
-            try{
-                SAFE_FALLBACK_ACTIVE=true;
-                if($('q-batch'))$('q-batch').value='15';
-                await new Promise(resolve=>setTimeout(resolve,0));
-                await startQuestions(more);
-                if(Q_STATE&&Q_STATE!==before&&Q_STATE.engine==='local'){
-                    Q_STATE.engine='adaptive';
-                    const count=Q_STATE.items.length;
-                    $('q-status').textContent='Modo seguro (regras locais): '+count+' questões neste lote. '+
-                        (Q_STATE.review?'Rodada de REVISÃO: itens já estudados, sem novas questões inéditas.':'Itens inéditos deste ciclo de cobertura.')+
-                        ' Não foi executada IA generativa.';
-                    $('q-coverage').textContent='Sem GPU ou download. '+Q_STATE.coverage.shown+' de '+Q_STATE.coverage.total+
-                        ' questões verificáveis neste recorte; '+Q_STATE.coverage.remaining+' restantes nesta rodada.';
-                    saveStudySession();
-                    return {ok:true,count,engine:'adaptive'};
-                }
-                // Não declarar sucesso quando nenhum item verificável foi produzido.
-                return {ok:false,reason:'Não foram identificadas proposições completas suficientes nesta fonte para formar questões confiáveis. Envie a íntegra da lei em PDF textual ou cole seus artigos e parágrafos; o gerador não preencherá lacunas inventando regras.'};
-            }catch(e){
-                toast('Não foi possível montar o lote seguro: '+String(e?.message||e||'erro inesperado'),'error');
-                return {ok:false,reason:'Falha ao elaborar questões com regras locais.'};
-            }finally{SAFE_FALLBACK_ACTIVE=false;if($('q-batch')&&previousBatch!==undefined)$('q-batch').value=previousBatch;}
-        }
-        function startAIQuestions(more=false){
-            if(!window.PMDFQuestionAI)return toast('Módulo de IA não carregado. Recarregue a página com internet.','error');
-            return window.PMDFQuestionAI.start(Boolean(more));
-        }
-        function questionUseSource(text,title){
+        function saveNeuralQuestions(){return window.PMDFNeuralQuestions?.save?.();}
+        function exportNeuralQuestions(){return window.PMDFNeuralQuestions?.json?.();}
+                function questionUseSource(text,title){
             if(window.PMDFQuestionAI?.status?.().running)throw Error('Interrompa a geração de IA antes de trocar o material.');
             const raw=String(text||'').trim();
             if(raw.length<60)throw Error('Forneça ao menos 60 caracteres de texto legível.');
@@ -5927,44 +5862,31 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             }catch(e){$('q-status').textContent='Falha ao analisar documento.';toast(e.message,'error');}
             finally{input.value='';}
         }
-        window.PMDFQuestionHost={
-            $:id=>$(id),toast:(message,kind)=>toast(message,kind),store,hash,
-            guides:()=>pickStudyGuides('q'),level:v=>LEVELS_SAFE_LEVEL(v),
+        window.PMDFNeuralQuestionHost={
+            el:id=>$(id),toast:(message,kind)=>toast(message,kind),hash,store,
+            guides:()=>pickStudyGuides('q'),
             sourceUnits:guides=>guides.flatMap(g=>['highIncidence','mediumIncidence','lowIncidence'].flatMap(group=>
                 safeArray(g.articlesMapping?.[group]).map(a=>({law:g.lawName,article:String(a.article||'Tópico'),
-                    text:String(a.sourceText||a.plainExplanation||'')})))),
-            bankKey:(guides,fmt,level)=>aiBankKey(guides,fmt,level),
-            rubric:()=>scanPrompt(),
-            user:()=>AUTH_USER,mode:()=>QUESTION_ENGINE,safe:(more,reason)=>startSafeQuestions(more,reason),
-            activateSafe:()=>{if($('q-ai-backend'))$('q-ai-backend').value='safe';refreshAIModeUI();},
-            healthGemini:async()=>{
-                const r=await fetch(SB_URL+'/functions/v1/gemini-questions',{method:'GET',
-                    headers:{apikey:SB_KEY},signal:AbortSignal.timeout(10000)});
-                const data=await r.json().catch(()=>({}));
-                if(!r.ok)throw Error(data.message||'Função Gemini ainda não foi publicada no Supabase (HTTP '+r.status+').');
-                return data;
-            },
-            requestGemini:async(body,signal)=>{
-                const token=await sbToken();
-                const response=await fetch(SB_URL+'/functions/v1/gemini-questions',{
-                    method:'POST',headers:sbHeaders(token),body:JSON.stringify(body),signal
-                });
-                const data=await response.json().catch(()=>({}));
-                if(!response.ok){
-                    const e=new Error(data.message||'Não foi possível executar o Gemini (HTTP '+response.status+').');
-                    e.code=data.code||'HTTP_'+response.status;throw e;
-                }
-                return data;
-            },
-            setQuestions:(items,model,key,engine='gemini',total=items.length,target=items.length)=>{
-                Q_STATE={items:items.slice(),engine,modelId:model,index:0,hits:0,wrong:0,blank:0,
+                text:String(a.sourceText||a.plainExplanation||'')})))),
+            auth:()=>AUTH_USER,
+            setQuestions:(items,{model,key,total,target})=>{
+                Q_STATE={items:items.slice(),engine:'neural',modelId:model,index:0,hits:0,wrong:0,blank:0,
                     pending:0,answered:false,questionStart:Date.now(),
-                    coverage:{total:Math.max(total,target),shown:total,remaining:Math.max(0,target-total),cycleKey:key}};
+                    coverage:{total:Math.max(target,total),shown:total,remaining:Math.max(0,target-total),cycleKey:key}};
                 saveStudySession();$('q-panel').classList.remove('hidden');drawQuestions();
+                $('q-status').textContent='Motor neural local · '+items.length+' questões geradas sem API externa.';
+                $('q-coverage').textContent='Cobertura: '+total+' de '+target+' questões disponíveis.';
             },
-            validateItem:q=>questionIsComplete(q),
-            memory:AI_MEMORY_BANKS,
-            saveSession:()=>saveStudySession()
+            persist:async rows=>{
+                if(!AUTH_USER)throw Error('Faça login antes de salvar.');
+                const token=await sbToken();
+                const response=await fetch(SB_URL+'/rest/v1/questoes?on_conflict=hash_unico',{
+                    method:'POST',headers:{...sbHeaders(token),Prefer:'resolution=merge-duplicates,return=minimal'},
+                    body:JSON.stringify(rows)});
+                if(!response.ok){const data=await response.json().catch(()=>({}));
+                    throw Error(data.message||data.error||('HTTP '+response.status));}
+                return true;
+            }
         };
         function questionCoverageId(q){
             return q.coverageId || q.type+'|'+(q.law||'')+'|'+(q.lawBasis||'')+'|'+String(q.statement||'').trim();
@@ -5983,36 +5905,15 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             return 'q:coverage:v3:'+(hash(fingerprint)>>>0).toString(36);
         }
         function resetQuestionCycle(){
-            if(QUESTION_ENGINE==='gemini'&&$('q-ai-backend')?.value==='safe'){
-                const guides=pickStudyGuides('q');
-                if($('q-source')?.value==='all'){
-                    store.del('q:adaptive:all:cursor');
-                    const fmtAll=$('q-format')?.value==='MC'?'MC':'CE';
-                    const lvlAll=LEVELS_SAFE_LEVEL($('q-level')?.value);
-                    for(const guide of guides)store.del(questionCycleKey([guide],fmtAll,lvlAll,false));
-                    $('q-coverage').textContent='Cobertura do catálogo inteiro reiniciada.';
-                    toast('Histórico de lotes de todas as leis reiniciado.','ok');return;
-                }
-                const fmt=$('q-format')?.value==='MC'?'MC':'CE';
-                const lvl=LEVELS_SAFE_LEVEL($('q-level')?.value);
-                store.del(questionCycleKey(guides,fmt,lvl,false));
-                $('q-coverage').textContent='Cobertura do modo seguro reiniciada.';
-                toast('Histórico de lotes do modo seguro reiniciado.','ok');return;
-            }
-            if(QUESTION_ENGINE==='gemini'){
-                if(window.PMDFQuestionAI?.status?.().running)return toast('Interrompa a geração e aguarde a conclusão antes de reiniciar o banco.','error');
-                window.PMDFQuestionAI?.reset?.();return;
-            }
-            const imported=$('q-source').value==='imported';
-            const guides=imported?[]:pickStudyGuides('q');
-            const fmt=$('q-format').value==='MC'?'MC':'CE';
-            const lvl=LEVELS_SAFE_LEVEL($('q-level').value);
+            if(QUESTION_ENGINE==='neural')return window.PMDFNeuralQuestions?.reset?.();
+            const imported=$('q-source').value==='imported',guides=imported?[]:pickStudyGuides('q');
+            const fmt=$('q-format').value==='MC'?'MC':'CE',lvl=LEVELS_SAFE_LEVEL($('q-level').value);
             store.del(questionCycleKey(guides,fmt,lvl,imported));
             if($('q-coverage'))$('q-coverage').textContent='Cobertura reiniciada para esta fonte, formato e nível.';
-            toast('Histórico de lotes reiniciado; suas estatísticas de estudo foram mantidas.','ok');
+            toast('Histórico de lotes reiniciado; suas estatísticas foram mantidas.','ok');
         }
         async function startQuestions(nextBatch=false){
-            if(QUESTION_ENGINE==='gemini'&&!SAFE_FALLBACK_ACTIVE)return startAIQuestions(nextBatch);
+            if(QUESTION_ENGINE==='neural'&&!SAFE_FALLBACK_ACTIVE)return startNeuralQuestions(nextBatch);
             if(!AUTH_USER)return toast('Faça login para gerar questões.','error');
             const imported=$('q-source').value==='imported';
             let guides=imported?[]:pickStudyGuides('q');
@@ -6085,11 +5986,11 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const el=$('q-panel'),s=Q_STATE;if(!el||!s)return;
             if(s.index>=s.items.length){
                 const pct=Math.round(s.hits/Math.max(1,s.items.length-(s.pending||0))*100);saveStudySession();
-                el.innerHTML='<h3 class="text-lg font-bold text-[#E5C158]">Simulado concluído</h3><p class="mt-2 text-slate-100">'+s.hits+' acertos de '+s.items.length+' questões ('+pct+'%). '+s.wrong+' erros · '+s.blank+' em branco · '+(s.pending||0)+' aguardando gabarito.</p><p class="mt-2 text-xs text-[#E5C158]">'+(s.coverage?s.coverage.shown+' de '+s.coverage.total+' itens gerados · '+s.coverage.remaining+' pendentes':'')+'</p><button class="mt-4 px-4 py-2 rounded-xl bg-[#D4AF37] text-[#050B16] font-bold" onclick="startQuestions(true)">'+(s.engine==='gemini'?'Gerar mais com Gemini':s.engine==='adaptive'?'Próximo lote (modo seguro)':'Próximo lote inédito')+'</button> <button class="mt-4 px-4 py-2 rounded-xl border border-[#334155] text-slate-100" onclick="resetQuestionCycle();startQuestions()">Reiniciar ciclo</button>';
+                el.innerHTML='<h3 class="text-lg font-bold text-[#E5C158]">Simulado concluído</h3><p class="mt-2 text-slate-100">'+s.hits+' acertos de '+s.items.length+' questões ('+pct+'%). '+s.wrong+' erros · '+s.blank+' em branco · '+(s.pending||0)+' aguardando gabarito.</p><p class="mt-2 text-xs text-[#E5C158]">'+(s.coverage?s.coverage.shown+' de '+s.coverage.total+' itens gerados · '+s.coverage.remaining+' pendentes':'')+'</p><button class="mt-4 px-4 py-2 rounded-xl bg-[#D4AF37] text-[#050B16] font-bold" onclick="startQuestions(true)">'+(s.engine==='neural'?'Gerar mais com motor neural':s.engine==='adaptive'?'Próximo lote (modo seguro)':'Próximo lote inédito')+'</button> <button class="mt-4 px-4 py-2 rounded-xl border border-[#334155] text-slate-100" onclick="resetQuestionCycle();startQuestions()">Reiniciar ciclo</button>';
                 return;
             }
             const q=s.items[s.index],mc=q.type==='MC',choices=mc?q.options:['Certo','Errado'];
-            el.innerHTML='<div class="study-progress-meter" aria-label="Progresso das questões"><span style="width:'+Math.round(s.index/s.items.length*100)+'%"></span></div><p class="text-xs text-slate-400">✅ '+s.hits+' acertos · ❌ '+s.wrong+' erros · ◻ '+s.blank+' brancas · '+(s.pending||0)+' sem gabarito</p><p class="text-sm text-[#E5C158] font-semibold mb-2">Questão '+(s.index+1)+' de '+s.items.length+'</p><p class="text-xs text-slate-400 mb-3">'+esc(q.law||'Material de estudo')+' · '+esc(q.topic||'Geral')+'</p>'+(q.origin==='gemini'?'<p class="text-xs mb-3 text-[#E5C158]">Gemini · gabarito sujeito à conferência jurídica</p>':q.origin==='webllm-local'?'<p class="text-xs mb-3 text-[#E5C158]">Questão de IA local de sessão anterior</p>':'')+'<p class="text-base text-slate-100 leading-relaxed font-semibold mb-4">'+esc(q.statement)+'</p>'+
+            el.innerHTML='<div class="study-progress-meter" aria-label="Progresso das questões"><span style="width:'+Math.round(s.index/s.items.length*100)+'%"></span></div><p class="text-xs text-slate-400">✅ '+s.hits+' acertos · ❌ '+s.wrong+' erros · ◻ '+s.blank+' brancas · '+(s.pending||0)+' sem gabarito</p><p class="text-sm text-[#E5C158] font-semibold mb-2">Questão '+(s.index+1)+' de '+s.items.length+'</p><p class="text-xs text-slate-400 mb-3">'+esc(q.law||'Material de estudo')+' · '+esc(q.topic||'Geral')+'</p>'+(q.origin==='neural-local'?'<p class="text-xs mb-3 text-[#E5C158]">Motor neural local · confira a fonte e a vigência</p>':q.origin==='webllm-local'?'<p class="text-xs mb-3 text-[#E5C158]">Questão de IA local de sessão anterior</p>':'')+'<p class="text-base text-slate-100 leading-relaxed font-semibold mb-4">'+esc(q.statement)+'</p>'+
                 '<div id="q-alternatives" class="grid gap-2">'+choices.map((choice,j)=>'<button type="button" data-choice="'+(mc?'ABCDE'[j]:'CE'[j])+'" onclick="answerQuestion(this.dataset.choice)" class="q-choice text-left px-4 py-3 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-100 hover:border-[#D4AF37]">'+(mc?'ABCDE'[j]+') ':'')+esc(choice)+'</button>').join('')+'</div><div class="flex flex-wrap gap-2 mt-3"><button type="button" id="q-blank" onclick="answerQuestion(null)" class="px-3 py-2 rounded-lg border border-[#334155] text-slate-200 bg-[#0E1B33]">Deixar em branco</button></div><div id="q-feedback" role="status" aria-live="polite"></div>';
             if(!s.questionStart)s.questionStart=Date.now();s.answered=false;
         }
@@ -6097,6 +5998,9 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const s=Q_STATE;if(!s||s.answered)return;
             const q=s.items[s.index];const elapsedSec=Math.min(86400,Math.max(0,(Date.now()-(s.questionStart||Date.now()))/1000));s.answered=true;
             const blank=answer===null,correct=!blank&&answer===q.answer;
+            if(q.origin==='neural-local'&&!blank&&q.sourceQuote){
+                try{window.PMDFNeuralQuestions?.testModel?.().aprenderComFeedback(q.sourceQuote,correct?0.40:0.90,correct?0.35:0.90);}catch(e){}
+            }
             const hasKey=!!q.answer; if(blank)s.blank++;else if(!hasKey)s.pending=(s.pending||0)+1;else if(correct)s.hits++;else s.wrong++;
             document.querySelectorAll('#q-alternatives button').forEach(btn=>{btn.disabled=true;if(btn.dataset.choice===q.answer)btn.classList.add('border-emerald-500');if(btn.dataset.choice===answer&&!correct)btn.classList.add('border-red-500');});
             $('q-blank').disabled=true; if(!blank&&hasKey)recordQuestionResult(q,answer===q.answer,elapsedSec);saveStudySession();showQuestionTotals();
@@ -6107,8 +6011,8 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 store.set('sim:errs',JSON.stringify(errors));
             }
             const gab=!hasKey?'Não disponível: importe o gabarito oficial':q.type==='MC'?q.answer+') '+(q.options['ABCDE'.indexOf(q.answer)]||''):q.answer==='C'?'Certo':'Errado';
-            const aiEvidence=['webllm-local','gemini'].includes(q.origin)?'<p class="mt-2"><strong>Trecho literal:</strong> '+esc(q.sourceQuote||'Não disponível')+'</p>':'';
-            const aiDistractors=['webllm-local','gemini'].includes(q.origin)&&Array.isArray(q.optionAnalysis)&&q.optionAnalysis.length?'<div class="mt-2"><strong>Justificativa das alternativas:</strong><ul class="list-disc ml-5">'+q.optionAnalysis.map((v,i)=>'<li>'+esc('ABCDE'[i]+') '+v)+'</li>').join('')+'</ul></div>':'';
+            const aiEvidence=['webllm-local','neural-local'].includes(q.origin)?'<p class="mt-2"><strong>Trecho literal:</strong> '+esc(q.sourceQuote||'Não disponível')+'</p>':'';
+            const aiDistractors=['webllm-local','neural-local'].includes(q.origin)&&Array.isArray(q.optionAnalysis)&&q.optionAnalysis.length?'<div class="mt-2"><strong>Justificativa das alternativas:</strong><ul class="list-disc ml-5">'+q.optionAnalysis.map((v,i)=>'<li>'+esc('ABCDE'[i]+') '+v)+'</li>').join('')+'</ul></div>':'';
             $('q-feedback').innerHTML='<div class="g-card mt-4"><p class="font-bold '+(correct?'text-emerald-300':'text-[#E5C158]')+'">'+(blank?'Em branco':!hasKey?'Resposta registrada — aguardando gabarito':correct?'✅ Acertou':'❌ Errou')+' · Gabarito: '+esc(gab)+'</p><p><strong>Comentário:</strong> '+esc(q.explanation||'Confira o trecho-fonte.')+'</p><p><strong>Fundamento:</strong> '+esc(q.lawBasis||'Conteúdo estudado')+'</p>'+aiEvidence+aiDistractors+(q.easyTip?'<p><strong>Dica:</strong> '+esc(q.easyTip)+'</p>':'')+'</div><button type="button" class="mt-3 px-5 py-2.5 rounded-xl bg-[#D4AF37] text-[#050B16] font-bold" onclick="nextQuestion()">'+(s.index+1===s.items.length?'Ver resultado':'Próxima questão →')+'</button>';
         }
         function nextQuestion(){if(!Q_STATE||!Q_STATE.answered)return;Q_STATE.index++;Q_STATE.answered=false;Q_STATE.questionStart=Date.now();saveStudySession();drawQuestions();}
@@ -6187,7 +6091,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 Q_STATE=s.question?.items?.length?s.question:null;
                 if(Q_STATE?.answered){Q_STATE.index=Math.min(Q_STATE.items.length,Q_STATE.index+1);Q_STATE.answered=false;}
                 ANKI_STATE=s.anki?.cards?.length?s.anki:null;
-                if(Q_STATE){$('q-panel').classList.remove('hidden');Q_STATE.questionStart=Date.now();if(['webllm','adaptive','gemini'].includes(Q_STATE.engine)){setQuestionEngine('gemini');if($('q-ai-backend'))$('q-ai-backend').value=Q_STATE.engine==='gemini'?'gemini':'safe';refreshAIModeUI();}if(Q_STATE.items.some(q=>q.origin==='official-import')){$('q-source').value='imported';$('q-format').value=Q_STATE.items[0]?.type==='CE'?'CE':'MC';}drawQuestions();}
+                if(Q_STATE){$('q-panel').classList.remove('hidden');Q_STATE.questionStart=Date.now();if(Q_STATE.engine==='neural')setQuestionEngine('neural');if(Q_STATE.items.some(q=>q.origin==='official-import')){$('q-source').value='imported';$('q-format').value=Q_STATE.items[0]?.type==='CE'?'CE':'MC';}drawQuestions();}
                 if(ANKI_STATE){$('anki-panel').classList.remove('hidden');drawAnki();}
                 restoreEssayLastResult();showTab(['leis','questoes','anki','redacao','resultados'].includes(s.tab)?s.tab:'leis');
             }else{Q_STATE=null;ANKI_STATE=null;$('q-panel')?.classList.add('hidden');$('anki-panel')?.classList.add('hidden');showTab('leis');}
