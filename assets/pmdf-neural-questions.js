@@ -505,6 +505,20 @@ class MotorNeuralPMDF extends MotorNeuralSupabase {
             "A segunda associação foi adulterada: "+d.comentario),u);
       }
     }
+    // Intercala formatos antes da paginação; sem isso, os primeiros lotes
+    // mistos continham apenas MC, apesar de haver questões C/E no banco.
+    if(modo==="MISTO_IA"){
+      const ce=out.filter(q=>q.formato==="CERTO_ERRADO");
+      const mc=out.filter(q=>q.formato==="MULTIPLA_ESCOLHA");
+      if(ce.length&&mc.length){
+        const alternadas=[],limite=Math.max(ce.length,mc.length);
+        for(let i=0;i<limite;i++){
+          if(i<ce.length)alternadas.push(ce[i]);
+          if(i<mc.length)alternadas.push(mc[i]);
+        }
+        return {questoes:alternadas,unidades:unidades.length};
+      }
+    }
     return {questoes:out,unidades:unidades.length};
   }
   aprenderComFeedback(texto,dif,peg){

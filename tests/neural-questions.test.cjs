@@ -32,6 +32,7 @@ for(const mode of ["APENAS_CE","ME_CORRETA","ME_INCORRETA","MISTO_IA"]){
   const result=neural.criarBanco(textRows,{formato:mode,disciplina:"Direito",assunto:"Atos"});
   assert.ok(result.questoes.length,mode+" deve gerar questões");
   if(mode==="MISTO_IA")assert.ok(result.questoes.length>=200,"Texto longo com variedade suficiente deve gerar pelo menos 200 questões mistas");
+  if(mode==="MISTO_IA"){assert.equal(new Set(result.questoes.slice(0,30).map(q=>q.formato)).size,2,"Primeiro lote misto precisa conter C/E e múltipla escolha");assert.equal(new Set(result.questoes.slice(30,60).map(q=>q.formato)).size,2,"Próximo lote misto deve continuar intercalando os formatos");}
   if(mode==="ME_CORRETA"||mode==="ME_INCORRETA")assert.ok(result.questoes.length>=10,"Material adequado deve oferecer várias questões em ambos os comandos");
   assert.equal(new Set(result.questoes.map(q=>q.hash_unico)).size,result.questoes.length,"Questões distintas precisam de hash distinto");
   for(const q of result.questoes){
