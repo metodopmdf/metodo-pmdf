@@ -291,7 +291,11 @@ ptCE.win.PMDFWebLLM.generate=async messages=>{
   numberPT++;
   const quote=messages[1].content.split('\n').at(-1);
   return {text:JSON.stringify({questoes:[{
-    enunciado:'No procedimento administrativo nº '+numberPT+', a autoridade deve registrar os fatos, motivar a decisão e observar a competência estabelecida no dispositivo legal considerado.',
+    enunciado:['O processo público demanda documentação acessível dos atos administrativos, conforme as regras expressas no trecho-base.',
+      'A autoridade deve fundamentar sua decisão, observando os requisitos de motivação exigidos no procedimento legal.',
+      'O interessado possui direito à informação e ao contraditório, segundo as condições expressamente presentes na fonte.',
+      'As decisões administrativas devem respeitar a competência da autoridade responsável, com registro da atuação estatal.',
+      'O controle documental exige preservação das informações e justificativas vinculadas ao procedimento.'][numberPT%5],
     gabarito:'CERTO',
     justificativa:'A obrigação de documentar, fundamentar e respeitar competência está prevista no trecho-base utilizado no item.',
     trecho:quote.slice(0,68)
@@ -308,7 +312,10 @@ ptMC.win.PMDFWebLLM.generate=async messages=>{
   numberMC++;
   const quote=messages[1].content.split('\n').at(-1);
   return {text:JSON.stringify({questoes:[{
-    enunciado:'No procedimento administrativo hipotético número '+numberMC+', qual das alternativas corresponde aos requisitos legais previstos na fonte sobre a decisão administrativa?',
+    enunciado:['Qual alternativa demonstra a obrigação de registro documental e a motivação que fundamenta o procedimento?',
+      'Na hipótese de pedido do interessado, qual resposta observa o contraditório e as garantias informativas citadas na fonte?',
+      'Considerando as competências atribuídas à autoridade, qual proposição reproduz corretamente as exigências documentais?',
+      'Em ato administrativo sujeito a revisão, qual alternativa contempla justificativa e formalização previstas no dispositivo?'][numberMC%4],
     gabarito:'B',
     justificativa:'É necessário observar requisitos de motivação, competência e registro documental para a decisão administrativa.',
     trecho:quote.slice(0,65),
