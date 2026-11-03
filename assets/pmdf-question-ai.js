@@ -183,7 +183,7 @@ async function start(more=false){
         continue;
       }
       let added=0;
-      for(const input of values.slice(0,requestCount+2)){
+      for(const input of values.slice(0,requestCount)){
         const q=validate(input,u,fmt,level,bank.questions);
         if(q){bank.questions.push(q);added++;}else bank.rejected++;
       }
