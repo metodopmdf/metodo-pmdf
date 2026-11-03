@@ -113,6 +113,7 @@ async function checkLongDocumentAndExhaustion(page){
     await page.waitForFunction(prev=>{
       const q=window.eval('Q_STATE');
       return !!q&&q.engine==='adaptive'&&q.items.length>0&&
+        String(q.items[0].law||'').includes('Regulamento fictício')&&
         (q.review||q.coverage.shown>prev);
     },lastCount,{timeout:20000});
     const result=await page.evaluate(()=>{
