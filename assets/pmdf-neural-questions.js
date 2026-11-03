@@ -405,6 +405,63 @@ class MotorNeuralPMDF extends MotorNeuralSupabase {
         tipo_armadilha:"Análise de norma por nível",enunciado:stem,alternativas:alts,gabarito:answer,
         comentario_gabarito:String(q.explanation),texto_origem:evidence},{law,article});
     }
+    // Composição de associações artigo/conteúdo, inclusive em temas curtos.
+    // Respostas conferidas contra a associação literal da fonte; nenhuma lei é inventada.
+    if(modo==="ME_CORRETA"||modo==="ME_INCORRETA"||modo==="MISTO_IA"){
+      for(const u of lista){
+        if(out.length>=MAX)break;
+        const group=groups.get(u.law)||[];
+        const uniqueArticle=new Set([this.normalizar(u.article)]);
+        const peers=[];
+        for(const peer of group){
+          const key=this.normalizar(peer.article);
+          if(!key||uniqueArticle.has(key))continue;
+          uniqueArticle.add(key);peers.push(peer);
+        }
+        if(peers.length<4)continue;
+        const mixCmd="De acordo com as associações literais entre dispositivos e conteúdo no material de "+
+          u.law+", assinale a opção ";
+        const makeAssoc=(incorrect,variation)=>{
+          const options=[];
+          const original={texto:u.article+" — "+u.text,correta:!incorrect,
+            comentario:"Esta associação corresponde ao texto-fonte de "+u.article+"."};
+          if(incorrect){
+            const reference=peers[variation%peers.length];
+            const falseItem={texto:u.article+" — "+reference.text,correta:true,
+              comentario:"O texto foi extraído de "+reference.article+
+                " e atribuído equivocadamente a "+u.article+"."};
+            const truthOptions=escolher(peers,(variation*3+u.i)%peers.length,4,new Set([this.normalizar(reference.text)]));
+            // Inclui o artigo original como associação verdadeira para preservar quatro alternativas.
+            options.push(falseItem,original,...truthOptions.slice(0,3).map(p=>({
+              texto:p.article+" — "+p.text,correta:false,
+              comentario:"Associação literal conforme "+p.article+"."})));
+            if(options.length!==5)return;
+          }else{
+            const wrongOptions=escolher(peers,(variation*3+u.i)%peers.length,4,new Set([this.normalizar(u.text)]));
+            if(wrongOptions.length!==4)return;
+            options.push(original,...wrongOptions.map(p=>({
+              texto:u.article+" — "+p.text,correta:false,
+              comentario:"O texto é de "+p.article+", não de "+u.article+"."})));
+          }
+          if(new Set(options.map(a=>this.normalizar(a.texto))).size!==5)return;
+          const shift=(u.i+variation*2+(incorrect?2:0))%5;
+          const rotated=options.slice(shift).concat(options.slice(0,shift)).map((a,i)=>({
+            letra:"ABCDE"[i],texto:a.texto,correta:a.correta,comentario:a.comentario
+          }));
+          const key=rotated.find(x=>x.correta)?.letra;
+          if(!key||rotated.filter(x=>x.correta).length!==1)return;
+          const statement=mixCmd+(incorrect?"INCORRETA":"CORRETA")+".";
+          incluir(makeBase(u,"MULTIPLA_ESCOLHA",statement,key,rotated,
+              "Associação e referência do dispositivo",
+              rotated.map(x=>"("+x.letra+") "+x.comentario).join(" | ")),u);
+        };
+        const allowCorrect=modo!=="ME_INCORRETA",allowIncorrect=modo!=="ME_CORRETA";
+        for(let variant=0;variant<(modo==="MISTO_IA"?3:5);variant++){
+          if(allowCorrect)makeAssoc(false,variant);
+          if(allowIncorrect)makeAssoc(true,variant);
+        }
+      }
+    }
     for(const u of lista){
       if(out.length>=MAX)break;
       if(modo==="APENAS_CE"||modo==="MISTO_IA"){
@@ -425,7 +482,7 @@ class MotorNeuralPMDF extends MotorNeuralSupabase {
       }
     }
     // Integra dois dispositivos da mesma matéria com rastreabilidade literal.
-    if(nivel!=="iniciante"&&(modo==="APENAS_CE"||modo==="MISTO_IA")){
+    if(modo==="APENAS_CE"||modo==="MISTO_IA"){
       for(const u of lista){
         if(out.length>=MAX)break;
         const peers=groups.get(u.law)||[];
