@@ -2933,7 +2933,7 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
     </footer>
 
     <script defer src="assets/pmdf-webllm.js?v=20261103-adaptive2"></script>
-    <script defer src="assets/pmdf-question-ai.js?v=20261103-json-recovery-final"></script>
+    <script defer src="assets/pmdf-question-ai.js?v=20261103-compact-schema"></script>
         <script>
         // ============================================================================
         // BASE DE CONHECIMENTO TÁTICA INTEGRADA (AS 5 LEIS PRINCIPAIS DA PMDF)
@@ -5850,14 +5850,18 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 if(Q_STATE&&Q_STATE!==before&&Q_STATE.engine==='local'){
                     Q_STATE.engine='adaptive';
                     const count=Q_STATE.items.length;
-                    const suffix=reason?' '+reason:'';
-                    $('q-status').textContent='Modo seguro (regras locais): '+count+' questões neste lote. Não foi executada IA generativa.'+suffix;
+                    $('q-status').textContent='Modo seguro (regras locais): '+count+' questões neste lote. Não foi executada IA generativa.';
                     $('q-coverage').textContent='Sem GPU ou download. '+Q_STATE.coverage.shown+' de '+Q_STATE.coverage.total+
                         ' questões disponíveis neste recorte; '+Q_STATE.coverage.remaining+' ainda inéditas.';
                     saveStudySession();
+                    return {ok:true,count,engine:'adaptive'};
                 }
-            }catch(e){toast('Não foi possível montar o lote seguro: '+e.message,'error');}
-            finally{SAFE_FALLBACK_ACTIVE=false;if($('q-batch')&&previousBatch!==undefined)$('q-batch').value=previousBatch;}
+                // Não declarar sucesso quando nenhum item verificável foi produzido.
+                return {ok:false,reason:'O material não possui novas questões verificáveis neste recorte. Revise a fonte ou reinicie a cobertura.'};
+            }catch(e){
+                toast('Não foi possível montar o lote seguro: '+String(e?.message||e||'erro inesperado'),'error');
+                return {ok:false,reason:'Falha ao elaborar questões com regras locais.'};
+            }finally{SAFE_FALLBACK_ACTIVE=false;if($('q-batch')&&previousBatch!==undefined)$('q-batch').value=previousBatch;}
         }
         function startAIQuestions(more=false){
             if(!window.PMDFQuestionAI)return toast('Módulo de IA não carregado. Recarregue a página com internet.','error');
