@@ -124,13 +124,13 @@ const multi=createClient(),multiApp=multi.application;
 multiApp.auth('qa-decks');multiApp.choose('lai');multiApp.level('intermediario');
 multi.$('anki-source').value='all';multi.$('anki-mode').value='all';multi.$('anki-batch-size').value='50';
 multiApp.startAnki();
-const batchA=multiApp.ankiState().cards;
-assert.equal(batchA.length,50,'O limite configurado de flashcards não foi aplicado');
-assert.equal(new Set(batchA.slice(0,26).map(c=>c.law)).size,26,
+const ankiBatchA=multiApp.ankiState().cards;
+assert.equal(ankiBatchA.length,50,'O limite configurado de flashcards não foi aplicado');
+assert.equal(new Set(ankiBatchA.slice(0,26).map(c=>c.law)).size,26,
   'Revisão de todas as leis deve distribuir os cartões entre as 26 matérias');
 multiApp.startAnki();
-const batchB=multiApp.ankiState().cards;
-assert(batchB.length>0&&batchB.every(c=>!batchA.some(a=>a.id===c.id)),
+const ankiBatchB=multiApp.ankiState().cards;
+assert(ankiBatchB.length>0&&ankiBatchB.every(c=>!ankiBatchA.some(a=>a.id===c.id)),
   'Próximo lote livre deve avançar sem repetir o anterior');
 const gradeClient=createClient(),gradeApp=gradeClient.application;
 gradeApp.auth('qa-card-grade');gradeApp.choose('lai');gradeApp.level('intermediario');
