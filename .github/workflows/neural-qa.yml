@@ -4,14 +4,18 @@ on:
     paths:
       - 'index.html'
       - 'assets/pmdf-neural-questions.js'
+      - 'assets/pmdf-neural-flashcards.js'
       - 'tests/neural-questions.test.cjs'
+      - 'tests/neural-flashcards.test.cjs'
       - 'supabase/migrations/**'
       - '.github/workflows/neural-qa.yml'
   pull_request:
     paths:
       - 'index.html'
       - 'assets/pmdf-neural-questions.js'
+      - 'assets/pmdf-neural-flashcards.js'
       - 'tests/neural-questions.test.cjs'
+      - 'tests/neural-flashcards.test.cjs'
       - 'supabase/migrations/**'
 permissions:
   contents: read
@@ -25,3 +29,5 @@ jobs:
           node-version: '22'
       - run: node --check assets/pmdf-neural-questions.js
       - run: node tests/neural-questions.test.cjs
+      - run: node --check assets/pmdf-neural-flashcards.js
+      - run: node tests/neural-flashcards.test.cjs
