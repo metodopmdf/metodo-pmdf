@@ -334,7 +334,7 @@ for(const g of Object.values(examApp.BUILTIN_PMDF_GUIDES)){
   const qs=examApp.questionPool(g,'MC','intermediario',4);
   for(const q of qs){
     assert.equal(q.optionAnalysis.length,q.options.length,'Comentário individual de alternativa ausente');
-    assert(q.optionAnalysis.filter(t=>t.includes('CORRETA')).length===1,'Auditoria identificou gabarito MC inconsistente');
+    assert(q.optionAnalysis.filter(t=>/\) CORRETA\./.test(t)).length===1,'Auditoria identificou gabarito MC inconsistente');
   }
 }
 
