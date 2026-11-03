@@ -334,7 +334,14 @@ for(const g of Object.values(examApp.BUILTIN_PMDF_GUIDES)){
   const qs=examApp.questionPool(g,'MC','intermediario',4);
   for(const q of qs){
     assert.equal(q.optionAnalysis.length,q.options.length,'Comentário individual de alternativa ausente');
-    assert(q.optionAnalysis.filter(t=>/\) CORRETA\./.test(t)).length===1,'Auditoria identificou gabarito MC inconsistente');
+    const altered=q.statement.includes('qual associação contém uma alteração');
+    const expected=altered?'INCORRETA':'CORRETA';
+    const marked=q.optionAnalysis.filter(t=>new RegExp('\\) '+expected+'\\.').test(t));
+    assert.equal(marked.length,1,'Auditoria identificou gabarito MC inconsistente para '+expected);
+    const idx='ABCDE'.indexOf(q.answer);
+    assert(idx>=0&&idx<q.optionAnalysis.length,'Gabarito fora do conjunto de alternativas');
+    assert(new RegExp('\\) '+expected+'\\.').test(q.optionAnalysis[idx]),
+      'A alternativa apontada pelo gabarito não corresponde à opção '+expected);
   }
 }
 
