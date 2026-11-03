@@ -8,7 +8,9 @@ assert(index.includes('assets/pmdf-webllm.js'),'Script WebLLM não registrado');
 assert(index.includes('assets/pmdf-question-ai.js'),'Controlador de IA não registrado');
 assert(index.includes('id="q-ai-settings"'),'Interface IA ausente');
 assert(index.includes('id="q-engine-local"')&&index.includes('id="q-engine-webllm"'),'Alternância de motores ausente');
-assert(index.includes('selected value="Qwen2.5-0.5B-Instruct-q4f32_1-MLC"'),'O modo leve deve iniciar com Qwen 0,5B');
+assert(index.includes('selected value="SmolLM2-360M-Instruct-q4f16_1-MLC"'),'Modelo experimental menor deve ser selecionado');
+assert(index.includes('id="q-ai-backend"'),'Seletor de processamento seguro não encontrado');
+assert(index.includes('selected value="safe"'),'Geração sem GPU deve ser o padrão');
 assert(engineText.includes('CreateWebWorkerMLCEngine')&&!engineText.includes('api.CreateMLCEngine('),'A inferência não pode executar na thread principal');
 assert(engineText.includes('worker?.terminate'),'O motor precisa liberar o Worker ao interromper');
 assert(readFileSync(new URL('../assets/pmdf-webllm-worker.js',import.meta.url),'utf8').includes('WebWorkerMLCEngineHandler'),'Handler do Worker ausente');
@@ -32,7 +34,7 @@ function makeHarness(format='CE',gpu=true){
   const map=new Map(),storeMap=new Map(),memory={},seen=[];
   const values={
     'q-source':'current','q-format':format,'q-level':'intermediario','q-board':'Cebraspe',
-    'q-ai-target':'30','q-ai-model':'Qwen2.5-1.5B-Instruct-q4f16_1-MLC'
+    'q-ai-target':'30','q-ai-model':'Qwen2.5-1.5B-Instruct-q4f16_1-MLC','q-ai-backend':'experimental'
   };
   const find=id=>{
     if(!map.has(id))map.set(id,{value:values[id]??'',disabled:false,textContent:'',innerHTML:'',style:{},
@@ -50,6 +52,7 @@ function makeHarness(format='CE',gpu=true){
     store:{get:k=>storeMap.get(k)||null,set:(k,v)=>{storeMap.set(k,String(v));return true;}},
     bankKey:(g,f,l)=>'qa:'+f+':'+l,memory,toast:(m,type)=>seen.push({m,type}),
     setQuestions:(items,model,key)=>{h.result={items,model,key};},
+    safe:async(more,reason)=>{h.safeCalls=(h.safeCalls||0)+1;h.lastSafe={more,reason};return 'seguro';},
     saveSession:()=>{}
   };
   const win={PMDFQuestionHost:h};
@@ -119,7 +122,7 @@ assert(mc.h.result.items.every(q=>q.optionAnalysis.length===4),'Comentários por
 const fail=makeHarness('CE',false);
 await fail.win.PMDFQuestionAI.start(false);
 assert.equal(fail.modelLoads,0,'Dispositivo incompatível não deve carregar modelo');
-assert.equal(fail.h.result,undefined,'Dispositivo incompatível não pode gerar questões');
+assert.equal(fail.h.safeCalls,1,'Dispositivo incompatível deve gerar por regras locais sem IA');
 
 
 // Teste do serviço de inferência com fábrica WebLLM simulada: verifica que
@@ -175,4 +178,31 @@ new Function('window',isolatedEngine)(smallRAM);
 await assert.rejects(smallRAM.PMDFWebLLM.load(tinyId),/Memória insuficiente/);
 assert.equal(createdWorkers,1,'Um dispositivo de 2 GB não deve abrir Worker de inferência');
 
-console.log('PASSOU: WebLLM em Worker, modelo leve padrão, sessões CE/MC de até 6/3, acumulação de 30 questões, evidência e fallback WebGPU.');
+
+const safe=makeHarness('CE');
+safe.find('q-ai-backend').value='safe';
+await safe.win.PMDFQuestionAI.start(false);
+assert.equal(safe.h.safeCalls,1,'Modo seguro deve gerar questões sem GPU');
+assert.equal(safe.modelLoads,0,'Modo seguro jamais deve baixar pesos de IA');
+assert.equal(safe.runs,0,'Modo seguro não pode executar inferência generativa');
+await safe.win.PMDFQuestionAI.checkCompatibility();
+assert.match(safe.find('q-ai-compat').textContent,/sem GPU/i);
+
+const mobile=makeHarness('MC');
+mobile.find('q-ai-backend').value='experimental';
+mobile.win.navigator={userAgent:'Mozilla/5.0 (Linux; Android 13; Mobile)'};
+await mobile.win.PMDFQuestionAI.start(false);
+assert.equal(mobile.h.safeCalls,1,'Android deve ser protegido por fallback automático');
+assert.equal(mobile.modelLoads,0,'Android não deve executar inicialização de modelo');
+
+let adapterRequests=0;
+const mobileWebGPU={
+  isSecureContext:true,Worker:function(){},
+  navigator:{userAgent:'Mozilla/5.0 (Linux; Android 13; Mobile)',deviceMemory:12,
+    gpu:{requestAdapter:async()=>{adapterRequests++;return {features:new Set(['shader-f16']),limits:{}};}}}
+};
+new Function('window',engineText)(mobileWebGPU);
+assert.equal((await mobileWebGPU.PMDFWebLLM.compatibility()).ok,false);
+assert.equal(adapterRequests,0,'A GPU de um Android não pode ser inicializada em modo seguro');
+
+console.log('PASSOU: WebLLM em Worker, fallback automático padrão, sessões CE/MC de até 6/3, acumulação de 30 questões, evidência e fallback WebGPU.');
