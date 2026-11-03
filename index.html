@@ -3841,7 +3841,7 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
         // =====================================================
         const $ = id => document.getElementById(id);
         const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-        const BACKUP_KEY_RE = /^(lvl|summaryFormat|lastKey|sim:stats|sim:errs|pmdf:session:v4|exam:imports|pmdf:results:events|pmdf:results:aggregates|essay:totals|(st|fc|leitner|leitnerDue|note|custom|essay):)/;
+        const BACKUP_KEY_RE = /^(lvl|summaryFormat|lastKey|sim:stats|sim:errs|pmdf:session:v4|exam:imports|pmdf:results:events|pmdf:results:aggregates|q:coverage:v2:|essay:totals|(st|fc|leitner|leitnerDue|note|custom|essay):)/;
         const SCRIPT_CACHE=Object.create(null);
         let AUTH_USER=null,CLOUD_SAVE_TIMER=null,CLOUD_SAVE_BUSY=false,CLOUD_DIRTY=false,CLOUD_LAST_ERROR='',CLOUD_MUTATION_SERIAL=0;
         const SYNC_LOCAL_META='__pmdf_sync_meta_v1',SYNC_REMOTE_META='__pmdfSync';
@@ -5644,41 +5644,76 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             return {...q,options,answer};
         }
         let Q_STATE=null;
-        async function startQuestions(){
+
+        function questionCoverageId(q){
+            return q.coverageId || q.type+'|'+(q.law||'')+'|'+(q.lawBasis||'')+'|'+String(q.statement||'').trim();
+        }
+        function questionCycleKey(guides,fmt,lvl,imported){
+            const sources=imported ? [...new Set(IMPORTED_QUESTIONS.map(q=>q.law||'Prova'))].sort().join('|')
+                : guides.map(g=>g._baseLawName||g.lawName||'Material').sort().join('|');
+            const sourceId=imported ? 'importadas' : (guides.length===1 && CUR.key ? CUR.key : sources);
+            const fingerprint=sourceId+'|'+sources+'|'+fmt+'|'+lvl+'|'+($('q-board')?.value||'');
+            return 'q:coverage:v2:'+(hash(fingerprint)>>>0).toString(36);
+        }
+        function resetQuestionCycle(){
+            const imported=$('q-source').value==='imported';
+            const guides=imported?[]:pickStudyGuides('q');
+            const fmt=$('q-format').value==='MC'?'MC':'CE';
+            const lvl=LEVELS_SAFE_LEVEL($('q-level').value);
+            store.del(questionCycleKey(guides,fmt,lvl,imported));
+            if($('q-coverage'))$('q-coverage').textContent='Cobertura reiniciada para esta fonte, formato e nível.';
+            toast('Histórico de lotes reiniciado; suas estatísticas de estudo foram mantidas.','ok');
+        }
+        async function startQuestions(nextBatch=false){
             if(!AUTH_USER)return toast('Faça login para gerar questões.','error');
-            const imported=$('q-source').value==='imported';const guides=imported?[]:pickStudyGuides('q');if(!imported&&!guides.length)return toast('Selecione uma norma ou envie conteúdo para gerar questões.','error');
-            const fmt=$('q-format').value,lvl=LEVELS_SAFE_LEVEL($('q-level').value),baseFmt=fmt==='CE'?'CE':'MC';
+            const imported=$('q-source').value==='imported';
+            const guides=imported?[]:pickStudyGuides('q');
+            if(!imported&&!guides.length)return toast('Selecione uma norma ou envie conteúdo para gerar questões.','error');
+            const fmt=$('q-format').value;
+            const lvl=LEVELS_SAFE_LEVEL($('q-level').value);
+            const baseFmt=fmt==='CE'?'CE':'MC';
             let pool=[];
-            try {
+            try{
                 if(imported){
                     pool=IMPORTED_QUESTIONS.filter(q=>q.type===baseFmt).map(q=>({...q}));
                 }else{
                     for(const g of guides){
-                        // Tenta 5 alternativas verificáveis primeiro; 4 quando necessário.
                         const five=questionPool(g,baseFmt,lvl,5);
                         const four=baseFmt==='MC'?questionPool(g,baseFmt,lvl,4):[];
-                        const keys=new Set(five.map(q=>q.statement+'|'+q.lawBasis));
+                        const keys=new Set(five.map(questionCoverageId));
                         pool.push(...five.map(q=>({...q,law:g.lawName})));
                         for(const q of four){
-                            if(!keys.has(q.statement+'|'+q.lawBasis)){
-                                pool.push({...q,law:g.lawName});
-                                keys.add(q.statement+'|'+q.lawBasis);
-                            }
+                            const id=questionCoverageId(q);
+                            if(!keys.has(id)){pool.push({...q,law:g.lawName});keys.add(id);}
                         }
                     }
                 }
-                pool=shuffle(uniqueQuestions(pool.filter(questionIsComplete).filter(q=>
+                pool=uniqueQuestions(pool.filter(questionIsComplete).filter(q=>
                     baseFmt!=='MC'||(Array.isArray(q.options)&&[4,5].includes(q.options.length)&&
                     new Set(q.options.map(x=>String(x).trim())).size===q.options.length&&
                     (imported||'ABCDE'.slice(0,q.options.length).includes(q.answer))
-                ))));
+                )));
             }catch(e){return toast('Falha ao preparar questões: '+e.message,'error');}
             if(!pool.length)return toast('Não foram encontrados itens completos e verificáveis neste material. Amplie a fonte ou escolha outra norma.','error');
-            const taken=pool.length;
-            Q_STATE={items:pool.slice(0,taken),index:0,hits:0,wrong:0,blank:0,pending:0,answered:false,questionStart:Date.now()};saveStudySession();
-            $('q-status').textContent='Fonte: '+(imported?'Provas importadas':guides.length===1?guides[0].lawName:guides.length+' leis')+' · Nível: '+LEVELS[lvl].label+' · Critério: '+EXAMINER_RUBRIC[lvl].label+'. Inicie a resolução para acompanhar o total disponível.';
-            $('q-panel').classList.remove('hidden');drawQuestions();
-            // O resultado externo já foi integrado antes de começar a sessão.
+            const key=questionCycleKey(guides,baseFmt,lvl,imported),stored=jget(key,[]);
+            const done=new Set(Array.isArray(stored)?stored.filter(x=>typeof x==='string'):[]);
+            const unseen=shuffle(pool.filter(q=>!done.has(questionCoverageId(q))));
+            if(!unseen.length){
+                if($('q-coverage'))$('q-coverage').textContent='Cobertura esgotada: '+pool.length+' questões distintas já apresentadas. Reinicie para revisar.';
+                return toast('Todos os itens deste recorte já foram apresentados. Use “Reiniciar cobertura” para revisar.','ok');
+            }
+            const configured=Number($('q-batch')?.value??30);
+            const limit=configured===0?unseen.length:Math.min(Math.max(1,configured),unseen.length);
+            const selected=unseen.slice(0,limit);
+            selected.forEach(q=>done.add(questionCoverageId(q)));
+            store.set(key,JSON.stringify([...done]));
+            Q_STATE={items:selected,index:0,hits:0,wrong:0,blank:0,pending:0,answered:false,questionStart:Date.now(),
+                coverage:{total:pool.length,shown:pool.length-unseen.length+selected.length,remaining:unseen.length-selected.length,cycleKey:key}};
+            saveStudySession();
+            $('q-status').textContent='Fonte: '+(imported?'Provas importadas':guides.length===1?guides[0].lawName:guides.length+' leis')+' · Nível: '+LEVELS[lvl].label+' · Critério: '+EXAMINER_RUBRIC[lvl].label+' · Lote: '+selected.length+' questões.';
+            if($('q-coverage'))$('q-coverage').textContent='Cobertura: '+Q_STATE.coverage.shown+' de '+pool.length+' itens gerados · '+Q_STATE.coverage.remaining+' inéditos restantes.'+(nextBatch?' Novo lote iniciado.':'');
+            $('q-panel').classList.remove('hidden');
+            drawQuestions();
         }
         function drawQuestions(){
             const el=$('q-panel'),s=Q_STATE;if(!el||!s)return;
