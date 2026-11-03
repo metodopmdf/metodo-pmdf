@@ -8,7 +8,7 @@
   const MODELS=Object.freeze([
     {id:'Qwen2.5-0.5B-Instruct-q4f32_1-MLC',label:'Leve · Qwen 0,5B',vramMB:1061,f16:false},
     {id:'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',label:'Qwen 1,5B (GPU potente)',vramMB:1630,f16:true},
-    {id:'Qwen2.5-1.5B-Instruct-q4f32_1-MLC',label:'Qwen 1,5B (compatível)',vramMB:1889,f16:false},
+    {id:'SmolLM2-360M-Instruct-q4f16_1-MLC',label:'SmolLM2 360M · baixo consumo (qualidade limitada em português)',vramMB:377,f16:true},
     {id:'Qwen2.5-3B-Instruct-q4f16_1-MLC',label:'Qwen 3B (não recomendado)',vramMB:2505,f16:true}
   ]);
   let apiPromise=null,worker=null,engine=null,loadedId=null,loading=null,active=false,version=0;
@@ -22,7 +22,9 @@
       const adapter=await root.navigator.gpu.requestAdapter({powerPreference:'low-power'});
       if(!adapter)return {ok:false,reason:'Nenhuma GPU WebGPU compatível foi encontrada.'};
       const memory=Number(root.navigator?.deviceMemory)||null;
-      return {ok:true,f16:!!adapter.features?.has('shader-f16'),memoryGB:memory,
+      const mobile=/Android|iPhone|iPad|iPod|Mobile|Silk/i.test(String(root.navigator?.userAgent||''));
+      return {ok:true,f16:!!adapter.features?.has('shader-f16'),memoryGB:memory,mobile,
+        cores:Number(root.navigator?.hardwareConcurrency)||null,
         maxBufferSize:adapter.limits?.maxBufferSize||null};
     }catch(e){return {ok:false,reason:'Falha na verificação de GPU: '+String(e?.message||e)};}
   }
@@ -42,11 +44,12 @@
   }
   function assertCapacity(info,device){
     if(!device.ok)throw Error(device.reason);
-    if(info.f16&&!device.f16)throw Error('A GPU não aceita f16. Selecione Qwen 0,5B.');
+    if(device.mobile)throw Error('IA generativa de GPU desativada em dispositivos móveis para prevenir travamentos. Utilize o modo automático seguro.');
+    if(device.memoryGB&&device.memoryGB<8)throw Error('Para modelos generativos locais é necessário um computador com pelo menos 8 GB de RAM detectáveis. Utilize o modo automático seguro.');
+    if(device.cores&&device.cores<4)throw Error('Dispositivo com poucos núcleos: utilize o modo automático seguro.');
+    if(info.f16&&!device.f16)throw Error('A GPU não oferece shader-f16; escolha Qwen 0,5B ou utilize o modo seguro.');
     if(info.vramMB>=2500)throw Error('O modelo 3B foi desativado no modo leve devido ao risco de travamento.');
-    if(device.memoryGB&&device.memoryGB<=2)throw Error('Memória insuficiente para IA local com segurança. Utilize o modo Tradicional.');
-    if(device.memoryGB&&device.memoryGB<=4&&info.vramMB>1100)
-      throw Error('Neste dispositivo, selecione Qwen 0,5B para evitar consumo excessivo de memória.');
+    if(!device.memoryGB&&info.vramMB>400)throw Error('Memória do computador não identificada. Utilize o modo automático ou um modelo experimental menor.');
   }
   async function load(id,progress){
     const info=modelInfo(id);if(!info)throw Error('Modelo inválido.');
