@@ -53,6 +53,7 @@ function makeHarness(format='CE',gpu=true){
     bankKey:(g,f,l)=>'qa:'+f+':'+l,memory,toast:(m,type)=>seen.push({m,type}),
     setQuestions:(items,model,key)=>{h.result={items,model,key};},
     safe:async(more,reason)=>{h.safeCalls=(h.safeCalls||0)+1;h.lastSafe={more,reason};return 'seguro';},
+    activateSafe:()=>{find('q-ai-backend').value='safe';h.activated=(h.activated||0)+1;},
     saveSession:()=>{}
   };
   const win={PMDFQuestionHost:h};
@@ -212,5 +213,58 @@ idle.win.PMDFWebLLM.status=()=>({worker:true,loadedId:'experimental-model'});
 idle.win.PMDFWebLLM.interrupt=()=>{idleUnloads++;};
 idle.win.PMDFQuestionAI.stop();
 assert.equal(idleUnloads,1,'Trocar para modo seguro deve descarregar modelo que ficou ocioso na GPU');
+
+
+// Regressões da mensagem "Quatro respostas consecutivas inválidas: undefined".
+// Até um "throw undefined" de uma biblioteca externa deve resultar em
+// fallback seguro e mensagem compreensível, nunca erro vermelho ao candidato.
+const undefinedError=makeHarness('CE');
+let attempts=0;
+undefinedError.win.PMDFWebLLM.generate=async()=>{attempts++;throw undefined;};
+await undefinedError.win.PMDFQuestionAI.start(false);
+assert.equal(attempts,3,'O modelo com erro repetido deve parar após 3 tentativas');
+assert.equal(undefinedError.h.safeCalls,1,'Erro indefinido deve ativar geração segura');
+assert.equal(undefinedError.find('q-ai-backend').value,'safe','Modo seguro deve ficar selecionado');
+assert(!undefinedError.seen.some(x=>String(x.m).includes('undefined')),'Erro "undefined" vazou para a interface');
+assert(!undefinedError.seen.some(x=>String(x.m).includes('Falha de geração:')),'Falha experimental não foi recuperada');
+
+// JSON truncado também deve produzir questões por regras, sem loop de erro.
+const malformed=makeHarness('MC');
+let malformedCalls=0;
+malformed.win.PMDFWebLLM.generate=async()=>{malformedCalls++;return {text:'{"questions":['};};
+await malformed.win.PMDFQuestionAI.start(false);
+assert.equal(malformedCalls,3,'Saída JSON truncada deve interromper novas chamadas após 3 tentativas');
+assert.equal(malformed.h.safeCalls,1,'JSON truncado não foi encaminhado ao modo seguro');
+assert.equal(malformed.find('q-ai-backend').value,'safe');
+
+// JSON com itens sem evidência válida deve ser rejeitado e gerar fallback.
+const ungrounded=makeHarness('CE');
+ungrounded.win.PMDFWebLLM.generate=async()=>({text:JSON.stringify({questions:[{
+  statement:'No procedimento administrativo a autoridade poderá dispensar qualquer motivação sem justificativa e sem registro dos fatos quando agir por vontade própria.',
+  answer:'C',explanation:'A fundamentação supostamente permitiria a ausência completa de registro e motivação no procedimento.',
+  evidence:'Regra que não consta do documento fornecido.'
+}]})});
+await ungrounded.win.PMDFQuestionAI.start(false);
+assert.equal(ungrounded.h.safeCalls,1,'Três itens não fundamentados precisam acionar fallback');
+
+// Preserve as questões previamente aceitas mesmo se respostas posteriores falharem.
+const partial=makeHarness('CE');
+let partialCalls=0;
+partial.win.PMDFWebLLM.generate=async messages=>{
+  partialCalls++;
+  if(partialCalls>1)throw {message:null};
+  const evidence=messages[1].content.split('\n').at(-1).slice(0,80);
+  return {text:JSON.stringify({question:{
+    statement:'O procedimento administrativo exige que a autoridade registre e motive expressamente cada decisão referente à competência para atuação estatal, conforme o texto.',
+    answer:'C',
+    evidence,
+    explanation:'O trecho original estabelece os requisitos de motivação expressa e registro documental do procedimento administrativo.'
+  }})};
+};
+await partial.win.PMDFQuestionAI.start(false);
+assert.equal(partial.h.result?.items.length,1,'Questão válida anterior ao erro foi descartada');
+assert.equal(partial.h.safeCalls||0,0,'Questões válidas devem ser apresentadas antes do fallback');
+assert.equal(partial.find('q-ai-backend').value,'safe','Próximos lotes devem migrar para o modo seguro');
+assert(!partial.seen.some(x=>String(x.m).includes('undefined')),'Mensagem de erro sem descrição voltou a aparecer');
 
 console.log('PASSOU: WebLLM em Worker, fallback automático padrão, sessões CE/MC de até 6/3, acumulação de 30 questões, evidência e fallback WebGPU.');
