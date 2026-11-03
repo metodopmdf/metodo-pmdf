@@ -5819,6 +5819,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             if($('q-next-button')&&QUESTION_ENGINE==='webllm')
                 $('q-next-button').textContent=experimental?'Gerar mais com IA':'Próximo lote (modo seguro)';
             if(!experimental){
+                stopQuestionAI(); // elimina qualquer modelo experimental que ainda esteja carregado na GPU
                 if($('q-ai-compat'))$('q-ai-compat').textContent='Modo seguro: questões por regras locais, sem download ou uso de GPU.';
                 $('q-ai-progress-wrap')?.classList.add('hidden');
             }else void window.PMDFQuestionAI?.checkCompatibility?.();
