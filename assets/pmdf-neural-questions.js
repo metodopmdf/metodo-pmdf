@@ -315,6 +315,8 @@ class MotorNeuralPMDF extends MotorNeuralSupabase {
       if(!groups.has(u.law))groups.set(u.law,[]);
       groups.get(u.law).push(u);
     }
+    const negativesByLaw=new Map();
+    for(const [law,entries] of groups)negativesByLaw.set(law,entries.flatMap(x=>x.d));
     const MAX=3800;
     const incluir=(raw,origin)=>{
       if(out.length>=MAX)return;
@@ -349,14 +351,13 @@ class MotorNeuralPMDF extends MotorNeuralSupabase {
       if(incorrect){
         if(!u.d.length||peers.length<5)return;
         const falseItem=u.d[variation%u.d.length];
-        const peersTruth=peers.filter(v=>v.i!==u.i);
         const exclude=new Set([this.normalizar(u.text),this.normalizar(falseItem.texto)]);
-        const truth=escolher(peersTruth,(u.i*7+variation*5)%Math.max(1,peersTruth.length),4,exclude);
+        const truth=escolher(peers,(u.i*7+variation*5)%Math.max(1,peers.length),4,exclude);
         if(truth.length!==4)return;
         options=[{texto:falseItem.texto,correta:true,comentario:falseItem.comentario},
           ...truth.map(t=>({texto:t.text,correta:false,comentario:"Afirmativa reproduzida da fonte: "+t.article+"."}))];
       }else{
-        const pool=[...u.d,...peers.filter(v=>v.i!==u.i).flatMap(v=>v.d)];
+        const pool=negativesByLaw.get(u.law)||[];
         const exclude=new Set([this.normalizar(u.text)]);
         const falseItems=escolher(pool,(variation*5+u.i)%Math.max(1,pool.length),4,exclude);
         if(falseItems.length!==4)return;
