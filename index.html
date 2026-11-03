@@ -2933,7 +2933,7 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
     </footer>
 
     <script defer src="assets/pmdf-webllm.js?v=20261103-adaptive2"></script>
-    <script defer src="assets/pmdf-question-ai.js?v=20261103-adaptive2"></script>
+    <script defer src="assets/pmdf-question-ai.js?v=20261103-json-recovery"></script>
         <script>
         // ============================================================================
         // BASE DE CONHECIMENTO TÁTICA INTEGRADA (AS 5 LEIS PRINCIPAIS DA PMDF)
@@ -5902,6 +5902,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             bankKey:(guides,fmt,level)=>aiBankKey(guides,fmt,level),
             rubric:()=>scanPrompt(),
             user:()=>AUTH_USER,mode:()=>QUESTION_ENGINE,safe:(more,reason)=>startSafeQuestions(more,reason),
+            activateSafe:()=>{if($('q-ai-backend'))$('q-ai-backend').value='safe';refreshAIModeUI();},
             setQuestions:(items,model,key)=>{
                 Q_STATE={items:items.slice(),engine:'webllm',modelId:model,index:0,hits:0,wrong:0,blank:0,
                     pending:0,answered:false,questionStart:Date.now(),
