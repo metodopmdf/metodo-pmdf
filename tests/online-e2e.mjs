@@ -65,9 +65,14 @@ async function checkQuestionFlow(page,type){
   await page.locator('#q-source').selectOption('current');
   await page.locator('#q-generate-button').click();
   await page.waitForFunction(
-    ()=>!document.getElementById('q-panel').classList.contains('hidden')&&
-      document.querySelectorAll('#q-alternatives .q-choice').length>=2,
-    null,{timeout:18000}
+    wanted=>{
+      const panel=document.getElementById('q-panel');
+      const options=document.querySelectorAll('#q-alternatives .q-choice').length;
+      const status=document.getElementById('q-status')?.textContent||'';
+      return !panel.classList.contains('hidden')&&status.includes('Modo seguro (regras locais)')&&
+        (wanted==='CE'?options===2:(options===4||options===5));
+    },
+    type,{timeout:20000}
   );
   const number=await page.locator('#q-alternatives .q-choice').count();
   assert(type==='CE'?number===2:number===4||number===5,
