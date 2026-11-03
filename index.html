@@ -2766,28 +2766,28 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <label class="text-xs font-semibold text-[#E5C158]">Modelo de IA local
                                 <select id="q-ai-model" class="qstudio-input block w-full mt-1">
-                                    <option value="Qwen2.5-0.5B-Instruct-q4f32_1-MLC">Qwen 0,5B · leve (≈1,1 GB GPU)</option>
-                                    <option selected value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC">Qwen 1,5B · equilibrado (≈1,6 GB GPU)</option>
+                                    <option selected value="Qwen2.5-0.5B-Instruct-q4f32_1-MLC">Qwen 0,5B · modo leve (≈1,1 GB GPU)</option>
+                                    <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC">Qwen 1,5B · apenas GPU com mais memória</option>
                                     <option value="Qwen2.5-1.5B-Instruct-q4f32_1-MLC">Qwen 1,5B · compatível (≈1,9 GB GPU)</option>
-                                    <option value="Qwen2.5-3B-Instruct-q4f16_1-MLC">Qwen 3B · avançado (≈2,5 GB GPU)</option>
+                                    
                                 </select>
                             </label>
-                            <label class="text-xs font-semibold text-[#E5C158]">Quantidade desejada
+                            <label class="text-xs font-semibold text-[#E5C158]">Meta acumulada de questões
                                 <select id="q-ai-target" class="qstudio-input block w-full mt-1">
                                     <option value="30">Até 30 questões</option>
                                     <option value="50">Até 50 questões</option>
-                                    <option value="100" selected>Até 100 questões</option>
+                                    <option value="100" selected>Meta de 100 questões (em lotes)</option>
                                     <option value="150">Até 150 questões</option>
                                     <option value="200">Até 200 questões</option>
                                 </select>
                             </label>
                         </div>
                         <div class="qstudio-ai-info rounded-xl p-3">
-                            <p class="text-xs text-slate-200"><i data-lucide="info" class="inline w-4 h-4 mr-1"></i> A IA trabalha em lotes e pode produzir menos questões que a meta se não houver conteúdo suficientemente distinto. O download do modelo é feito pela primeira vez no seu navegador; o processamento usa sua GPU. Não enviamos sua lei para uma API de inferência.</p>
+                            <p class="text-xs text-slate-200"><i data-lucide="info" class="inline w-4 h-4 mr-1"></i> <strong>Modo leve:</strong> o Qwen 0,5B é o padrão e funciona em um Web Worker separado. Cada clique tenta gerar até 6 itens de Certo/Errado ou 3 de múltipla escolha; use <strong>Gerar mais com IA</strong> para avançar até a meta, sem sobrecarregar a GPU de uma só vez. A primeira utilização baixa o modelo e requer memória disponível. Se o dispositivo continuar lento, utilize o gerador Tradicional.</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
                             <button type="button" id="q-ai-load" class="qstudio-secondary" onclick="prepareQuestionAI()">Carregar modelo</button>
-                            <button type="button" id="q-ai-stop" class="qstudio-danger hidden" onclick="stopQuestionAI()">Interromper geração</button>
+                            <button type="button" id="q-ai-stop" class="qstudio-danger hidden" onclick="stopQuestionAI()">Interromper e liberar memória</button>
                             <span id="q-ai-compat" class="text-xs text-slate-400" role="status">Verificação de WebGPU pendente.</span>
                         </div>
                         <div id="q-ai-progress-wrap" class="hidden space-y-1">
