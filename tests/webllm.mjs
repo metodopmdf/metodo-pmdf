@@ -267,4 +267,11 @@ assert.equal(partial.h.safeCalls||0,0,'Questões válidas devem ser apresentadas
 assert.equal(partial.find('q-ai-backend').value,'safe','Próximos lotes devem migrar para o modo seguro');
 assert(!partial.seen.some(x=>String(x.m).includes('undefined')),'Mensagem de erro sem descrição voltou a aparecer');
 
+// Se o download/inicialização falhar sem mensagem, não expor undefined ao usuário.
+const loadFailure=makeHarness('CE');
+loadFailure.win.PMDFWebLLM.load=async()=>{throw undefined;};
+await loadFailure.win.PMDFQuestionAI.prepare();
+assert.equal(loadFailure.find('q-ai-backend').value,'safe','Falha no carregamento não ativou o modo seguro');
+assert(!loadFailure.seen.some(x=>String(x.m).includes('undefined')),'Carregamento exibiu undefined novamente');
+
 console.log('PASSOU: WebLLM em Worker, fallback automático padrão, sessões CE/MC de até 6/3, acumulação de 30 questões, evidência e fallback WebGPU.');
