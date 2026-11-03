@@ -127,6 +127,7 @@ async function generate(page,format){
 }
 async function checkFlashcards(page){
   await page.locator('#tab-btn-anki').click();
+  await page.locator('#anki-source').selectOption('all');
   await page.locator('#anki-generation-mode').selectOption('advanced');
   await page.locator('#anki-mode').selectOption('all');
   await page.locator('#anki-batch-size').selectOption('50');
