@@ -84,7 +84,7 @@ class MotorNeuralSupabase {
 
   inicializarModelo(reset = false) {
     if (!reset) {
-      const salvo = localStorage.getItem(this.chaveStorage);
+      let salvo=null;try{salvo=localStorage.getItem(this.chaveStorage);}catch(e){}
       if (salvo) {
         try {
           const d = JSON.parse(salvo);
@@ -104,7 +104,7 @@ class MotorNeuralSupabase {
     ];
     for (let ep = 0; ep < 3000; ep++) for (const item of ds) this.treinarPasso(item.in, item.out);
     this.ciclosTreino = 3000;
-    this.salvarModelo();
+    try{this.salvarModelo();}catch(e){}
   }
 
   salvarModelo() {
@@ -375,6 +375,36 @@ class MotorNeuralPMDF extends MotorNeuralSupabase {
         incorrect?"Identificação da alternativa adulterada":"Distratores por alteração textual",
         alternatives.map(a=>"("+a.letra+") "+a.comentario).join(" | ")),u);
     };
+    // Aproveita o elaborador local existente: texto, banca, nível, comentário e fonte.
+    const nivel=["iniciante","intermediario","avancado"].includes(config.nivel)?config.nivel:"intermediario";
+    const levelMap={iniciante:["Fácil",0.28],intermediario:["Médio",0.56],avancado:["Difícil",0.82]};
+    for(const q of (config.questoesReferenciais||[]).slice(0,1500)){
+      if(out.length>=MAX)break;
+      if(!q||!["CE","MC"].includes(q.type))continue;
+      if(modo==="ME_INCORRETA")continue;
+      if(modo==="APENAS_CE"&&q.type!=="CE")continue;
+      if(modo==="ME_CORRETA"&&q.type!=="MC")continue;
+      const stem=String(q.statement||"").trim();
+      const evidence=String(q.sourceQuote||"").trim();
+      if(stem.length<45||!evidence||stem.includes("…")||!q.explanation)continue;
+      let alts=null,answer;
+      if(q.type==="MC"){
+        if(!Array.isArray(q.options)||q.options.length!==5||!q.options.every(v=>String(v).trim()))continue;
+        if(new Set(q.options.map(v=>this.normalizar(v))).size!==5||!"ABCDE".includes(q.answer))continue;
+        answer=q.answer;
+        alts=q.options.map((option,i)=>({letra:"ABCDE"[i],texto:String(option),
+          correta:answer==="ABCDE"[i],comentario:String(q.optionAnalysis?.[i]||q.explanation)}));
+      }else {
+        if(!["C","E"].includes(q.answer))continue;
+        answer=q.answer==="C"?"CERTO":"ERRADO";
+      }
+      const law=String(q.law||config.disciplina||"Material"),article=String(q.topic||"Texto-base");
+      incluir({disciplina:law,assunto:article,
+        formato:q.type==="MC"?"MULTIPLA_ESCOLHA":"CERTO_ERRADO",
+        dificuldade:levelMap[nivel][0],score_dificuldade:levelMap[nivel][1],
+        tipo_armadilha:"Análise de norma por nível",enunciado:stem,alternativas:alts,gabarito:answer,
+        comentario_gabarito:String(q.explanation),texto_origem:evidence},{law,article});
+    }
     for(const u of lista){
       if(out.length>=MAX)break;
       if(modo==="APENAS_CE"||modo==="MISTO_IA"){
@@ -392,6 +422,30 @@ class MotorNeuralPMDF extends MotorNeuralSupabase {
           else if(modo==="ME_INCORRETA")makeMC(u,true,v);
           else{makeMC(u,false,v);makeMC(u,true,v);}
         }
+      }
+    }
+    // Integra dois dispositivos da mesma matéria com rastreabilidade literal.
+    if(nivel!=="iniciante"&&(modo==="APENAS_CE"||modo==="MISTO_IA")){
+      for(const u of lista){
+        if(out.length>=MAX)break;
+        const peers=groups.get(u.law)||[];
+        if(peers.length<2||u.text.length>340)continue;
+        const idx=peers.findIndex(x=>x.i===u.i);
+        let v=null;
+        for(let k=1;k<Math.min(peers.length,8);k++){
+          const p=peers[(idx+k)%peers.length];
+          if(p.article!==u.article&&p.text.length<=340){v=p;break;}
+        }
+        if(!v)continue;
+        const cmd="Conforme o material, julgue a correção conjunta das associações: "+
+          "(I) "+u.article+" — "+u.text+" (II) "+v.article+" — ";
+        const evidence=u.article+": "+u.text+"\n"+v.article+": "+v.text;
+        const basis={...u,text:evidence};
+        incluir(makeBase(basis,"CERTO_ERRADO",cmd+v.text,"CERTO",null,"Comparação de dispositivos",
+          "Ambas as associações reproduzem os respectivos textos de origem."),u);
+        for(const d of v.d.slice(0,nivel==="avancado"?2:1))
+          incluir(makeBase(basis,"CERTO_ERRADO",cmd+d.texto,"ERRADO",null,"Comparação com alteração",
+            "A segunda associação foi adulterada: "+d.comentario),u);
       }
     }
     return {questoes:out,unidades:unidades.length};
@@ -442,17 +496,20 @@ async function start(more=false){
     if(state.cancelled)return;
     const engine=getMotor();
     const sourceKey=engine.gerarHash(units.map(u=>u.law+"|"+u.article+"|"+u.text).join("§"));
-    const bankKey=sourceKey+"|"+formato;
+    const nivel=el("q-level")?.value||"intermediario";
+    const banca=el("q-board")?.value||"Cebraspe";
+    const bankKey=sourceKey+"|"+formato+"|"+nivel+"|"+banca;
     let build;
     if(cachedKey===bankKey&&cachedBank)build=cachedBank;
     else{
-      build=engine.criarBanco(units,{formato,
+      const references=typeof h.referenceQuestions==="function"?h.referenceQuestions(guides,nivel):[];
+      build=engine.criarBanco(units,{formato,nivel,questoesReferenciais:references,
         disciplina:guides.length===1?guides[0].lawName:"Legislação policial",
         assunto:guides.length===1?guides[0].lawName:"Conteúdo selecionado"});
       cachedKey=bankKey;cachedBank=build;
     }
     if(state.cancelled)return;
-    const key="q:neural:cycle:v2:"+engine.gerarHash(bankKey);
+    const key="q:neural:cycle:v3:"+engine.gerarHash(bankKey);
     const all=build.questoes,available=all.length;
     if(!available)throw Error("O texto não contém trechos suficientes para formar questões verificáveis neste formato. Experimente Certo/Errado ou envie mais artigos.");
     let cursor=more?Math.max(0,Number(h.store.get(key))||0):0;
@@ -460,7 +517,7 @@ async function start(more=false){
     const picked=all.slice(cursor,cursor+target),next=cursor+picked.length;
     h.store.set(key,String(next));
     lastRows=picked;
-    h.setQuestions(picked.map(convert),{model:"Rede 6-8-3 · múltiplas mutações",key,total:next,target:available});
+    h.setQuestions(picked.map(convert),{model:"Motor híbrido local: regras + elaborador por nível",key,total:next,target:available});
     info(picked.length+" questões criadas de "+available+" possibilidades ("+build.unidades+" trechos). "+
       (next>=available?"Cobertura concluída; próximo lote reiniciará o ciclo.":"Use Próximo lote para continuar.")+
       " Gabaritos baseados no texto fornecido, sem verificação jurídica externa.");
@@ -482,7 +539,8 @@ function reset(){
   const engine=getMotor(),fmt=el("q-format")?.value||"CE",cmd=el("q-neural-command")?.value||"correta";
   const forma=fmt==="MIX"?"MISTO_IA":fmt==="MC"?(cmd==="incorreta"?"ME_INCORRETA":"ME_CORRETA"):"APENAS_CE";
   const sourceKey=engine.gerarHash(units.map(u=>u.law+"|"+u.article+"|"+u.text).join("§"));
-  host().store.del("q:neural:cycle:v2:"+engine.gerarHash(sourceKey+"|"+forma));
+  const nivel=el("q-level")?.value||"intermediario",banca=el("q-board")?.value||"Cebraspe";
+  host().store.del("q:neural:cycle:v3:"+engine.gerarHash(sourceKey+"|"+forma+"|"+nivel+"|"+banca));
   info("Cobertura reiniciada. O aprendizado local foi preservado.");
   host().toast("Cobertura reiniciada.","ok");
 }
