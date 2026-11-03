@@ -5513,7 +5513,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     canonical.push({text:label,correct:false,why:'Trecho literal associado a '+other.head+'.'});
                     if(canonical.length>=3)break;
                 }
-                if(canonical.length===3&&changes.length){
+                if(requestedCount===4&&canonical.length===3&&changes.length){
                     const caps=level==='avancado'?2:1;
                     for(const altered of changes.slice(0,caps)){
                         const swapped=item.head+' — '+altered.text;
