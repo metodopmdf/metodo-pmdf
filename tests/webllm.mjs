@@ -8,19 +8,23 @@ assert(index.includes('assets/pmdf-webllm.js'),'Script WebLLM não registrado');
 assert(index.includes('assets/pmdf-question-ai.js'),'Controlador de IA não registrado');
 assert(index.includes('id="q-ai-settings"'),'Interface IA ausente');
 assert(index.includes('id="q-engine-local"')&&index.includes('id="q-engine-webllm"'),'Alternância de motores ausente');
+assert(index.includes('selected value="Qwen2.5-0.5B-Instruct-q4f32_1-MLC"'),'O modo leve deve iniciar com Qwen 0,5B');
+assert(engineText.includes('CreateWebWorkerMLCEngine')&&!engineText.includes('api.CreateMLCEngine('),'A inferência não pode executar na thread principal');
+assert(engineText.includes('worker?.terminate'),'O motor precisa liberar o Worker ao interromper');
+assert(readFileSync(new URL('../assets/pmdf-webllm-worker.js',import.meta.url),'utf8').includes('WebWorkerMLCEngineHandler'),'Handler do Worker ausente');
 new Function('window',engineText);
 new Function('window',controllerText);
 const pageScript=[...index.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].at(-1)[1];
 new Function(pageScript);
 
-const win={isSecureContext:true,navigator:{gpu:{requestAdapter:async()=>({
+const win={isSecureContext:true,Worker:function(){},navigator:{gpu:{requestAdapter:async()=>({
   features:new Set(['shader-f16']),limits:{maxBufferSize:2**30}
 })}}};
 new Function('window',engineText)(win);
 assert.equal(win.PMDFWebLLM.MODELS.length,4,'Seleção de modelos não disponível');
 assert(win.PMDFWebLLM.modelInfo('Qwen2.5-1.5B-Instruct-q4f16_1-MLC'));
 assert.equal((await win.PMDFWebLLM.compatibility()).ok,true);
-const noGpu={navigator:{},isSecureContext:true};
+const noGpu={navigator:{},Worker:function(){},isSecureContext:true};
 new Function('window',engineText)(noGpu);
 assert.equal((await noGpu.PMDFWebLLM.compatibility()).ok,false);
 
@@ -91,7 +95,9 @@ function makeHarness(format='CE',gpu=true){
 }
 const ce=makeHarness('CE');
 await ce.win.PMDFQuestionAI.start(false);
-assert.equal(ce.h.result?.items.length,30,'Meta CE de 30 não atingida');
+assert.equal(ce.h.result?.items.length,6,'Primeira sessão leve CE deve limitar-se a 6 questões');
+for(let round=0;round<4;round++)await ce.win.PMDFQuestionAI.start(true);
+assert.equal(ce.h.result?.items.length,30,'Meta CE de 30 não atingida após sessões curtas');
 assert(ce.h.result.items.every(q=>q.type==='CE'&&q.answer==='C'&&q.sourceQuote.length>16));
 assert.equal(new Set(ce.h.result.items.map(q=>q.statement)).size,30,'Questões repetidas em CE');
 assert(ce.h.result.items.every(q=>q.origin==='webllm-local'),'Origem local ausente');
@@ -103,7 +109,9 @@ assert.equal(ce.runs,6,'Um banco já concluído não deve chamar o modelo novame
 
 const mc=makeHarness('MC');
 await mc.win.PMDFQuestionAI.start(false);
-assert.equal(mc.h.result?.items.length,30,'Meta MC de 30 não atingida');
+assert.equal(mc.h.result?.items.length,3,'Primeira sessão leve MC deve limitar-se a 3 questões');
+for(let round=0;round<9;round++)await mc.win.PMDFQuestionAI.start(true);
+assert.equal(mc.h.result?.items.length,30,'Meta MC de 30 não atingida após sessões curtas');
 assert(mc.h.result.items.every(q=>q.type==='MC'&&q.options.length===4&&q.answer==='B'));
 assert(mc.h.result.items.every(q=>q.optionAnalysis.length===4),'Comentários por alternativa ausentes');
 
@@ -112,4 +120,4 @@ await fail.win.PMDFQuestionAI.start(false);
 assert.equal(fail.modelLoads,0,'Dispositivo incompatível não deve carregar modelo');
 assert.equal(fail.h.result,undefined,'Dispositivo incompatível não pode gerar questões');
 
-console.log('PASSOU: módulo WebLLM, escolha de modelos, geração mock CE/MC, meta de 30, descarte de evidência falsa, recuperação do banco e fallback WebGPU.');
+console.log('PASSOU: WebLLM em Worker, modelo leve padrão, sessões CE/MC de até 6/3, acumulação de 30 questões, evidência e fallback WebGPU.');
