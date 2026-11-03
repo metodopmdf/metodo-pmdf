@@ -6320,6 +6320,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     ', lacunas '+(modes['Cloze (Lacuna)']||0)+', julgamento '+(modes['Gatilho de Banca']||0)+
                     '. Dificuldade: fácil '+levels['Fácil']+', média '+levels['Médio']+', difícil '+
                     levels['Difícil']+'. Conteúdo não legível ou sem fato verificável pode ficar de fora.';
+                if($('anki-coverage-details'))$('anki-coverage-details').open=true;
                 if(!cards.length)$('anki-panel').innerHTML='<div class="g-card"><h3 class="font-bold text-[#E5C158]">Nenhum cartão vencido</h3><p class="mt-2">Você está em dia. Altere para Todos (treino livre) se desejar continuar.</p></div>';
                 else drawAnki();
                 return {count:cards.length,bank:bank.length};
