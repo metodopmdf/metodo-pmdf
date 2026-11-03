@@ -56,7 +56,7 @@ async function startSyntheticStudy(page){
   assert.equal(result.logged,'qa_browser_roteiro','A sessão de UI simulada não pôde ser criada');
   assert(result.hasGuide.includes('Acesso à Informação'),'Guia real de teste não selecionado');
   await page.locator('#tab-btn-questoes').click();
-  await page.locator('#q-engine-webllm').click();
+  await page.locator('#q-engine-gemini').click();
   await page.locator('#q-ai-backend').selectOption('safe');
   assert.equal(await page.locator('#q-ai-backend').inputValue(),'safe');
 }
@@ -94,7 +94,7 @@ async function checkLongDocumentAndExhaustion(page){
     'Art. '+(i+1)+'º O setor de fiscalização '+(i+1)+
     ' deve registrar cada decisão administrativa em documento próprio, deve apresentar motivação expressa, pode consultar a autoridade competente e deve assegurar que o relatório seja acessível aos interessados.'
   ).join('\n');
-  await page.locator('#q-engine-webllm').click();
+  await page.locator('#q-engine-gemini').click();
   await page.locator('#q-ai-backend').selectOption('safe');
   await page.locator('details.qstudio-paste summary').click();
   await page.locator('#q-inline-title').fill('Regulamento fictício de 80 dispositivos para QA online');
@@ -139,6 +139,61 @@ async function checkLongDocumentAndExhaustion(page){
   log('Documento fictício longo online: '+identifiers.size+
     ' questões de múltipla escolha distintas e reinício explícito da revisão (sem GPU).');
 }
+async function checkGeminiFrontendWithMock(page,viewport) {
+  // Teste do código Gemini publicado com Edge Function simulada.
+  // NÃO constitui chamada real à API do Google ou autenticação real.
+  let mockCalls=0;
+  await page.route('**/functions/v1/gemini-questions',async route=>{
+    if(route.request().method()==='GET'){
+      return route.fulfill({status:200,contentType:'application/json',
+        body:JSON.stringify({available:true,provider:'Gemini',model:'gemini-3.5-flash-lite'})});
+    }
+    const payload=JSON.parse(route.request().postData());
+    mockCalls++;
+    const options=['A norma dispensa totalmente a motivação e o registro dos atos.',
+      'A autoridade deve registrar e justificar as decisões administrativas.',
+      'A competência é irrelevante para a validação dos procedimentos.',
+      'A transparência é vedada independentemente do teor da informação.'];
+    const item={
+      statement:'Considerando o regulamento administrativo e o controle de legalidade, qual alternativa corresponde à regra de fundamentação expressa prevista para os atos públicos do segmento '+mockCalls+'?',
+      evidence:payload.source.text.slice(0,100),
+      answer:'B',
+      explanation:'A fonte exige registro documental e fundamentação expressa nos procedimentos praticados pela autoridade competente.',
+      topic:'Dever de motivação',subtopic:'Requisitos da atuação estatal',
+      options,optionAnalysis:[
+        'Incorreta: contraria a obrigação expressa de motivar.',
+        'Correta: reproduz o dever de fundamentar e documentar.',
+        'Incorreta: ignora a competência exigida no texto.',
+        'Incorreta: afasta injustificadamente a transparência.'
+      ]
+    };
+    return route.fulfill({status:200,contentType:'application/json',
+      body:JSON.stringify({questions:[item],provider:'Gemini',model:'gemini-3.5-flash-lite',
+        quota:{userRemaining:10,globalRemaining:40}})});
+  });
+  await page.locator('#q-engine-gemini').click();
+  await page.locator('#q-ai-backend').selectOption('gemini');
+  await page.locator('#q-format').selectOption('MC');
+  await page.locator('#q-source').selectOption('current');
+  await page.evaluate(()=>window.eval("SB_SESSION={access_token:'fake.jwt.token.for_chromium_test',expires_at:Math.floor(Date.now()/1000)+3600};"));
+  await page.locator('#q-generate-button').click();
+  await page.waitForFunction(()=>{
+    const q=window.eval('Q_STATE');
+    return q?.engine==='gemini'&&q.items.length>0&&q.items[0].origin==='gemini';
+  },null,{timeout:20000});
+  const result=await page.evaluate(()=>{
+    const q=window.eval('Q_STATE');
+    return {count:q.items.length,optionCount:q.items[0].options.length,
+      origin:q.items[0].origin,answer:q.items[0].answer};
+  });
+  assert(result.count>=1&&result.optionCount===4&&result.answer==='B');
+  assert(mockCalls>=1,'Frontend não enviou pedidos ao gateway Gemini simulado');
+  await page.locator('#q-alternatives .q-choice').nth(1).click();
+  assert.match(await page.locator('#q-feedback').innerText(),/Gabarito:/);
+  assert.match(await page.locator('#q-feedback').innerText(),/Trecho literal:/);
+  log('Gemini '+viewport+' integrado ao site REAL com servidor de IA SIMULADO, sem uso de GPU.');
+  await page.unroute('**/functions/v1/gemini-questions');
+}
 async function run(){
   await waitForPublishedVersion();
   const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
@@ -166,8 +221,8 @@ async function run(){
           null,{timeout:30000});
         assert(await page.locator('#account-form').count(),'Formulário de acesso ausente');
         assert(await page.locator('#q-ai-backend').count(),'Controles de geração ausentes');
-        assert.equal(await page.locator('#q-ai-backend').inputValue(),'safe',
-          'O modo inicial deve ser seguro e sem GPU');
+        assert.equal(await page.locator('#q-ai-backend').inputValue(),'gemini',
+          'Gemini deve ser o padrão, sem GPU local. O backend poderá estar desativado.');
         const themeBefore=await page.evaluate(()=>document.body.dataset.theme);
         await page.locator('.welcome-actions button[onclick="toggleTheme()"]').click();
         assert.notEqual(await page.evaluate(()=>document.body.dataset.theme),themeBefore,
@@ -176,20 +231,11 @@ async function run(){
         await checkQuestionFlow(page,'CE');
         await checkQuestionFlow(page,'MC');
         if(variant.name==='desktop')await checkLongDocumentAndExhaustion(page);
-        if(variant.name==='mobile'){
-          // Simular escolha experimental em aparelho móvel: proibir modelo pesado.
-          await page.locator('#q-ai-backend').selectOption('experimental');
-          await page.locator('#q-generate-button').click();
-          await page.waitForFunction(()=>document.getElementById('q-ai-backend').value==='safe',
-            null,{timeout:12000});
-          assert.match(await page.locator('#q-status').innerText(),/Modo seguro/,
-            'A proteção do dispositivo móvel não gerou o lote seguro');
-          log('Fallback móvel sem WebGPU confirmado em interface real.');
-        }
+        await checkGeminiFrontendWithMock(page,variant.name);
         assert.deepEqual(issues,[],'Erro não tratado no navegador: '+issues.join(' | '));
         await page.screenshot({path:output+'/'+variant.name+'-ok.png',fullPage:true});
         records.push({viewport:variant.name,result:'PASS',flow:'guest/theme + authenticated-UI-simulated + CE + MC'+
-          (variant.name==='mobile'?' + fallback sem WebGPU':'')});
+          ' + Gemini com servidor simulado (sem credenciais reais)'});
         log('Navegação REAL '+variant.name+': APROVADA.');
       }catch(e){
         records.push({viewport:variant.name,result:'FAIL',error:String(e?.stack||e),issues});
@@ -203,6 +249,6 @@ async function run(){
     },null,2));
     await browser.close();
   }
-  log('APROVADO: website publicado, versão exata, tema, navegação, CE, MC e fallback móvel.');
+  log('APROVADO: website publicado, versão exata, tema, CE/MC, Gemini com backend simulado em Chromium desktop/móvel.');
 }
 await run();
