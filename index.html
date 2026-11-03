@@ -5841,7 +5841,6 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const format=$('q-format')?.value==='MC'?'MC':'CE';
             const before=Q_STATE,previousBatch=$('q-batch')?.value;
             if($('q-source')?.value==='imported')return toast('Provas importadas ficam no modo Tradicional.','error');
-            if($('q-source')?.value==='all')return toast('No modo seguro, selecione a lei ou documento atual. O catálogo inteiro pode exigir processamento excessivo.','error');
             try{
                 SAFE_FALLBACK_ACTIVE=true;
                 if($('q-batch'))$('q-batch').value='15';
@@ -5925,6 +5924,14 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         function resetQuestionCycle(){
             if(QUESTION_ENGINE==='webllm'&&$('q-ai-backend')?.value==='safe'){
                 const guides=pickStudyGuides('q');
+                if($('q-source')?.value==='all'){
+                    store.del('q:adaptive:all:cursor');
+                    const fmtAll=$('q-format')?.value==='MC'?'MC':'CE';
+                    const lvlAll=LEVELS_SAFE_LEVEL($('q-level')?.value);
+                    for(const guide of guides)store.del(questionCycleKey([guide],fmtAll,lvlAll,false));
+                    $('q-coverage').textContent='Cobertura do catálogo inteiro reiniciada.';
+                    toast('Histórico de lotes de todas as leis reiniciado.','ok');return;
+                }
                 const fmt=$('q-format')?.value==='MC'?'MC':'CE';
                 const lvl=LEVELS_SAFE_LEVEL($('q-level')?.value);
                 store.del(questionCycleKey(guides,fmt,lvl,false));
@@ -5950,7 +5957,12 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             if(QUESTION_ENGINE==='webllm'&&!SAFE_FALLBACK_ACTIVE)return startAIQuestions(nextBatch);
             if(!AUTH_USER)return toast('Faça login para gerar questões.','error');
             const imported=$('q-source').value==='imported';
-            const guides=imported?[]:pickStudyGuides('q');
+            let guides=imported?[]:pickStudyGuides('q');
+            if(SAFE_FALLBACK_ACTIVE&&$('q-source')?.value==='all'&&guides.length){
+                const cursor=Math.max(0,Number(store.get('q:adaptive:all:cursor'))||0);
+                guides=[guides[cursor%guides.length]];
+                store.set('q:adaptive:all:cursor',String(cursor+1));
+            }
             if(!imported&&!guides.length)return toast('Selecione uma norma ou envie conteúdo para gerar questões.','error');
             const fmt=$('q-format').value;
             const lvl=LEVELS_SAFE_LEVEL($('q-level').value);
