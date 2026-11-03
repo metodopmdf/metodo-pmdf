@@ -2738,7 +2738,7 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
                         </button>
                         <button id="q-engine-webllm" type="button" class="qstudio-engine text-left" aria-pressed="false" onclick="setQuestionEngine('webllm')">
                             <span class="qstudio-engine-symbol"><i data-lucide="brain-circuit"></i></span>
-                            <span><strong class="block text-sm">IA avançada</strong><span class="block text-xs text-slate-400 mt-1">WebLLM no navegador · requer WebGPU e download inicial.</span></span>
+                            <span><strong class="block text-sm">Geração adaptativa</strong><span class="block text-xs text-slate-400 mt-1">Modo seguro sem GPU; IA generativa opcional em computadores compatíveis.</span></span>
                         </button>
                     </div>
                 </div>
@@ -2764,11 +2764,16 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
                     </div>
                     <div id="q-ai-settings" class="hidden space-y-3">
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <label class="text-xs font-semibold text-[#E5C158]">Modelo de IA local
+                            <label class="text-xs font-semibold text-[#E5C158]">Modo de processamento
+                                <select id="q-ai-backend" class="qstudio-input block w-full mt-1" onchange="refreshAIModeUI()">
+                                    <option selected value="safe">Automático seguro · sem modelo de IA (recomendado)</option>
+                                    <option value="experimental">IA generativa local · experimental (somente PC)</option>
+                                </select>
+                            </label>
+                            <label id="q-ai-model-label" class="hidden text-xs font-semibold text-[#E5C158]">Modelo experimental
                                 <select id="q-ai-model" class="qstudio-input block w-full mt-1">
-                                    <option selected value="Qwen2.5-0.5B-Instruct-q4f32_1-MLC">Qwen 0,5B · modo leve (≈1,1 GB GPU)</option>
-                                    <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC">Qwen 1,5B · apenas GPU com mais memória</option>
-                                    <option value="Qwen2.5-1.5B-Instruct-q4f32_1-MLC">Qwen 1,5B · compatível (≈1,9 GB GPU)</option>
+                                    <option selected value="SmolLM2-360M-Instruct-q4f16_1-MLC">SmolLM2 360M · ≈376 MB GPU (português jurídico limitado)</option>
+                                    <option value="Qwen2.5-0.5B-Instruct-q4f32_1-MLC">Qwen 0,5B · ≈1,1 GB GPU (mais exigente)</option>
                                     
                                 </select>
                             </label>
@@ -2783,12 +2788,12 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
                             </label>
                         </div>
                         <div class="qstudio-ai-info rounded-xl p-3">
-                            <p class="text-xs text-slate-200"><i data-lucide="info" class="inline w-4 h-4 mr-1"></i> <strong>Modo leve:</strong> o Qwen 0,5B é o padrão e funciona em um Web Worker separado. Cada clique tenta gerar até 6 itens de Certo/Errado ou 3 de múltipla escolha; use <strong>Gerar mais com IA</strong> para avançar até a meta, sem sobrecarregar a GPU de uma só vez. A primeira utilização baixa o modelo e requer memória disponível. Se o dispositivo continuar lento, utilize o gerador Tradicional.</p>
+                            <p class="text-xs text-slate-200"><i data-lucide="info" class="inline w-4 h-4 mr-1"></i> <strong>Automático seguro:</strong> gera questões com regras locais e trechos da lei, sem baixar modelo nem utilizar GPU. Preserva Certo/Errado, múltipla escolha, gabaritos e comentários. Não é IA generativa e pode ter menor profundidade interpretativa. <strong>IA generativa experimental:</strong> disponível apenas em computadores com memória suficiente; modelos menores também podem cometer erros jurídicos.</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
-                            <button type="button" id="q-ai-load" class="qstudio-secondary" onclick="prepareQuestionAI()">Carregar modelo</button>
+                            <button type="button" id="q-ai-load" class="qstudio-secondary hidden" onclick="prepareQuestionAI()">Carregar IA experimental</button>
                             <button type="button" id="q-ai-stop" class="qstudio-danger hidden" onclick="stopQuestionAI()">Interromper e liberar memória</button>
-                            <span id="q-ai-compat" class="text-xs text-slate-400" role="status">Verificação de WebGPU pendente.</span>
+                            <span id="q-ai-compat" class="text-xs text-slate-400" role="status">Modo seguro ativo: sem download e sem WebGPU.</span>
                         </div>
                         <div id="q-ai-progress-wrap" class="hidden space-y-1">
                             <div class="qstudio-meter" role="progressbar" aria-label="Progresso da geração com IA" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="q-ai-progress"><span id="q-ai-progress-fill" style="width:0%"></span></div>
@@ -5788,7 +5793,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
 
 
         // Ponte entre a aplicação legada e o módulo WebLLM: evita duplicar o simulador.
-        let QUESTION_ENGINE='local';
+        let QUESTION_ENGINE='local', SAFE_FALLBACK_ACTIVE=false;
         const AI_MEMORY_BANKS=Object.create(null);
         function setQuestionEngine(mode){
             if(mode!=='local'&&mode!=='webllm')return;
@@ -5803,7 +5808,20 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             if($('q-generate-button'))$('q-generate-button').textContent=mode==='webllm'?'Gerar questões com IA':'Gerar e iniciar questões';
             if($('q-next-button'))$('q-next-button').textContent=mode==='webllm'?'Gerar mais com IA':'Próximo lote inédito';
             refreshQuestionStudio();
-            if(mode==='webllm')void window.PMDFQuestionAI?.checkCompatibility?.();
+            if(mode==='webllm')refreshAIModeUI();
+        }
+        function refreshAIModeUI(){
+            const experimental=$('q-ai-backend')?.value==='experimental';
+            $('q-ai-model-label')?.classList.toggle('hidden',!experimental);
+            $('q-ai-load')?.classList.toggle('hidden',!experimental);
+            if($('q-generate-button')&&QUESTION_ENGINE==='webllm')
+                $('q-generate-button').textContent=experimental?'Gerar com IA experimental':'Gerar questões (modo seguro)';
+            if($('q-next-button')&&QUESTION_ENGINE==='webllm')
+                $('q-next-button').textContent=experimental?'Gerar mais com IA':'Próximo lote (modo seguro)';
+            if(!experimental){
+                if($('q-ai-compat'))$('q-ai-compat').textContent='Modo seguro: questões por regras locais, sem download ou uso de GPU.';
+                $('q-ai-progress-wrap')?.classList.add('hidden');
+            }else void window.PMDFQuestionAI?.checkCompatibility?.();
         }
         function refreshQuestionStudio(){
             const selected=$('q-source')?.value,el=$('q-document-indicator');
@@ -5818,6 +5836,29 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         }
         function stopQuestionAI(){window.PMDFQuestionAI?.stop?.();}
         function prepareQuestionAI(){return window.PMDFQuestionAI?.prepare?.();}
+        async function startSafeQuestions(more=false,reason=''){
+            if(!AUTH_USER)return toast('Faça login para gerar questões.','error');
+            const format=$('q-format')?.value==='MC'?'MC':'CE';
+            const before=Q_STATE,previousBatch=$('q-batch')?.value;
+            if($('q-source')?.value==='imported')return toast('Provas importadas ficam no modo Tradicional.','error');
+            if($('q-source')?.value==='all')return toast('No modo seguro, selecione a lei ou documento atual. O catálogo inteiro pode exigir processamento excessivo.','error');
+            try{
+                SAFE_FALLBACK_ACTIVE=true;
+                if($('q-batch'))$('q-batch').value='15';
+                await new Promise(resolve=>setTimeout(resolve,0));
+                await startQuestions(more);
+                if(Q_STATE&&Q_STATE!==before&&Q_STATE.engine==='local'){
+                    Q_STATE.engine='adaptive';
+                    const count=Q_STATE.items.length;
+                    const suffix=reason?' '+reason:'';
+                    $('q-status').textContent='Modo seguro (regras locais): '+count+' questões neste lote. Não foi executada IA generativa.'+suffix;
+                    $('q-coverage').textContent='Sem GPU ou download. '+Q_STATE.coverage.shown+' de '+Q_STATE.coverage.total+
+                        ' questões disponíveis neste recorte; '+Q_STATE.coverage.remaining+' ainda inéditas.';
+                    saveStudySession();
+                }
+            }catch(e){toast('Não foi possível montar o lote seguro: '+e.message,'error');}
+            finally{SAFE_FALLBACK_ACTIVE=false;if($('q-batch')&&previousBatch!==undefined)$('q-batch').value=previousBatch;}
+        }
         function startAIQuestions(more=false){
             if(!window.PMDFQuestionAI)return toast('Módulo de IA não carregado. Recarregue a página com internet.','error');
             return window.PMDFQuestionAI.start(Boolean(more));
@@ -5860,7 +5901,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     text:String(a.sourceText||a.plainExplanation||'')})))),
             bankKey:(guides,fmt,level)=>aiBankKey(guides,fmt,level),
             rubric:()=>scanPrompt(),
-            user:()=>AUTH_USER,mode:()=>QUESTION_ENGINE,
+            user:()=>AUTH_USER,mode:()=>QUESTION_ENGINE,safe:(more,reason)=>startSafeQuestions(more,reason),
             setQuestions:(items,model,key)=>{
                 Q_STATE={items:items.slice(),engine:'webllm',modelId:model,index:0,hits:0,wrong:0,blank:0,
                     pending:0,answered:false,questionStart:Date.now(),
@@ -5882,6 +5923,14 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             return 'q:coverage:v2:'+(hash(fingerprint)>>>0).toString(36);
         }
         function resetQuestionCycle(){
+            if(QUESTION_ENGINE==='webllm'&&$('q-ai-backend')?.value==='safe'){
+                const guides=pickStudyGuides('q');
+                const fmt=$('q-format')?.value==='MC'?'MC':'CE';
+                const lvl=LEVELS_SAFE_LEVEL($('q-level')?.value);
+                store.del(questionCycleKey(guides,fmt,lvl,false));
+                $('q-coverage').textContent='Cobertura do modo seguro reiniciada.';
+                toast('Histórico de lotes do modo seguro reiniciado.','ok');return;
+            }
             if(QUESTION_ENGINE==='webllm'){
                 if(window.PMDFQuestionAI?.status?.().running)return toast('Interrompa a geração e aguarde a conclusão antes de reiniciar o banco.','error');
                 const guides=pickStudyGuides('q'),format=$('q-format').value==='MC'?'MC':'CE';
@@ -5898,7 +5947,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             toast('Histórico de lotes reiniciado; suas estatísticas de estudo foram mantidas.','ok');
         }
         async function startQuestions(nextBatch=false){
-            if(QUESTION_ENGINE==='webllm')return startAIQuestions(nextBatch);
+            if(QUESTION_ENGINE==='webllm'&&!SAFE_FALLBACK_ACTIVE)return startAIQuestions(nextBatch);
             if(!AUTH_USER)return toast('Faça login para gerar questões.','error');
             const imported=$('q-source').value==='imported';
             const guides=imported?[]:pickStudyGuides('q');
@@ -5954,7 +6003,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const el=$('q-panel'),s=Q_STATE;if(!el||!s)return;
             if(s.index>=s.items.length){
                 const pct=Math.round(s.hits/Math.max(1,s.items.length-(s.pending||0))*100);saveStudySession();
-                el.innerHTML='<h3 class="text-lg font-bold text-[#E5C158]">Simulado concluído</h3><p class="mt-2 text-slate-100">'+s.hits+' acertos de '+s.items.length+' questões ('+pct+'%). '+s.wrong+' erros · '+s.blank+' em branco · '+(s.pending||0)+' aguardando gabarito.</p><p class="mt-2 text-xs text-[#E5C158]">'+(s.coverage?s.coverage.shown+' de '+s.coverage.total+' itens gerados · '+s.coverage.remaining+' pendentes':'')+'</p><button class="mt-4 px-4 py-2 rounded-xl bg-[#D4AF37] text-[#050B16] font-bold" onclick="startQuestions(true)">'+(s.engine==='webllm'?'Gerar mais questões com IA':'Próximo lote inédito')+'</button> <button class="mt-4 px-4 py-2 rounded-xl border border-[#334155] text-slate-100" onclick="resetQuestionCycle();startQuestions()">Reiniciar ciclo</button>';
+                el.innerHTML='<h3 class="text-lg font-bold text-[#E5C158]">Simulado concluído</h3><p class="mt-2 text-slate-100">'+s.hits+' acertos de '+s.items.length+' questões ('+pct+'%). '+s.wrong+' erros · '+s.blank+' em branco · '+(s.pending||0)+' aguardando gabarito.</p><p class="mt-2 text-xs text-[#E5C158]">'+(s.coverage?s.coverage.shown+' de '+s.coverage.total+' itens gerados · '+s.coverage.remaining+' pendentes':'')+'</p><button class="mt-4 px-4 py-2 rounded-xl bg-[#D4AF37] text-[#050B16] font-bold" onclick="startQuestions(true)">'+(s.engine==='webllm'?'Gerar mais questões com IA':s.engine==='adaptive'?'Próximo lote (modo seguro)':'Próximo lote inédito')+'</button> <button class="mt-4 px-4 py-2 rounded-xl border border-[#334155] text-slate-100" onclick="resetQuestionCycle();startQuestions()">Reiniciar ciclo</button>';
                 return;
             }
             const q=s.items[s.index],mc=q.type==='MC',choices=mc?q.options:['Certo','Errado'];
@@ -6056,7 +6105,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 Q_STATE=s.question?.items?.length?s.question:null;
                 if(Q_STATE?.answered){Q_STATE.index=Math.min(Q_STATE.items.length,Q_STATE.index+1);Q_STATE.answered=false;}
                 ANKI_STATE=s.anki?.cards?.length?s.anki:null;
-                if(Q_STATE){$('q-panel').classList.remove('hidden');Q_STATE.questionStart=Date.now();if(Q_STATE.engine==='webllm'){setQuestionEngine('webllm');if(Q_STATE.modelId&&$('q-ai-model'))$('q-ai-model').value=Q_STATE.modelId;}if(Q_STATE.items.some(q=>q.origin==='official-import')){$('q-source').value='imported';$('q-format').value=Q_STATE.items[0]?.type==='CE'?'CE':'MC';}drawQuestions();}
+                if(Q_STATE){$('q-panel').classList.remove('hidden');Q_STATE.questionStart=Date.now();if(Q_STATE.engine==='webllm'||Q_STATE.engine==='adaptive'){setQuestionEngine('webllm');if($('q-ai-backend'))$('q-ai-backend').value=Q_STATE.engine==='adaptive'?'safe':'experimental';refreshAIModeUI();if(Q_STATE.modelId&&$('q-ai-model'))$('q-ai-model').value=Q_STATE.modelId;}if(Q_STATE.items.some(q=>q.origin==='official-import')){$('q-source').value='imported';$('q-format').value=Q_STATE.items[0]?.type==='CE'?'CE':'MC';}drawQuestions();}
                 if(ANKI_STATE){$('anki-panel').classList.remove('hidden');drawAnki();}
                 restoreEssayLastResult();showTab(['leis','questoes','anki','redacao','resultados'].includes(s.tab)?s.tab:'leis');
             }else{Q_STATE=null;ANKI_STATE=null;$('q-panel')?.classList.add('hidden');$('anki-panel')?.classList.add('hidden');showTab('leis');}
