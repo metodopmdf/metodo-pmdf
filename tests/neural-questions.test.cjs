@@ -31,7 +31,9 @@ const textRows=Array.from({length:120},(_,i)=>({
 for(const mode of ["APENAS_CE","ME_CORRETA","ME_INCORRETA","MISTO_IA"]){
   const result=neural.criarBanco(textRows,{formato:mode,disciplina:"Direito",assunto:"Atos"});
   assert.ok(result.questoes.length,mode+" deve gerar questões");
-  if(mode==="MISTO_IA")assert.ok(result.questoes.length>100,"Texto extenso com variedade suficiente deve gerar mais de 100 questões mistas");
+  if(mode==="MISTO_IA")assert.ok(result.questoes.length>=200,"Texto longo com variedade suficiente deve gerar pelo menos 200 questões mistas");
+  if(mode==="ME_CORRETA"||mode==="ME_INCORRETA")assert.ok(result.questoes.length>=10,"Material adequado deve oferecer várias questões em ambos os comandos");
+  assert.equal(new Set(result.questoes.map(q=>q.hash_unico)).size,result.questoes.length,"Questões distintas precisam de hash distinto");
   for(const q of result.questoes){
     assert.ok(q.hash_unico&&q.enunciado&&q.gabarito);
     if(q.formato==="MULTIPLA_ESCOLHA"){
@@ -53,11 +55,15 @@ rootWindow.PMDFNeuralQuestionHost={
   setQuestions:qs=>{latest=qs;calls++;},persist:async rows=>{persisted=rows;},toast:()=>{}
 };
 (async()=>{
+  const engine=api.testModel();
+  let bankBuilds=0;const originalBuild=engine.criarBanco.bind(engine);
+  engine.criarBanco=(...args)=>{bankBuilds++;return originalBuild(...args);};
   const a=await api.start(false),b=await api.start(true);
+  assert.equal(bankBuilds,1,"Próximo lote não deve reconstruir a mesma base e travar o aparelho");
   assert.equal(a.ok,true);assert.equal(b.ok,true);assert.equal(a.count,30);assert.ok(b.count>0);
   assert.equal(calls,2);assert.ok(latest.every(q=>q.type==="MC"&&q.options.length===5));
   await api.save();
   assert.equal(persisted.length,latest.length);
   assert.ok(persisted.every(q=>q.publicada===false&&q.criado_por==="1d8ed87c-5a20-4cd0-9a17-924c91ae413e"));
-  console.log("QA PASS: HTML, sintaxe, CE, MC correta/incorreta, misto >100, não repetição, lotes, RLS e payload Supabase.");
+  console.log("QA PASS: HTML, sintaxe, C/E, múltipla escolha (ambos comandos), misto 200+, hash distinto, cache de lotes, RLS e Supabase.");
 })().catch(e=>{console.error(e);process.exitCode=1;});
