@@ -16,8 +16,13 @@
   const modelInfo=id=>MODELS.find(x=>x.id===id)||null;
   async function compatibility(){
     if(root.isSecureContext===false)return {ok:false,reason:'A IA local exige conexão HTTPS.'};
-    if(typeof root.Worker!=='function')return {ok:false,reason:'Este navegador não oferece Web Workers. Use o modo Tradicional.'};
-    if(!root.navigator?.gpu?.requestAdapter)return {ok:false,reason:'WebGPU indisponível. Use o modo Tradicional.'};
+    if(typeof root.Worker!=='function')return {ok:false,reason:'Este navegador não oferece Web Workers. Use o modo seguro.'};
+    if(/Android|iPhone|iPad|iPod|Mobile|Silk/i.test(String(root.navigator?.userAgent||'')))
+      return {ok:false,mobile:true,reason:'Inferência WebGPU bloqueada em dispositivos móveis por segurança. O modo seguro gera questões sem GPU.'};
+    const detectedMemory=Number(root.navigator?.deviceMemory)||null;
+    if(detectedMemory&&detectedMemory<8)
+      return {ok:false,memoryGB:detectedMemory,reason:'Memória insuficiente para IA generativa local com segurança. Use o modo seguro.'};
+    if(!root.navigator?.gpu?.requestAdapter)return {ok:false,reason:'WebGPU indisponível. Use o modo seguro.'};
     try{
       const adapter=await root.navigator.gpu.requestAdapter({powerPreference:'low-power'});
       if(!adapter)return {ok:false,reason:'Nenhuma GPU WebGPU compatível foi encontrada.'};
