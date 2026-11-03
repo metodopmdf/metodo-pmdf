@@ -120,6 +120,7 @@ function saveBank(key,b){
   }
 }
 function showBank(b,key,model){
+  if(job?.cancelled&&H().mode?.()==='local')return false;
   if(b.questions.length){H().setQuestions(b.questions,model,key);return true;}return false;
 }
 async function start(more=false){
@@ -136,9 +137,13 @@ async function start(more=false){
   const target=Math.min(500,more?bank.questions.length+desired:desired);
   if(bank.questions.length>=target){showBank(bank,key,model);return;}
   const compatible=await L().compatibility();
+  if(H().mode?.()==='local')return;
   if(!compatible.ok){progress(null,compatible.reason+' Use o modo Tradicional.');return notify(compatible.reason,true);}
   const run={cancelled:false};job=run;
   const buttons=['q-generate-button','q-next-button'];
+  const locked=['q-source','q-format','q-level','q-board','q-ai-model','q-ai-target'];
+  const priorDisabled=locked.map(id=>E(id)?.disabled||false);
+  for(const id of locked)if(E(id))E(id).disabled=true;
   for(const id of buttons)if(E(id))E(id).disabled=true;
   E('q-ai-stop')?.classList.remove('hidden');
   const per=fmt==='CE'?5:3;
@@ -189,6 +194,7 @@ async function start(more=false){
   }finally{
     job=null;
     for(const id of buttons)if(E(id))E(id).disabled=false;
+    locked.forEach((id,i)=>{if(E(id))E(id).disabled=priorDisabled[i];});
     E('q-ai-stop')?.classList.add('hidden');
     H().saveSession();
   }
