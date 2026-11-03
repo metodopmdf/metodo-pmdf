@@ -126,9 +126,24 @@
     q.coverageId="gemini-"+String(host().hash(fmt+"|"+source.title+"|"+statement));
     return host().validateItem(q)?q:null;
   }
-  function show(bank,key,model) {
+  function show(bank,key,model,count=12,target=null) {
     if(!bank.questions.length)return false;
-    host().setQuestions(bank.questions,model,key,"gemini");
+    // O histórico íntegro fica no banco; o simulador recebe somente o lote
+    // recente para evitar sessões enormes e consumo excessivo de memória.
+    const batch=bank.questions.slice(-Math.max(1,Math.min(20,count)));
+    host().setQuestions(batch,model,key,"gemini",bank.questions.length,target);
+    return true;
+  }
+  function reset(){
+    if(current){toast("Interrompa a geração antes de reiniciar o banco.");return false;}
+    const guides=host().guides();
+    const fmt=element("q-format")?.value==="MC"?"MC":"CE";
+    const level=host().level(element("q-level")?.value);
+    const key=bankKey(guides,fmt,level);
+    host().store.del(key);
+    delete host().memory[key];
+    if(element("q-coverage"))element("q-coverage").textContent="Banco de questões Gemini reiniciado para esta fonte e configuração.";
+    toast("Banco Gemini reiniciado para este material e formato.","ok");
     return true;
   }
   async function start(more=false){
@@ -148,7 +163,7 @@
     const bank=read(key);
     const target=Math.min(200,Math.max(1,Number(element("q-ai-target")?.value)||100));
     if(bank.questions.length>=target) {
-      show(bank,key,"Gemini");
+      show(bank,key,"Gemini",12,target);
       return toast("Meta atingida. Selecione uma meta maior para continuar.","ok");
     }
     const roundMax=fmt==="MC"?8:12;
@@ -186,7 +201,7 @@
           const message=String(e?.message||"Falha na comunicação com Gemini.");
           diagnostic("Gemini: "+message+" ("+code+"). Não foi necessário utilizar WebGPU.");
           if(element("q-status"))element("q-status").textContent=message;
-          if(bank.questions.length)show(bank,key,"Gemini");
+          if(bank.questions.length)show(bank,key,"Gemini",Math.max(1,acceptedThisRound),target);
           toast(message);
           return {ok:false,code,message};
         }
@@ -210,7 +225,7 @@
         if(!additions && bank.cursor>=source.length*3)break;
         await new Promise(resolve=>setTimeout(resolve,20));
       }
-      if(bank.questions.length)show(bank,key,"Gemini");
+      if(bank.questions.length)show(bank,key,"Gemini",Math.max(1,acceptedThisRound),target);
       const note=state.cancelled?"Geração interrompida.":
         bank.questions.length>=target?"Meta acumulada atingida.":
         acceptedThisRound?"Lote Gemini concluído. Use Gerar mais para continuar.":
@@ -230,5 +245,5 @@
       host().saveSession();
     }
   }
-  root.PMDFQuestionAI=Object.freeze({start,stop,prepare,checkCompatibility,status:()=>({running:!!current})});
+  root.PMDFQuestionAI=Object.freeze({start,stop,reset,prepare,checkCompatibility,status:()=>({running:!!current})});
 })(window);
