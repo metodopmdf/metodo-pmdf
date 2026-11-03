@@ -399,5 +399,66 @@ await safeApp.startQuestions(true);
 assert.equal(safeApp.store.get('q:adaptive:all:cursor'),'2','Segundo lote não avançou para próxima lei');
 assert.equal(unsafeGPUAttempts,0,'Catálogo seguro tentou carregar IA');
 
+
+// Regressão do erro real: "O material não possui novas questões verificáveis".
+// Quando o candidato percorre todo o conjunto seguro, a rodada seguinte
+// deve ser identificada como revisão e continuar funcional, sem alegar ineditismo.
+const exhaustedBrowser=createClient(),exhaustedApp=exhaustedBrowser.application;
+exhaustedApp.auth('qa-ciclo-esgotado');
+exhaustedApp.choose('lai');
+new Function('window',safeController)(exhaustedBrowser.win);
+exhaustedBrowser.$('q-source').value='current';
+exhaustedBrowser.$('q-format').value='MC';
+exhaustedBrowser.$('q-level').value='intermediario';
+exhaustedBrowser.$('q-ai-backend').value='safe';
+exhaustedApp.setQuestionEngine('webllm');
+let gotReview=false,uniqueMC=new Set();
+for(let turn=0;turn<65;turn++){
+  await exhaustedApp.startQuestions(true);
+  const batch=exhaustedApp.questionState();
+  assert(batch?.items.length>0,'A geração segura parou após esgotar o banco');
+  assert(batch.items.every(q=>q.type==='MC'&&[4,5].includes(q.options.length)&&
+    'ABCDE'.slice(0,q.options.length).includes(q.answer)));
+  if(batch.review){
+    gotReview=true;
+    assert.match(exhaustedBrowser.$('q-status').textContent,/REVISÃO/,'A rodada repetida não foi rotulada');
+    assert.match(exhaustedBrowser.$('q-coverage').textContent,/rodada/i,'Cobertura da revisão ausente');
+    break;
+  }
+  for(const q of batch.items)uniqueMC.add(q.coverageId);
+}
+assert(gotReview,'O modo seguro não retomou automaticamente a revisão depois de esgotar questões MC');
+assert(uniqueMC.size>=1,'O teste não percorreu questões inéditas antes da revisão');
+assert.equal(exhaustedBrowser.$('q-ai-backend').value,'safe');
+
+// Documento longo e explícito: o gerador deve atingir mais de 100 questões
+// apenas se existirem dispositivos e alterações comprováveis na própria fonte.
+const comprehensiveSource=Array.from({length:80},(_,i)=>
+  'Art. '+(i+1)+'º O setor administrativo de referência '+(i+1)+
+  ' deve registrar a justificativa de cada ato de fiscalização, deve garantir o acesso ao relatório e pode encaminhar o procedimento à autoridade competente quando houver fundamentação expressa.'
+).join('\n');
+const comprehensiveGuide=app.analyzeLawText(comprehensiveSource,'Regulamento sintético de 80 dispositivos — QA');
+const comprehensiveCE=app.questionPool(comprehensiveGuide,'CE','intermediario');
+const comprehensiveMC=app.questionPool(comprehensiveGuide,'MC','intermediario',4);
+assert(comprehensiveCE.length>=100,'Documento com 80 dispositivos não gerou 100+ questões CE verificáveis: '+comprehensiveCE.length);
+assert(comprehensiveMC.length>=100,'Documento com 80 dispositivos não gerou 100+ questões MC verificáveis: '+comprehensiveMC.length);
+assert(comprehensiveMC.some(q=>q.statement.includes('qual associação contém uma alteração')),
+  'Faltaram questões novas de associação e localização da alteração');
+assert(comprehensiveMC.every(q=>q.options.length===4&&
+  'ABCD'.includes(q.answer)&&new Set(q.options).size===4),
+  'Nova cobertura MC não possui 4 alternativas únicas e resposta válida');
+// O conteúdo mudou, portanto um histórico salvo sob o mesmo título não deve
+// bloquear novas questões por causa de chave de cobertura antiga.
+const updatedSource=comprehensiveSource.replace('setor administrativo de referência 1','setor administrativo de referência 1 renovado');
+const updatedGuide=app.analyzeLawText(updatedSource,'Regulamento sintético de 80 dispositivos — QA');
+const changedClient=createClient(),changedApp=changedClient.application;
+changedApp.auth('qa-versao-fonte');
+changedApp.choose('lai');
+new Function('window',safeController)(changedClient.win);
+changedClient.$('q-ai-backend').value='safe';
+changedApp.setQuestionEngine('webllm');
+await changedApp.startQuestions();
+assert(changedApp.questionState()?.items.length>0,'Regressão do catálogo após mudança de fonte');
+
 console.log('PASSOU: integração do elaborador, 75 dispositivos, lotes inéditos, 26 normas, 3 níveis, 468 resumos, questões MC/CE, importação, redação A4, flashcards e sincronização simulada.');
 console.log(JSON.stringify({counts,walkthrough},null,2));
