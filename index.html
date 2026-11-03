@@ -5818,7 +5818,12 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             if($('q-next-button'))$('q-next-button').textContent=mode==='neural'?'Próximo lote neural':'Próximo lote inédito';
             updateNeuralFormatUI();refreshQuestionStudio();
         }
-        function updateNeuralFormatUI(){$('q-neural-command-wrap')?.classList.toggle('hidden',QUESTION_ENGINE!=='neural'||$('q-format')?.value!=='MC');}
+        function updateNeuralFormatUI(){
+            const mixed=$('q-format')?.querySelector('option[value="MIX"]');
+            if(mixed)mixed.disabled=QUESTION_ENGINE!=='neural';
+            if(QUESTION_ENGINE==='local'&&$('q-format')?.value==='MIX')$('q-format').value='CE';
+            $('q-neural-command-wrap')?.classList.toggle('hidden',QUESTION_ENGINE!=='neural'||$('q-format')?.value!=='MC');
+        }
         function refreshQuestionStudio(){
             const selected=$('q-source')?.value,el=$('q-document-indicator');
             if(el)el.textContent=selected==='imported'?'Provas importadas: utilize o modo Tradicional':
@@ -6458,7 +6463,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             ['essay-theme','essay-lines','essay-motiv'].forEach(id=>{const el=$(id);if(el)el.addEventListener('input',saveEssayDraft);});
             restoreEssayDraft();if(window.lucide)lucide.createIcons();restoreLastGuide();
             try{const imported=jget('exam:imports',[]);if(Array.isArray(imported))IMPORTED_QUESTIONS.push(...imported.slice(0,500).filter(q=>q&&['CE','MC'].includes(q.type)&&typeof q.statement==='string'));}catch(e){}
-            refreshImportedExamSources();refreshWelcome();showQuestionTotals();void bootstrapAccount();
+            refreshImportedExamSources();refreshWelcome();showQuestionTotals();updateNeuralFormatUI();void bootstrapAccount();
             document.addEventListener('visibilitychange',()=>{if(document.hidden&&CLOUD_DIRTY)void flushCloudSave();});
             document.addEventListener('keydown',event=>{if(event.key==='Escape'){closePromptModal();closeModal();}});
             ['prompt-modal','gen-modal'].forEach(id=>{const modal=$(id);if(modal)modal.addEventListener('click',event=>{if(event.target===modal){if(id==='prompt-modal')closePromptModal();else closeModal();}});});
