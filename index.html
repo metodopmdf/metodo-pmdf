@@ -2840,6 +2840,8 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
                     
                     <label class="text-xs text-[#E5C158] font-semibold">Tipo de revisão
                         <select id="anki-mode" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="due">Vencidos e novos</option><option value="all">Todos (treino livre)</option></select></label>
+                    <label class="text-xs text-[#E5C158] font-semibold">Cartões por sessão
+                        <select id="anki-batch-size" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="25">25</option><option value="50" selected>50</option><option value="100">100</option><option value="200">200</option><option value="all">Todos (pode ser longo)</option></select></label>
                 </div>
                 <div class="flex gap-2 flex-wrap"><button type="button" onclick="startAnki()" class="px-5 py-2.5 rounded-xl bg-[#D4AF37] text-[#050B16] font-extrabold">Iniciar revisão</button><button type="button" onclick="clearAnkiFilters()" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">↺ Limpar filtros</button></div>
                 <p id="anki-status" class="text-sm text-slate-400" role="status" aria-live="polite"></p>
@@ -2928,7 +2930,7 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
     </footer>
 
 
-    <script defer src="assets/pmdf-neural-questions.js?v=20261103-neural-v4"></script>
+    <script defer src="assets/pmdf-neural-questions.js?v=20261103-mix-flash-v5"></script>
         <script>
         // ============================================================================
         // BASE DE CONHECIMENTO TÁTICA INTEGRADA (AS 5 LEIS PRINCIPAIS DA PMDF)
@@ -5659,9 +5661,13 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 cards.push({id,front:f,back:answer,kind,article:art,source:basis,
                     priority,difficulty:level});
             };
-            for(const a of sources.slice(0,500)){
+            for(const a of sources.slice(0,1200)){
                 const art=clean(a.article||a.title||'Tópico');
-                const source=clean(a.sourceText||a.plainExplanation);
+                const original=clean(a.sourceText),resumo=clean(a.plainExplanation);
+                // O artigo integral pode exceder o tamanho seguro do cartão.
+                // Prioriza o texto completo verificável e, se for longo demais,
+                // utiliza a explicação curta já presente no mesmo dispositivo.
+                const source=original.length>=45&&original.length<=1500&&!original.includes('…')?original:resumo;
                 if(!art||source.length<45||source.length>1500||source.includes('…')||weak.test(source))continue;
                 const dedupe=norm(art+'|'+source);
                 if(sourceSeen.has(dedupe))continue;sourceSeen.add(dedupe);
@@ -5850,6 +5856,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         }
         function clearAnkiFilters(){
             $('anki-source').value='current';$('anki-mode').value='due';
+            if($('anki-batch-size'))$('anki-batch-size').value='50';
             $('anki-status').textContent='Filtros limpos.';$('anki-panel').classList.add('hidden');ANKI_STATE=null;
         }
         function questionIsComplete(q){
@@ -6115,15 +6122,41 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const el=$('question-progress-summary');if(el)el.textContent='Histórico no dispositivo: '+a+' respondidas · '+c+' certas · '+(a-c)+' erradas'; }
         let ANKI_STATE=null;
         function startAnki(){
-            const guides=pickStudyGuides('anki');if(!guides.length)return toast('Selecione um guia ou envie um conteúdo antes de revisar.','error');
-            let cards=[];for(const g of guides){for(const card of buildStudyCards(g))cards.push({...card,law:g.lawName});}
+            const guides=pickStudyGuides('anki');
+            if(!guides.length)return toast('Selecione um guia ou envie um conteúdo antes de revisar.','error');
+            // Intercala os materiais antes de formar os lotes: ao estudar todas as
+            // leis, a revisão não fica concentrada apenas nas primeiras normas.
+            const decks=guides.map(g=>buildStudyCards(g).map(card=>({...card,law:g.lawName})));
+            let cards=[];
+            const max=Math.max(0,...decks.map(deck=>deck.length));
+            for(let i=0;i<max;i++)for(const deck of decks)if(deck[i])cards.push(deck[i]);
             cards=[...new Map(cards.map(c=>[c.id,c])).values()];
-            if($('anki-mode').value==='due')cards=cards.filter(c=>{const state=getCardBox(c.id);return !state.due||Date.now()>=state.due;});
-            cards.sort((x,y)=>getCardBox(x.id).due-getCardBox(y.id).due);
-            ANKI_STATE={cards:cards,index:0,seen:0,back:false,graded:null,correct:0,wrong:0};
+            const mode=$('anki-mode').value;
+            if(mode==='due'){
+                cards=cards.filter(c=>{const state=getCardBox(c.id);return !state.due||Date.now()>=state.due;});
+                cards.sort((x,y)=>getCardBox(x.id).due-getCardBox(y.id).due);
+            }
+            const available=cards.length;
+            const requested=$('anki-batch-size')?.value||'50';
+            const limit=requested==='all'?available:Math.max(1,Math.min(200,Number(requested)||50));
+            // Treino livre percorre todo o conjunto em lotes consecutivos.
+            // A ordem é estável entre sessões, mesmo depois de avaliar cartões.
+            if(mode==='all'&&cards.length){
+                const cycleKey='anki:batch:v3:'+(hash(cards.map(c=>c.id).join('¦')+'|'+LEVEL)>>>0).toString(36);
+                let cursor=Math.max(0,Number(store.get(cycleKey))||0);
+                if(cursor>=cards.length)cursor=0;
+                const batch=cards.slice(cursor,cursor+limit);
+                store.set(cycleKey,String(cursor+batch.length));
+                cards=batch;
+            }else cards=cards.slice(0,limit);
+            ANKI_STATE={cards,index:0,seen:0,back:false,graded:null,correct:0,wrong:0};
             saveStudySession();$('anki-panel').classList.remove('hidden');
-            $('anki-status').textContent='Revisão pronta · '+LEVELS[LEVEL].label+' · Avance para acompanhar o progresso dos cartões.';
-            if(!ANKI_STATE.cards.length){$('anki-panel').innerHTML='<div class="g-card"><h3 class="font-bold text-[#E5C158]">Nenhum cartão vencido</h3><p class="mt-2 text-slate-300">Você está em dia. Se quiser continuar praticando, selecione “Todos (treino livre)”.</p></div>';return;}
+            $('anki-status').textContent='Revisão pronta · '+cards.length+' cartões neste lote, de '+available+
+                ' elegíveis · '+LEVELS[LEVEL].label+'. Avalie a recordação para programar as próximas revisões.';
+            if(!cards.length){
+                $('anki-panel').innerHTML='<div class="g-card"><h3 class="font-bold text-[#E5C158]">Nenhum cartão vencido</h3><p class="mt-2 text-slate-300">Você está em dia. Se quiser continuar praticando, selecione “Todos (treino livre)”.</p></div>';
+                return;
+            }
             drawAnki();
         }
         function drawAnki(){

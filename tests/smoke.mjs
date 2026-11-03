@@ -111,6 +111,27 @@ for(const level of ['iniciante','intermediario','avancado']){
   if(level!=='iniciante')assert(cloze>0,'Faltam cartões específicos de prazos/requisitos: '+level);
 }
 app.level('intermediario');
+// Um artigo longo com explicação segura não pode zerar todo o baralho.
+const sourceFallback=app.buildStudyCards({lawName:'Guia sintético de regressão',articlesMapping:{
+  highIncidence:[{article:'Art. 9º — Motivação',
+    sourceText:'Texto excessivamente longo que não cabe no cartão. '.repeat(50),
+    plainExplanation:'A decisão administrativa deve apresentar motivação específica, indicar seus fundamentos e observar os requisitos do procedimento previsto.'}],
+  mediumIncidence:[],lowIncidence:[]}});
+assert(sourceFallback.length>0&&sourceFallback[0].source.includes('motivação específica'),
+  'Fonte longa deve utilizar explicação completa disponível em vez de descartar o artigo');
+// Lotes por lei equilibrados, sem repetir os mesmos cartões no treino livre.
+const multi=createClient(),multiApp=multi.application;
+multiApp.auth('qa-decks');multiApp.choose('lai');multiApp.level('intermediario');
+multi.$('anki-source').value='all';multi.$('anki-mode').value='all';multi.$('anki-batch-size').value='50';
+multiApp.startAnki();
+const batchA=multiApp.ankiState().cards;
+assert.equal(batchA.length,50,'O limite configurado de flashcards não foi aplicado');
+assert.equal(new Set(batchA.slice(0,26).map(c=>c.law)).size,26,
+  'Revisão de todas as leis deve distribuir os cartões entre as 26 matérias');
+multiApp.startAnki();
+const batchB=multiApp.ankiState().cards;
+assert(batchB.length>0&&batchB.every(c=>!batchA.some(a=>a.id===c.id)),
+  'Próximo lote livre deve avançar sem repetir o anterior');
 const gradeClient=createClient(),gradeApp=gradeClient.application;
 gradeApp.auth('qa-card-grade');gradeApp.choose('lai');gradeApp.level('intermediario');
 gradeApp.startAnki();

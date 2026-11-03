@@ -11,6 +11,7 @@ import {chromium} from 'playwright';
 
 const BASE=(process.env.PMDF_ONLINE_URL||'https://metodopmdf.github.io/metodo-pmdf/').replace(/\/?$/,'/');
 const expected=readFileSync(new URL('../index.html',import.meta.url));
+const expectedNeural=readFileSync(new URL('../assets/pmdf-neural-questions.js',import.meta.url));
 const hash=b=>createHash('sha256').update(b).digest('hex');
 const output='test-artifacts';
 mkdirSync(output,{recursive:true});
@@ -22,7 +23,11 @@ async function published(){
     try{
       const response=await fetch(BASE+'?qa_build='+Date.now(),{
         headers:{'Cache-Control':'no-cache'},signal:AbortSignal.timeout(15000)});
-      if(response.ok&&hash(Buffer.from(await response.arrayBuffer()))===expectedHash)return true;
+      if(response.ok&&hash(Buffer.from(await response.arrayBuffer()))===expectedHash){
+        const asset=await fetch(BASE+'assets/pmdf-neural-questions.js?qa_build='+Date.now(),{
+          headers:{'Cache-Control':'no-cache'},signal:AbortSignal.timeout(15000)});
+        if(asset.ok&&hash(Buffer.from(await asset.arrayBuffer()))===hash(expectedNeural))return true;
+      }
     }catch(e){console.log('[QA ONLINE] Verificação indisponível: '+String(e.message||e));}
     await pause(8000);
   }
@@ -64,7 +69,8 @@ async function generate(page,format){
   for(const item of result.items)assert(format==='CE'?['C','E'].includes(item.answer):
     format==='MC'?'ABCDE'.includes(item.answer)&&item.options===5:
     ['C','E','A','B','C','D','E'].includes(item.answer),'Gabarito inválido '+format);
-  if(format==='MIX')assert(new Set(result.types).size===2,'Misto sem os dois formatos');
+  if(format==='MIX')assert(new Set(result.types).size===2,
+    'Misto sem os dois formatos: '+JSON.stringify({types:result.types,coverage:result.shown,available:result.total}));
   const choices=await page.locator('#q-alternatives .q-choice').count();
   assert(choices===2||choices===5,'Quantidade de botões de resposta inválida: '+choices);
   await page.locator('#q-alternatives .q-choice').first().click();
@@ -76,9 +82,12 @@ async function generate(page,format){
 async function checkFlashcards(page){
   await page.locator('#tab-btn-anki').click();
   await page.locator('#anki-mode').selectOption('all');
+  await page.locator('#anki-batch-size').selectOption('50');
   await page.locator('button[onclick="startAnki()"]').click();
   await page.waitForFunction(()=>document.querySelector('#anki-panel .anki-question')?.textContent?.length>35,
     null,{timeout:20000});
+  assert((await page.evaluate(()=>window.eval('ANKI_STATE.cards.length')))<=50,
+    'Quantidade de flashcards por sessão ultrapassou o limite');
   const first=await page.locator('#anki-panel .anki-question').innerText();
   assert(first.length>35,'Flashcard sem pergunta substantiva');
   assert(!first.includes('Identifique o instituto, seu requisito principal'),
