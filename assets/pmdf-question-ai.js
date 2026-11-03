@@ -64,7 +64,14 @@ async function prepare(){
   try{
     await L().load(E('q-ai-model')?.value,r=>progress(r.progress,'Carregando modelo: '+r.text));
     progress(1,'Modelo pronto para geração no navegador.');notify('WebLLM pronto.');return true;
-  }catch(e){progress(null,'Falha: '+e.message);notify(e.message,true);return false;}
+  }catch(e){
+    const cause=describeError(e);
+    H()?.activateSafe?.();
+    try{L()?.interrupt?.();}catch(_){}
+    progress(null,'Modelo experimental indisponível. Modo seguro ativado: '+cause);
+    notify('Não foi possível carregar a IA experimental. O gerador seguro está pronto.');
+    return false;
+  }
   finally{if(b)b.disabled=false;if(!job)stopButton?.classList.add('hidden');}
 }
 function stop(){
