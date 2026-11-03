@@ -52,7 +52,7 @@ function makeHarness(format='CE',gpu=true){
     store:{get:k=>storeMap.get(k)||null,set:(k,v)=>{storeMap.set(k,String(v));return true;}},
     bankKey:(g,f,l)=>'qa:'+f+':'+l,memory,toast:(m,type)=>seen.push({m,type}),
     setQuestions:(items,model,key)=>{h.result={items,model,key};},
-    safe:async(more,reason)=>{h.safeCalls=(h.safeCalls||0)+1;h.lastSafe={more,reason};return 'seguro';},
+    safe:async(more,reason)=>{h.safeCalls=(h.safeCalls||0)+1;h.lastSafe={more,reason};return {ok:true,count:6,engine:'adaptive'};},
     activateSafe:()=>{find('q-ai-backend').value='safe';h.activated=(h.activated||0)+1;},
     saveSession:()=>{}
   };
@@ -273,5 +273,62 @@ loadFailure.win.PMDFWebLLM.load=async()=>{throw undefined;};
 await loadFailure.win.PMDFQuestionAI.prepare();
 assert.equal(loadFailure.find('q-ai-backend').value,'safe','Falha no carregamento não ativou o modo seguro');
 assert(!loadFailure.seen.some(x=>String(x.m).includes('undefined')),'Carregamento exibiu undefined novamente');
+
+
+// Regressão: o aviso de sucesso só pode aparecer se a geração segura produziu itens.
+const noFallbackItems=makeHarness('CE');
+noFallbackItems.win.PMDFWebLLM.generate=async()=>{throw new Error('JSON incompleto');};
+noFallbackItems.h.safe=async()=>({ok:false,reason:'Fonte sem novas questões válidas'});
+await noFallbackItems.win.PMDFQuestionAI.start(false);
+assert(!noFallbackItems.seen.some(x=>String(x.m).includes('6 questões elaboradas')),'O fallback declarou um lote inexistente');
+assert(noFallbackItems.seen.some(x=>String(x.m).includes('Não foram geradas questões')),'É preciso informar quando faltam questões verificáveis');
+
+// Campos em português também devem ser processados quando o modelo pequeno
+// produz JSON com suas próprias denominações.
+const ptCE=makeHarness('CE');
+let numberPT=0;
+ptCE.win.PMDFWebLLM.generate=async messages=>{
+  numberPT++;
+  const quote=messages[1].content.split('\n').at(-1);
+  return {text:JSON.stringify({questoes:[{
+    enunciado:'No procedimento administrativo nº '+numberPT+', a autoridade deve registrar os fatos, motivar a decisão e observar a competência estabelecida no dispositivo legal considerado.',
+    gabarito:'CERTO',
+    justificativa:'A obrigação de documentar, fundamentar e respeitar competência está prevista no trecho-base utilizado no item.',
+    trecho:quote.slice(0,68)
+  }]})};
+};
+await ptCE.win.PMDFQuestionAI.start(false);
+assert(ptCE.h.result?.items.length>=3,'O modelo compacto com chaves em português não produziu questões CE');
+assert(ptCE.h.result.items.every(q=>q.answer==='C'&&q.sourceQuote.length>=16),'Gabaritos CE ou evidências em português inválidos');
+assert.equal(ptCE.h.safeCalls||0,0,'Itens JSON válidos em português não devem acionar o fallback');
+
+const ptMC=makeHarness('MC');
+let numberMC=0;
+ptMC.win.PMDFWebLLM.generate=async messages=>{
+  numberMC++;
+  const quote=messages[1].content.split('\n').at(-1);
+  return {text:JSON.stringify({questoes:[{
+    enunciado:'No procedimento administrativo hipotético número '+numberMC+', qual das alternativas corresponde aos requisitos legais previstos na fonte sobre a decisão administrativa?',
+    gabarito:'B',
+    justificativa:'É necessário observar requisitos de motivação, competência e registro documental para a decisão administrativa.',
+    trecho:quote.slice(0,65),
+    alternativas:[
+      'A motivação formal é proibida nos procedimentos administrativos.',
+      'A autoridade deve registrar os fatos e observar a competência.',
+      'A decisão não depende dos requisitos de documentação previstos.',
+      'A atuação estatal pode ignorar todos os requisitos do documento.'
+    ],
+    analiseAlternativas:[
+      'Contraria a motivação prevista.',
+      'Reproduz o dever documental.',
+      'Nega o requisito expresso.',
+      'Inverte o comando original.'
+    ]
+  }]})};
+};
+await ptMC.win.PMDFQuestionAI.start(false);
+assert(ptMC.h.result?.items.length===3,'Não gerou o lote MC com campos em português');
+assert(ptMC.h.result.items.every(q=>q.options.length===4&&q.optionAnalysis.length===4&&q.answer==='B'));
+assert.equal(ptMC.h.safeCalls||0,0,'MC válido em português não deve migrar para geração por regras');
 
 console.log('PASSOU: WebLLM em Worker, fallback automático padrão, sessões CE/MC de até 6/3, acumulação de 30 questões, evidência e fallback WebGPU.');
