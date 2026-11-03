@@ -2928,6 +2928,7 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
     </footer>
 
     <script defer src="assets/pmdf-webllm.js"></script>
+    <script defer src="assets/pmdf-question-ai.js"></script>
         <script>
         // ============================================================================
         // BASE DE CONHECIMENTO TÁTICA INTEGRADA (AS 5 LEIS PRINCIPAIS DA PMDF)
@@ -5785,6 +5786,90 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         }
         let Q_STATE=null;
 
+
+        // Ponte entre a aplicação legada e o módulo WebLLM: evita duplicar o simulador.
+        let QUESTION_ENGINE='local';
+        const AI_MEMORY_BANKS=Object.create(null);
+        function setQuestionEngine(mode){
+            if(mode!=='local'&&mode!=='webllm')return;
+            if(QUESTION_ENGINE!==mode)stopQuestionAI();
+            QUESTION_ENGINE=mode;
+            for(const value of ['local','webllm']){
+                const el=$('q-engine-'+value);
+                if(el){el.classList.toggle('active',mode===value);el.setAttribute('aria-pressed',String(mode===value));}
+            }
+            $('q-ai-settings')?.classList.toggle('hidden',mode!=='webllm');
+            $('q-local-settings')?.classList.toggle('hidden',mode==='webllm');
+            if($('q-generate-button'))$('q-generate-button').textContent=mode==='webllm'?'Gerar questões com IA':'Gerar e iniciar questões';
+            if($('q-next-button'))$('q-next-button').textContent=mode==='webllm'?'Gerar mais com IA':'Próximo lote inédito';
+            refreshQuestionStudio();
+            if(mode==='webllm')void window.PMDFQuestionAI?.checkCompatibility?.();
+        }
+        function refreshQuestionStudio(){
+            const selected=$('q-source')?.value,el=$('q-document-indicator');
+            if(el)el.textContent=selected==='imported'?'Provas importadas: utilize o modo Tradicional':
+                selected==='all'?'Catálogo inteiro (guias didáticos, não leis integrais)':
+                CUR.guide?'Fonte: '+CUR.guide.lawName:'Nenhum documento selecionado';
+        }
+        function aiBankKey(guides,fmt,level){
+            const sources=guides.map(g=>g.lawName+'|'+['highIncidence','mediumIncidence','lowIncidence'].flatMap(k=>
+                safeArray(g.articlesMapping?.[k]).map(a=>String(a.article||'')+'='+String(a.sourceText||a.plainExplanation||''))).join('¦')).join('§');
+            return 'q:ai:bank:v1:'+(hash(sources+'|'+fmt+'|'+level+'|'+($('q-board')?.value||'')+'|'+($('q-ai-model')?.value||''))>>>0).toString(36);
+        }
+        function stopQuestionAI(){window.PMDFQuestionAI?.stop?.();}
+        function prepareQuestionAI(){return window.PMDFQuestionAI?.prepare?.();}
+        function startAIQuestions(more=false){
+            if(!window.PMDFQuestionAI)return toast('Módulo de IA não carregado. Recarregue a página com internet.','error');
+            return window.PMDFQuestionAI.start(Boolean(more));
+        }
+        function questionUseSource(text,title){
+            const raw=String(text||'').trim();
+            if(raw.length<60)throw Error('Forneça ao menos 60 caracteres de texto legível.');
+            const g=analyzeLawText(raw,String(title||'Material personalizado').slice(0,160));
+            g._baseLawName=g.lawName;
+            const key='custom-'+hash(g.lawName+'|'+raw);
+            CUR={key,guide:g,_poolCache:Object.create(null)};
+            $('q-source').value='current';
+            if(!store.set('custom:'+key,JSON.stringify(g)))toast('O documento excede o espaço de armazenamento; mantenha o arquivo original.','error');
+            renderGuide(g,true);refreshQuestionStudio();
+            $('q-status').textContent='Material analisado: '+g.lawName+'.';
+            return g;
+        }
+        function questionUseText(){
+            try{
+                const g=questionUseSource($('q-inline-text')?.value,$('q-inline-title')?.value||'Texto personalizado');
+                toast('Texto analisado: '+g.lawName,'ok');
+            }catch(e){toast('Falha na análise: '+e.message,'error');}
+        }
+        async function questionUploadFile(input){
+            const f=input?.files?.[0];if(!f)return;
+            if(!/\.(pdf|docx|txt)$/i.test(f.name)){toast('Formato permitido: PDF, DOCX ou TXT.','error');input.value='';return;}
+            $('q-status').textContent='Extraindo texto de '+f.name+'...';
+            try{
+                const t=await readFileText(f);questionUseSource(t,f.name);
+                toast('Documento extraído e pronto para gerar questões.','ok');
+            }catch(e){$('q-status').textContent='Falha ao analisar documento.';toast(e.message,'error');}
+            finally{input.value='';}
+        }
+        window.PMDFQuestionHost={
+            $:id=>$(id),toast:(message,kind)=>toast(message,kind),store,hash,
+            guides:()=>pickStudyGuides('q'),level:v=>LEVELS_SAFE_LEVEL(v),
+            sourceUnits:guides=>guides.flatMap(g=>['highIncidence','mediumIncidence','lowIncidence'].flatMap(group=>
+                safeArray(g.articlesMapping?.[group]).map(a=>({law:g.lawName,article:String(a.article||'Tópico'),
+                    text:String(a.sourceText||a.plainExplanation||'')})))),
+            bankKey:(guides,fmt,level)=>aiBankKey(guides,fmt,level),
+            rubric:()=>scanPrompt(),
+            user:()=>AUTH_USER,
+            setQuestions:(items,model,key)=>{
+                Q_STATE={items:items.slice(),engine:'webllm',modelId:model,index:0,hits:0,wrong:0,blank:0,
+                    pending:0,answered:false,questionStart:Date.now(),
+                    coverage:{total:items.length,shown:items.length,remaining:0,cycleKey:key}};
+                saveStudySession();$('q-panel').classList.remove('hidden');drawQuestions();
+            },
+            validateItem:q=>questionIsComplete(q),
+            memory:AI_MEMORY_BANKS,
+            saveSession:()=>saveStudySession()
+        };
         function questionCoverageId(q){
             return q.coverageId || q.type+'|'+(q.law||'')+'|'+(q.lawBasis||'')+'|'+String(q.statement||'').trim();
         }
