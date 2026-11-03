@@ -40,7 +40,7 @@ function createClient(fetchImpl=async()=>({ok:true,status:200,json:async()=>[]})
     'document','window','localStorage','location','navigator','setInterval','setTimeout','clearTimeout','fetch',
     code+'\nreturn {BUILTIN_PMDF_GUIDES,questionPool,buildStudyCards,fullQuestionSentences,getCardBox,'+
     'store,accountData,accountFetch,mergeProgressData,applyProgressSnapshot,getSyncMeta,'+
-    'startQuestions,resetQuestionCycle,scanPrompt,setQuestionEngine,questionUseSource,answerQuestion,nextQuestion,startAnki,revealAnki,nextAnki,correctEssay,renderResultsChart,'+
+    'startQuestions,resetQuestionCycle,scanPrompt,setQuestionEngine,questionUseSource,answerQuestion,nextQuestion,startAnki,revealAnki,gradeAnki,nextAnki,correctEssay,renderResultsChart,'+
     'setSummaryFormat,renderGuide,guideHtml,exportEssayPdfA4,addOfficialQuestions,importOfficialAnswerFile,refreshImportedExamSources,analyzeLawText,beginStudies,saveStudySession,readStudySession,'+
     'choose(k){CUR={key:k,guide:BUILTIN_PMDF_GUIDES[k],_poolCache:{}}},'+
     'level(l){LEVEL=l},auth(id){AUTH_USER={username:id,displayName:id};saveSbSession({access_token:"jwt",refresh_token:"refresh",expires_in:3600})},'+
@@ -83,6 +83,50 @@ for(const level of ['iniciante','intermediario','avancado']){
   assert(ceTotal>=70&&cardsTotal>=100,'Banco de questões C/E ou flashcards insuficiente');
   counts[level]={ce:ceTotal,mc:mcTotal,flashcards:cardsTotal};
 }
+// Flashcards v2: teste real das 26 matérias em três níveis.
+for(const level of ['iniciante','intermediario','avancado']){
+  app.level(level);
+  let total=0,cloze=0;
+  for(const [key,g] of Object.entries(app.BUILTIN_PMDF_GUIDES)){
+    const cards=app.buildStudyCards(g);
+    assert(cards.length>0,'Sem flashcards baseados em fonte: '+key+'/'+level);
+    assert.equal(new Set(cards.map(c=>c.id)).size,cards.length,'IDs repetidos de flashcards em '+key);
+    for(const c of cards){
+      assert(c.front.length>37&&c.back.length>25&&c.source?.length>=35,
+        'Cartão incompleto ou sem fonte: '+key+'/'+c.article);
+      assert(c.front!==c.back,'Flashcard com frente repetida no verso: '+key);
+      assert(!c.front.includes('Identifique o instituto, seu requisito principal'),
+        'Pergunta genérica antiga foi mantida: '+key);
+      assert(!c.front.includes('Identifique o detalhe jurídico que torna'),
+        'Pegadinha autocontida sem explicação voltou: '+key);
+      assert(!c.front.includes('…')&&!c.back.includes('…'),'Flashcard truncado: '+key);
+      assert(['Regra principal','Prazo e quantidade','Proibição e requisito',
+        'Aplicação contextual','Comparação entre artigos'].includes(c.kind),'Tipo desconhecido: '+c.kind);
+      if(c.front.includes('_____')){cloze++;assert(c.back.includes('Expressão correta:'),
+        'Cartão de lacuna sem resposta: '+key);}
+    }
+    total+=cards.length;
+  }
+  assert(total>=100,'Cobertura de flashcards insuficiente no nível '+level+': '+total);
+  if(level!=='iniciante')assert(cloze>0,'Faltam cartões específicos de prazos/requisitos: '+level);
+}
+app.level('intermediario');
+const gradeClient=createClient(),gradeApp=gradeClient.application;
+gradeApp.auth('qa-card-grade');gradeApp.choose('lai');gradeApp.level('intermediario');
+gradeApp.startAnki();
+const gradeCard=gradeApp.ankiState()?.cards?.[0];
+assert(gradeCard,'Sessão de flashcards vazia');
+gradeApp.revealAnki();
+assert(gradeClient.$('anki-panel').innerHTML.includes('VERSO'),'Verso não apareceu');
+assert(gradeClient.$('anki-panel').innerHTML.includes('Fundamento rastreável'),
+  'Novo cartão não mostra origem');
+assert(gradeClient.$('anki-panel').innerHTML.includes('Não lembrei'),
+  'Botão de revisar cartão não está presente');
+gradeApp.gradeAnki(false);
+assert.equal(gradeApp.getCardBox(gradeCard.id).box,0,
+  'Não lembrar não pode promover a revisão');
+assert.equal(gradeApp.ankiState().wrong,1,'Falha de recordação não contabilizada');
+
 // Validação estrutural dos controles que o usuário realmente utiliza.
 const staticMarkup=html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'');
 const staticIds=[...staticMarkup.matchAll(/\bid=(["'])([^"']+)\1/g)].map(m=>m[2]);
@@ -145,7 +189,7 @@ for(const level of ['iniciante','intermediario','avancado']){
   assert.equal(app.questionState().index,1,'Avanço do simulado');
   app.startAnki();const card=app.ankiState().cards[0];assert(card,'Baralho vazio');
   app.revealAnki();assert(primary.$('anki-panel').innerHTML.includes('VERSO'),'Verso não revelado');
-  app.nextAnki();const due=app.getCardBox(card.id);
+  app.gradeAnki(true);const due=app.getCardBox(card.id);
   assert(due.box>=1&&due.due>Date.now(),'Revisão não agendada');
   app.store.set('pmdf:results:aggregates',JSON.stringify({'CPM • crimes':{a:3,c:1,seconds:90}}));
   primary.$('results-topic').value='*';app.renderResultsChart();
