@@ -1,5 +1,5 @@
 /* Método PMDF — gerador neural local adaptado do código fornecido pelo usuário.
-   Sem Gemini, sem WebGPU, sem chaves privadas no navegador.
+   Sem serviços externos, sem WebGPU e sem chaves privadas no navegador.
    Rede neural pequena classifica dificuldade; enunciados são extrativos/mutações, NÃO IA generativa.
 */
 (function(root){
@@ -249,7 +249,15 @@ class MotorNeuralPMDF extends MotorNeuralSupabase {
   gerarDistratores(frase, quantidade=4) {
     const base=String(frase||"").trim().replace(/[.;:]$/,"");
     const vistos=new Set([this.normalizar(base)]), resultado=[];
-    for(const regra of this.regrasMutacao){
+    const regrasAdicionais=[
+      {tipo:"Faculdade vs. obrigação",regex:/\b(poderá|poderão|poderiam)\b/i,substituir:"deverá obrigatoriamente",explicacao:"Substituição de faculdade por dever"},
+      {tipo:"Dever vs. faculdade",regex:/\b(deve|deverá|devem)\b/i,substituir:"poderá facultativamente",explicacao:"Substituição de dever por mera permissão"},
+      {tipo:"Prazo legal",regex:/\b(\d+)\s*(dias|meses|anos|horas)\b/i,substituir:(_,n,u)=>(Number(n)+7)+" "+u,explicacao:"Adulteração de prazo"},
+      {tipo:"Possibilidade vs. obrigação",regex:/\b(possível|possibilidade)\b/i,substituir:"obrigatório",explicacao:"Mudança de possibilidade em obrigação"},
+      {tipo:"Exceção",regex:/\b(ressalvadas?|exceto|salvo)\b/i,substituir:"inclusive",explicacao:"Alteração de ressalva"},
+      {tipo:"Negação expressa",regex:/\b(não podem|não poderá|não deve|não se admite)\b/i,substituir:"podem livremente",explicacao:"Inversão de negação"}
+    ];
+    for(const regra of [...regrasAdicionais,...this.regrasMutacao]){
       if(!regra.regex.test(base))continue;
       const texto=base.replace(regra.regex,regra.substituir).replace(/[.;:]?$/,".") ;
       const chave=this.normalizar(texto);
@@ -278,7 +286,7 @@ class MotorNeuralPMDF extends MotorNeuralSupabase {
         if(sentence.length<42||sentence.length>1400||unique.has(sig)||/[.…]$/.test(sentence.slice(0,-1)))continue;
         unique.add(sig);
         result.push({text:sentence,law:row.law||"Material",article:row.article||"Texto-base"});
-        if(result.length>=2500)return result;
+        if(result.length>=500)return result;
       }
     }
     return result;
