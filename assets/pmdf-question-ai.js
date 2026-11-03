@@ -46,7 +46,8 @@ async function prepare(){
 }
 function stop(){
   if(job)job.cancelled=true;
-  if(job||L()?.status?.()?.loading){
+  const state=L()?.status?.();
+  if(job||state?.loading||state?.worker||state?.loadedId){
     L()?.interrupt?.();
     progress(null,'Processamento interrompido e memória do Worker liberada. Os itens aprovados foram preservados.');
   }
