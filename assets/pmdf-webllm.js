@@ -1,73 +1,109 @@
-/* Método PMDF · WebLLM local (navegador). Sem backend, API key ou IA paga.
- * WebLLM: Apache-2.0. A primeira ativação requer internet para baixar os pesos.
- * Módulo carregado sob demanda: nenhum modelo é baixado ao abrir a página.
+/* Método PMDF · WebLLM leve.
+ * Cálculo e memória do modelo isolados em um Web Worker dedicado.
+ * Nenhum fallback para inferência na thread principal.
  */
-(function (root) {
-    'use strict';
-    const CDN = 'https://esm.run/@mlc-ai/web-llm@0.2.87';
-    const MODELS = Object.freeze([
-        { id:'Qwen2.5-0.5B-Instruct-q4f32_1-MLC',label:'Leve · Qwen 0,5B',vramMB:1061,f16:false,quality:'limitada' },
-        { id:'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',label:'Equilibrado · Qwen 1,5B',vramMB:1630,f16:true,quality:'intermediária' },
-        { id:'Qwen2.5-1.5B-Instruct-q4f32_1-MLC',label:'Compatível · Qwen 1,5B',vramMB:1889,f16:false,quality:'intermediária' },
-        { id:'Qwen2.5-3B-Instruct-q4f16_1-MLC',label:'Avançado · Qwen 3B',vramMB:2505,f16:true,quality:'melhor, maior consumo' }
-    ]);
-    let modulePromise=null,engine=null,loadedId=null,loading=null,active=false;
-    function modelInfo(id){return MODELS.find(m=>m.id===id)||null;}
-    async function compatibility(){
-        if(root.isSecureContext===false)return {ok:false,reason:'É necessário acessar o site por HTTPS.'};
-        if(!root.navigator?.gpu?.requestAdapter)return {ok:false,reason:'WebGPU indisponível neste navegador ou dispositivo.'};
-        try{
-            const adapter=await root.navigator.gpu.requestAdapter({powerPreference:'high-performance'});
-            if(!adapter)return {ok:false,reason:'Nenhuma GPU compatível com WebGPU foi encontrada.'};
-            return {ok:true,f16:!!adapter.features?.has('shader-f16'),maxBufferSize:adapter.limits?.maxBufferSize||null};
-        }catch(e){return {ok:false,reason:'Não foi possível inicializar WebGPU: '+String(e?.message||e)};}
+(function(root){
+  'use strict';
+  const CDN='https://esm.run/@mlc-ai/web-llm@0.2.87';
+  const MODELS=Object.freeze([
+    {id:'Qwen2.5-0.5B-Instruct-q4f32_1-MLC',label:'Leve · Qwen 0,5B',vramMB:1061,f16:false},
+    {id:'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',label:'Qwen 1,5B (GPU potente)',vramMB:1630,f16:true},
+    {id:'Qwen2.5-1.5B-Instruct-q4f32_1-MLC',label:'Qwen 1,5B (compatível)',vramMB:1889,f16:false},
+    {id:'Qwen2.5-3B-Instruct-q4f16_1-MLC',label:'Qwen 3B (não recomendado)',vramMB:2505,f16:true}
+  ]);
+  let apiPromise=null,worker=null,engine=null,loadedId=null,loading=null,active=false,version=0;
+  const pending=new Set();
+  const modelInfo=id=>MODELS.find(x=>x.id===id)||null;
+  async function compatibility(){
+    if(root.isSecureContext===false)return {ok:false,reason:'A IA local exige conexão HTTPS.'};
+    if(typeof root.Worker!=='function')return {ok:false,reason:'Este navegador não oferece Web Workers. Use o modo Tradicional.'};
+    if(!root.navigator?.gpu?.requestAdapter)return {ok:false,reason:'WebGPU indisponível. Use o modo Tradicional.'};
+    try{
+      const adapter=await root.navigator.gpu.requestAdapter({powerPreference:'low-power'});
+      if(!adapter)return {ok:false,reason:'Nenhuma GPU WebGPU compatível foi encontrada.'};
+      const memory=Number(root.navigator?.deviceMemory)||null;
+      return {ok:true,f16:!!adapter.features?.has('shader-f16'),memoryGB:memory,
+        maxBufferSize:adapter.limits?.maxBufferSize||null};
+    }catch(e){return {ok:false,reason:'Falha na verificação de GPU: '+String(e?.message||e)};}
+  }
+  function protect(promise){
+    return new Promise((resolve,reject)=>{
+      const cancel=error=>{pending.delete(cancel);reject(error);};
+      pending.add(cancel);
+      Promise.resolve(promise).then(x=>{pending.delete(cancel);resolve(x);},e=>{pending.delete(cancel);reject(e);});
+    });
+  }
+  function unload(){
+    version++;
+    const error=Error('Processamento local interrompido; os itens aprovados permanecem salvos.');
+    for(const cancel of [...pending])cancel(error);
+    try{worker?.terminate?.();}catch(_){}
+    worker=null;engine=null;loadedId=null;loading=null;active=false;
+  }
+  function assertCapacity(info,device){
+    if(!device.ok)throw Error(device.reason);
+    if(info.f16&&!device.f16)throw Error('A GPU não aceita f16. Selecione Qwen 0,5B.');
+    if(info.vramMB>=2500)throw Error('O modelo 3B foi desativado no modo leve devido ao risco de travamento.');
+    if(device.memoryGB&&device.memoryGB<=2)throw Error('Memória insuficiente para IA local com segurança. Utilize o modo Tradicional.');
+    if(device.memoryGB&&device.memoryGB<=4&&info.vramMB>1100)
+      throw Error('Neste dispositivo, selecione Qwen 0,5B para evitar consumo excessivo de memória.');
+  }
+  async function load(id,progress){
+    const info=modelInfo(id);if(!info)throw Error('Modelo inválido.');
+    const device=await compatibility();assertCapacity(info,device);
+    if(engine&&loadedId===id)return engine;
+    if(loading){
+      await loading;
+      if(engine&&loadedId===id)return engine;
+      return load(id,progress);
     }
-    async function load(modelId,progress){
-        const item=modelInfo(modelId);
-        if(!item)throw Error('Modelo não autorizado pela plataforma.');
-        const gpu=await compatibility();
-        if(!gpu.ok)throw Error(gpu.reason);
-        if(item.f16&&!gpu.f16)throw Error('Esta GPU não aceita shader-f16. Selecione o modelo Compatível ou Leve.');
-        if(engine&&loadedId===modelId)return engine;
-        if(loading){
-            await loading;
-            if(engine&&loadedId===modelId)return engine;
-            return load(modelId,progress);
+    if(engine||worker)unload();
+    const generation=version;
+    loading=(async()=>{
+      const api=await protect(apiPromise||(apiPromise=import(CDN).catch(e=>{apiPromise=null;throw e;})));
+      if(version!==generation)throw Error('Inicialização cancelada.');
+      if(!api.prebuiltAppConfig?.model_list?.some(m=>m.model_id===id))
+        throw Error('Este modelo não está disponível nesta versão do WebLLM.');
+      const url=new URL('assets/pmdf-webllm-worker.js',root.document?.baseURI||root.location?.href);
+      worker=new root.Worker(url,{type:'module',name:'pmdf-webllm'});
+      worker.addEventListener?.('error',()=>unload());
+      worker.addEventListener?.('messageerror',()=>unload());
+      const created=api.CreateWebWorkerMLCEngine(worker,id,{
+        initProgressCallback:p=>{
+          if(version!==generation)return;
+          const n=Number(p?.progress);
+          progress?.({text:String(p?.text||'Carregando pesos da IA...'),
+            progress:Number.isFinite(n)?Math.max(0,Math.min(1,n)):null});
         }
-        loading=(async()=>{
-            const api=await (modulePromise||(modulePromise=import(CDN).catch(e=>{modulePromise=null;throw e;})));
-            if(!api.prebuiltAppConfig?.model_list?.some(m=>m.model_id===modelId))
-                throw Error('O modelo selecionado não está listado na versão instalada do WebLLM.');
-            if(engine){await engine.unload();engine=null;loadedId=null;}
-            const newEngine=await api.CreateMLCEngine(modelId,{
-                initProgressCallback: info=>{
-                    const n=Number(info?.progress);
-                    progress?.({text:String(info?.text||'Preparando modelo...'),progress:Number.isFinite(n)?Math.max(0,Math.min(1,n)):null});
-                }
-            });
-            engine=newEngine;loadedId=modelId;
-            return engine;
-        })();
-        try{return await loading;}finally{loading=null;}
-    }
-    async function generate(messages,config){
-        if(!engine||!loadedId)throw Error('Carregue um modelo de IA antes de gerar questões.');
-        if(active)throw Error('A IA já está gerando um lote.');
-        active=true;
-        try{
-            const result=await engine.chat.completions.create({
-                messages,model:loadedId,response_format:{type:'json_object'},
-                temperature:config?.temperature??0.35,top_p:0.9,
-                max_tokens:config?.max_tokens??1536
-            });
-            const raw=result?.choices?.[0]?.message?.content;
-            if(!raw||typeof raw!=='string')throw Error('A IA não retornou conteúdo textual utilizável.');
-            return {text:raw,finishReason:result?.choices?.[0]?.finish_reason||null};
-        }finally{active=false;}
-    }
-    function interrupt(){
-        try{engine?.interruptGenerate?.();}catch(_){}
-    }
-    function status(){return {loadedId,active,loading:!!loading};}
-    root.PMDFWebLLM=Object.freeze({MODELS,compatibility,load,generate,interrupt,status,modelInfo});
+      });
+      const result=await protect(created);
+      if(version!==generation)throw Error('Inicialização cancelada.');
+      engine=result;loadedId=id;
+      return result;
+    })();
+    const inFlight=loading;
+    try{return await inFlight;}
+    catch(e){if(version===generation)unload();throw e;}
+    finally{if(loading===inFlight)loading=null;}
+  }
+  async function generate(messages,config){
+    if(!engine||!loadedId)throw Error('Carregue um modelo antes de gerar questões.');
+    if(active)throw Error('Uma questão já está sendo elaborada.');
+    active=true;
+    try{
+      const result=await protect(engine.chat.completions.create({
+        messages,response_format:{type:'json_object'},model:loadedId,
+        max_tokens:Math.min(750,Math.max(96,Number(config?.max_tokens)||480)),
+        temperature:config?.temperature??0.25,top_p:0.85
+      }));
+      const output=result?.choices?.[0]?.message?.content;
+      if(typeof output!=='string'||!output.trim())throw Error('A IA não retornou texto aproveitável.');
+      return {text:output,finishReason:result.choices[0]?.finish_reason||null};
+    }finally{active=false;}
+  }
+  // Cancelamento forte: encerra o Web Worker e libera sua memória. Nova geração
+  // exige carregar novamente o modelo (o download costuma estar em cache).
+  function interrupt(){unload();}
+  function status(){return {loadedId,active,loading:!!loading,worker:!!worker};}
+  root.PMDFWebLLM=Object.freeze({MODELS,compatibility,load,generate,interrupt,status,modelInfo});
 })(window);
