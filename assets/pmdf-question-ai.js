@@ -18,6 +18,7 @@ async function failOverToSafe(more,reason){
   // Libere a GPU antes de gerar questões determinísticas para não disputar memória.
   try{L()?.interrupt?.();}catch(_){}
   H()?.activateSafe?.();
+  diagnostic('A IA compacta não entregou JSON jurídico válido. Motivo: '+String(reason||'resposta inválida').slice(0,150)+'. Usando o motor seguro.');
   try{
     const result=await H()?.safe?.(more,String(reason||'resposta inválida').slice(0,95));
     if(result?.ok){
@@ -35,6 +36,7 @@ async function failOverToSafe(more,reason){
     return {ok:false,reason:issue};
   }
 }
+function diagnostic(message){if(E('q-ai-diagnostic'))E('q-ai-diagnostic').textContent=String(message||'');}
 function progress(p,m){
   E('q-ai-progress-wrap')?.classList.remove('hidden');
   if(E('q-ai-progress-text'))E('q-ai-progress-text').textContent=String(m||'');
@@ -292,14 +294,14 @@ async function start(more=false){
         failures=0;
       }catch(e){
         if(run.cancelled)break;
-        failures++;bank.rejected++;saveBank(key,bank);
+        failures++;bank.rejected++;bank.lastIssue=describeError(e);saveBank(key,bank);
         if(failures>=3)throw Error('O modelo retornou três respostas consecutivas sem estrutura válida: '+describeError(e));
         continue;
       }
       let added=0;
       for(const input of values.slice(0,requestCount)){
         const q=validate(input,u,fmt,level,bank.questions);
-        if(q){bank.questions.push(q);added++;}else bank.rejected++;
+        if(q){bank.questions.push(q);added++;}else {bank.rejected++;bank.lastIssue='A resposta não passou na verificação de evidência textual, alternativas ou duplicidade.';}
       }
       saveBank(key,bank);empty=added?0:empty+1;
       if(empty>=3)break;
@@ -314,7 +316,7 @@ async function start(more=false){
     if(E('q-status'))E('q-status').textContent=reason+' Total: '+bank.questions.length+'/'+target+' questões.';
     if(E('q-coverage'))E('q-coverage').textContent='IA local: '+bank.questions.length+' itens aceitos estruturalmente; '+bank.rejected+' descartados. A exatidão jurídica exige conferência.';
     if(!bank.questions.length&&!run.cancelled)
-      await failOverToSafe(more,'O modelo gerou itens sem evidências ou gabaritos verificáveis.');
+      await failOverToSafe(more,bank.lastIssue||'O modelo não gerou itens com evidências e gabaritos verificáveis.');
   }catch(e){
     saveBank(key,bank);
     const reason=describeError(e);
@@ -326,6 +328,7 @@ async function start(more=false){
       H()?.activateSafe?.();
       try{L()?.interrupt?.();}catch(_){}
       progress(null,'O modelo falhou, mas '+bank.questions.length+' questões válidas foram preservadas. O próximo lote usará o modo seguro.');
+      diagnostic('O lote experimental foi interrompido; '+bank.questions.length+' questões foram preservadas. Motivo: '+reason);
       notify('Questões experimentais válidas preservadas. Próximos lotes usarão o modo seguro.');
     }else{
       await failOverToSafe(more,reason);
