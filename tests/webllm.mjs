@@ -205,4 +205,12 @@ new Function('window',engineText)(mobileWebGPU);
 assert.equal((await mobileWebGPU.PMDFWebLLM.compatibility()).ok,false);
 assert.equal(adapterRequests,0,'A GPU de um Android não pode ser inicializada em modo seguro');
 
+
+const idle=makeHarness('CE');
+let idleUnloads=0;
+idle.win.PMDFWebLLM.status=()=>({worker:true,loadedId:'experimental-model'});
+idle.win.PMDFWebLLM.interrupt=()=>{idleUnloads++;};
+idle.win.PMDFQuestionAI.stop();
+assert.equal(idleUnloads,1,'Trocar para modo seguro deve descarregar modelo que ficou ocioso na GPU');
+
 console.log('PASSOU: WebLLM em Worker, fallback automático padrão, sessões CE/MC de até 6/3, acumulação de 30 questões, evidência e fallback WebGPU.');
