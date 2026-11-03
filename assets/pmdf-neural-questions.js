@@ -307,17 +307,24 @@ class MotorNeuralPMDF extends MotorNeuralSupabase {
     return result;
   }
   criarBanco(rows,config){
-    const unidades=this.gerarUnidades(rows),out=[],seen=new Set();
-    const modo=config.formato,lista=unidades.map((u,i)=>({...u,i,
-      d:this.gerarDistratores(u.text,8)}));
+    const unidades=this.gerarUnidades(rows),out=[],seen=new Set(),groups=new Map();
+    const modo=config.formato,lista=unidades.map((u,i)=>({...u,i,d:this.gerarDistratores(u.text,8)}));
+    const evidence=new Set(lista.map(u=>this.normalizar(u.text)));
+    for(const u of lista){
+      u.d=u.d.filter(d=>!evidence.has(this.normalizar(d.texto)));
+      if(!groups.has(u.law))groups.set(u.law,[]);
+      groups.get(u.law).push(u);
+    }
+    const MAX=3800;
     const incluir=(raw,origin)=>{
+      if(out.length>=MAX)return;
       const choices=raw.alternativas;
-      const id=raw.formato+"|"+raw.enunciado+"|"+(choices||[]).map(x=>x.texto).join("|")+"|"+raw.texto_origem;
-      const signature=this.normalizar(id);
+      const signature=raw.formato+"|"+this.normalizar(raw.enunciado)+"|"+
+        (choices?choices.map(x=>this.normalizar(x.texto)).sort().join("¦"):"")+
+        "|"+this.normalizar(raw.texto_origem);
       if(seen.has(signature))return;
       seen.add(signature);
-      const full={...raw,hash_unico:this.gerarHash(id),_law:origin.law,_article:origin.article};
-      out.push(full);
+      out.push({...raw,hash_unico:this.gerarHash(signature),_law:origin.law,_article:origin.article});
     };
     const makeBase=(u,formato,statement,answer,alts,arm,comment)=>{
       const score=this.preverVetor(this.extrairFeatures(u.text)).saida[0];
@@ -326,54 +333,64 @@ class MotorNeuralPMDF extends MotorNeuralSupabase {
         tipo_armadilha:arm,enunciado:statement,alternativas:alts,gabarito:answer,
         comentario_gabarito:comment,texto_origem:u.text};
     };
-    const makeMC=(u,incorrect)=>{
-      let alternativas=[];
-      if(incorrect){
-        if(!u.d.length)return;
-        const outras=lista.filter(v=>v.i!==u.i&&v.law===u.law&&this.normalizar(v.text)!==this.normalizar(u.text)).slice(0,4);
-        if(outras.length<4)return;
-        alternativas=[{texto:u.d[0].texto,correta:true,comentario:u.d[0].comentario},
-          ...outras.map(v=>({texto:v.text,correta:false,comentario:"Afirmativa presente no texto-base ("+v.article+")."}))];
-      }else{
-        const falsos=[];
-        const seenFalse=new Set([this.normalizar(u.text)]);
-        // Reaproveita mutações de outros trechos da mesma fonte; nunca preenche com alternativas repetidas.
-        for(const v of [u,...lista]){
-          if(v.law!==u.law)continue;
-          for(const d of v.d){
-            const norm=this.normalizar(d.texto);
-            if(seenFalse.has(norm))continue;
-            seenFalse.add(norm);falsos.push(d);
-            if(falsos.length>=4)break;
-          }
-          if(falsos.length>=4)break;
-        }
-        if(falsos.length<4)return;
-        alternativas=[{texto:u.text,correta:true,comentario:"Trecho do material de origem."},
-          ...falsos.map(d=>({...d,correta:false}))];
+    // Seleção circular em vez de sempre as quatro primeiras alternativas.
+    const escolher=(pool,offset,qty,skip)=>{
+      const found=[];
+      for(let i=0;i<pool.length&&found.length<qty;i++){
+        const x=pool[(offset+i)%pool.length],key=this.normalizar(x.texto||x.text);
+        if(!key||skip.has(key))continue;
+        skip.add(key);found.push(x);
       }
-      if(alternativas.length!==5||new Set(alternativas.map(a=>this.normalizar(a.texto))).size!==5)return;
-      const deslocamento=u.i%5;
-      alternativas=[...alternativas.slice(deslocamento),...alternativas.slice(0,deslocamento)];
-      alternativas=alternativas.map((a,i)=>({letra:"ABCDE"[i],texto:a.texto,correta:a.correta,
-        comentario:a.comentario||"Compare com o texto-base."}));
-      const selected=alternativas.find(a=>a.correta);
-      if(!selected||alternativas.filter(a=>a.correta).length!==1)return;
-      const enunciado="Considerando o conteúdo de "+u.law+" ("+u.article+"), assinale a alternativa "+(incorrect?"INCORRETA":"CORRETA")+".";
-      incluir(makeBase(u,"MULTIPLA_ESCOLHA",enunciado,selected.letra,alternativas,
-        incorrect?"Identificação da incorreta":"Distratores por alterações textuais",
-        alternativas.map(a=>"("+a.letra+") "+a.comentario).join(" | ")),u);
+      return found;
+    };
+    const makeMC=(u,incorrect,variation)=>{
+      const peers=groups.get(u.law)||[];
+      let options=[];
+      if(incorrect){
+        if(!u.d.length||peers.length<5)return;
+        const falseItem=u.d[variation%u.d.length];
+        const peersTruth=peers.filter(v=>v.i!==u.i);
+        const exclude=new Set([this.normalizar(u.text),this.normalizar(falseItem.texto)]);
+        const truth=escolher(peersTruth,(u.i*7+variation*5)%Math.max(1,peersTruth.length),4,exclude);
+        if(truth.length!==4)return;
+        options=[{texto:falseItem.texto,correta:true,comentario:falseItem.comentario},
+          ...truth.map(t=>({texto:t.text,correta:false,comentario:"Afirmativa reproduzida da fonte: "+t.article+"."}))];
+      }else{
+        const pool=[...u.d,...peers.filter(v=>v.i!==u.i).flatMap(v=>v.d)];
+        const exclude=new Set([this.normalizar(u.text)]);
+        const falseItems=escolher(pool,(variation*5+u.i)%Math.max(1,pool.length),4,exclude);
+        if(falseItems.length!==4)return;
+        options=[{texto:u.text,correta:true,comentario:"Trecho apresentado no material de origem."},
+          ...falseItems.map(d=>({texto:d.texto,correta:false,comentario:d.comentario}))];
+      }
+      if(options.length!==5||new Set(options.map(x=>this.normalizar(x.texto))).size!==5)return;
+      const shift=(u.i+variation*2+(incorrect?1:0))%5;
+      options=options.slice(shift).concat(options.slice(0,shift));
+      const alternatives=options.map((a,i)=>({letra:"ABCDE"[i],texto:a.texto,correta:a.correta,comentario:a.comentario}));
+      const correct=alternatives.find(a=>a.correta);
+      if(!correct||alternatives.filter(a=>a.correta).length!==1)return;
+      const command="Considerando o material de estudo de "+u.law+", assinale a alternativa "+(incorrect?"INCORRETA":"CORRETA")+".";
+      incluir(makeBase(u,"MULTIPLA_ESCOLHA",command,correct.letra,alternatives,
+        incorrect?"Identificação da alternativa adulterada":"Distratores por alteração textual",
+        alternatives.map(a=>"("+a.letra+") "+a.comentario).join(" | ")),u);
     };
     for(const u of lista){
+      if(out.length>=MAX)break;
       if(modo==="APENAS_CE"||modo==="MISTO_IA"){
         incluir(makeBase(u,"CERTO_ERRADO",u.text,"CERTO",null,"Literalidade",
-          "O enunciado reproduz um trecho do material fornecido, sem confirmação externa de vigência."),u);
-        if(u.d.length)incluir(makeBase(u,"CERTO_ERRADO",u.d[0].texto,"ERRADO",null,u.d[0].tipoPegadinha,
-          u.d[0].comentario+" Confira a alteração com o texto original."),u);
+          "O enunciado reproduz o trecho fornecido, sem verificação externa de vigência."),u);
+        // Agora utiliza TODAS as alterações independentes sustentadas pelo trecho.
+        for(const d of u.d)
+          incluir(makeBase(u,"CERTO_ERRADO",d.texto,"ERRADO",null,d.tipoPegadinha,
+            d.comentario+" Compare com o trecho: "+u.text),u);
       }
       if(modo==="ME_CORRETA"||modo==="ME_INCORRETA"||modo==="MISTO_IA"){
-        if(modo==="MISTO_IA"){if(u.i%2===0)makeMC(u,false);else makeMC(u,true);}
-        else makeMC(u,modo==="ME_INCORRETA");
+        const variants=modo==="MISTO_IA"?3:5;
+        for(let v=0;v<variants;v++){
+          if(modo==="ME_CORRETA")makeMC(u,false,v);
+          else if(modo==="ME_INCORRETA")makeMC(u,true,v);
+          else{makeMC(u,false,v);makeMC(u,true,v);}
+        }
       }
     }
     return {questoes:out,unidades:unidades.length};
@@ -387,7 +404,7 @@ class MotorNeuralPMDF extends MotorNeuralSupabase {
 }
 const host=()=>root.PMDFNeuralQuestionHost;
 const el=id=>host()?.el(id);
-let motor=null,run=null,lastRows=[];
+let motor=null,run=null,lastRows=[],cachedBank=null,cachedKey=null;
 function getMotor(){return motor||(motor=new MotorNeuralPMDF());}
 function info(value){const e=el("q-neural-status");if(e)e.textContent=String(value||"");}
 function status(){return {running:!!run};}
@@ -413,7 +430,7 @@ async function start(more=false){
   const fmt=el("q-format")?.value||"CE";
   const comando=el("q-neural-command")?.value||"correta";
   const formato=fmt==="MIX"?"MISTO_IA":fmt==="MC"?(comando==="incorreta"?"ME_INCORRETA":"ME_CORRETA"):"APENAS_CE";
-  const target=Math.min(200,Math.max(1,Number(el("q-neural-target")?.value)||30));
+  const target=Math.min(300,Math.max(1,Number(el("q-neural-target")?.value)||30));
   const state={cancelled:false};run=state;
   if(el("q-generate-button"))el("q-generate-button").disabled=true;
   if(el("q-next-button"))el("q-next-button").disabled=true;
@@ -422,12 +439,19 @@ async function start(more=false){
     await new Promise(resolve=>setTimeout(resolve,0));
     const units=h.sourceUnits(guides);
     if(state.cancelled)return;
-    const engine=getMotor(),build=engine.criarBanco(units,{formato,
-      disciplina:guides.length===1?guides[0].lawName:"Legislação policial",
-      assunto:guides.length===1?guides[0].lawName:"Conteúdo selecionado"});
+    const engine=getMotor();
+    const sourceKey=engine.gerarHash(units.map(u=>u.law+"|"+u.article+"|"+u.text).join("§"));
+    const bankKey=sourceKey+"|"+formato;
+    let build;
+    if(cachedKey===bankKey&&cachedBank)build=cachedBank;
+    else{
+      build=engine.criarBanco(units,{formato,
+        disciplina:guides.length===1?guides[0].lawName:"Legislação policial",
+        assunto:guides.length===1?guides[0].lawName:"Conteúdo selecionado"});
+      cachedKey=bankKey;cachedBank=build;
+    }
     if(state.cancelled)return;
-    const sourceKey=h.hash(units.map(u=>u.law+"|"+u.article+"|"+u.text).join("§"));
-    const key="q:neural:cycle:v1:"+engine.gerarHash(sourceKey+"|"+formato);
+    const key="q:neural:cycle:v2:"+engine.gerarHash(bankKey);
     const all=build.questoes,available=all.length;
     if(!available)throw Error("O texto não contém trechos suficientes para formar questões verificáveis neste formato. Experimente Certo/Errado ou envie mais artigos.");
     let cursor=more?Math.max(0,Number(h.store.get(key))||0):0;
@@ -435,7 +459,7 @@ async function start(more=false){
     const picked=all.slice(cursor,cursor+target),next=cursor+picked.length;
     h.store.set(key,String(next));
     lastRows=picked;
-    h.setQuestions(picked.map(convert),{model:"Rede 6-8-3 · mutações locais",key,total:next,target:available});
+    h.setQuestions(picked.map(convert),{model:"Rede 6-8-3 · múltiplas mutações",key,total:next,target:available});
     info(picked.length+" questões criadas de "+available+" possibilidades ("+build.unidades+" trechos). "+
       (next>=available?"Cobertura concluída; próximo lote reiniciará o ciclo.":"Use Próximo lote para continuar.")+
       " Gabaritos baseados no texto fornecido, sem verificação jurídica externa.");
@@ -456,8 +480,8 @@ function reset(){
   const guides=host()?.guides()||[],units=host()?.sourceUnits(guides)||[];
   const engine=getMotor(),fmt=el("q-format")?.value||"CE",cmd=el("q-neural-command")?.value||"correta";
   const forma=fmt==="MIX"?"MISTO_IA":fmt==="MC"?(cmd==="incorreta"?"ME_INCORRETA":"ME_CORRETA"):"APENAS_CE";
-  const sourceKey=host().hash(units.map(u=>u.law+"|"+u.article+"|"+u.text).join("§"));
-  host().store.del("q:neural:cycle:v1:"+engine.gerarHash(sourceKey+"|"+forma));
+  const sourceKey=engine.gerarHash(units.map(u=>u.law+"|"+u.article+"|"+u.text).join("§"));
+  host().store.del("q:neural:cycle:v2:"+engine.gerarHash(sourceKey+"|"+forma));
   info("Cobertura reiniciada. O aprendizado local foi preservado.");
   host().toast("Cobertura reiniciada.","ok");
 }
