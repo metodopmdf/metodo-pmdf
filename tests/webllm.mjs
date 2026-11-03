@@ -121,4 +121,58 @@ await fail.win.PMDFQuestionAI.start(false);
 assert.equal(fail.modelLoads,0,'Dispositivo incompatível não deve carregar modelo');
 assert.equal(fail.h.result,undefined,'Dispositivo incompatível não pode gerar questões');
 
+
+// Teste do serviço de inferência com fábrica WebLLM simulada: verifica que
+// o cálculo fica no Worker, o limite de tokens e o cancelamento que libera a GPU.
+let createdWorkers=0,terminatedWorkers=0,inferenceCalls=0,requestedTokens=0;
+class FakeWorker {
+  constructor(url,config){
+    assert.equal(config.type,'module','O Worker deve ser do tipo module');
+    assert(String(url).endsWith('/assets/pmdf-webllm-worker.js'),'Caminho do Worker incorreto');
+    createdWorkers++;
+  }
+  addEventListener(){}
+  terminate(){terminatedWorkers++;}
+}
+const tinyId='Qwen2.5-0.5B-Instruct-q4f32_1-MLC';
+const mockedAPI={
+  prebuiltAppConfig:{model_list:[{model_id:tinyId}]},
+  async CreateWebWorkerMLCEngine(worker,id,config){
+    assert(worker instanceof FakeWorker);
+    assert.equal(id,tinyId);
+    config.initProgressCallback({progress:1,text:'Modelo de teste pronto'});
+    return {chat:{completions:{async create(args){
+      requestedTokens=args.max_tokens;inferenceCalls++;
+      return {choices:[{message:{content:'{"questions":[]}'},finish_reason:'stop'}]};
+    }}}};
+  },
+  CreateMLCEngine(){throw Error('Execução direta do modelo não autorizada');}
+};
+const virtualRoot={
+  Worker:FakeWorker,isSecureContext:true,__TEST_API__:mockedAPI,
+  document:{baseURI:'https://example.org/metodo-pmdf/'},
+  navigator:{deviceMemory:8,gpu:{requestAdapter:async()=>({features:new Set(['shader-f16']),limits:{maxBufferSize:2**30}})}}
+};
+const isolatedEngine=engineText.replace('import(CDN)','Promise.resolve(root.__TEST_API__)');
+assert.notEqual(isolatedEngine,engineText,'Não foi possível simular a importação do WebLLM');
+new Function('window',isolatedEngine)(virtualRoot);
+const service=virtualRoot.PMDFWebLLM;
+await service.load(tinyId);
+assert.equal(createdWorkers,1,'Modelo não foi carregado em Worker dedicado');
+await service.generate([{role:'user',content:'Faça uma questão'}],{max_tokens:2000});
+assert.equal(inferenceCalls,1);
+assert(requestedTokens<=750,'Limite de geração por chamada não aplicado');
+service.interrupt();
+assert.equal(terminatedWorkers,1,'Interromper deve encerrar Worker e liberar recursos');
+assert.equal(service.status().worker,false);
+await assert.rejects(service.generate([],{}),'Após interromper, o modelo precisa ser recarregado');
+const smallRAM={
+  Worker:FakeWorker,isSecureContext:true,__TEST_API__:mockedAPI,
+  document:{baseURI:'https://example.org/metodo-pmdf/'},
+  navigator:{deviceMemory:2,gpu:{requestAdapter:async()=>({features:new Set(),limits:{}})}}
+};
+new Function('window',isolatedEngine)(smallRAM);
+await assert.rejects(smallRAM.PMDFWebLLM.load(tinyId),/Memória insuficiente/);
+assert.equal(createdWorkers,1,'Um dispositivo de 2 GB não deve abrir Worker de inferência');
+
 console.log('PASSOU: WebLLM em Worker, modelo leve padrão, sessões CE/MC de até 6/3, acumulação de 30 questões, evidência e fallback WebGPU.');
