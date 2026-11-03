@@ -4395,11 +4395,40 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
         }
         const boardFmt = () => /Cebraspe/i.test($('board-select').value) ? 'CE' : 'MC';
         function scanPrompt() {
-            const L = LEVELS[LEVEL], n = Math.max(20,getCachedPool(CUR.guide,boardFmt(),LEVEL).length), fmt = boardFmt(), role = $('role-select').value, board = $('board-select').value;
-            const law = (CUR.guide && CUR.guide.lawName) || $('law-input').value.trim() || '[informe a norma]';
-            const lv = { iniciante: 'INICIANTE: questões sobre os artigos mais cobrados (alta incidência), cobrando a literalidade da lei e conceitos essenciais de forma direta.', intermediario: 'INTERMEDIÁRIO: questões de aplicação em situações policiais hipotéticas, prazos, penas e distinção entre institutos parecidos.', avancado: 'AVANÇADO: questões de alta complexidade explorando exceções legais, pegadinhas recorrentes da banca e jurisprudência dominante do STF e STJ.' }[LEVEL] || L.instr;
-            const f = fmt === 'CE' ? 'Formato CERTO/ERRADO (Cebraspe): "type":"CE", "options":[] e "answer":"C" ou "E".' : 'Formato MÚLTIPLA ESCOLHA (banca ' + board + '): "type":"MC", "options" com 5 textos (alternativas A a E, sem o prefixo da letra), apenas 1 correta, e "answer":"A"|"B"|"C"|"D"|"E".';
-            return `Atue como professor especialista em concursos de carreiras policiais. Faça uma varredura online das questões mais recentes de concursos policiais e dos dispositivos de maior incidência histórica.\n\nNORMA: ${law}\nCARGO/FOCO: ${role}\nBANCA: ${board}\nNÍVEL DO CANDIDATO: ${L.label}\n\nCALIBRAGEM — ${lv}\n\n${f}\n\nGere ${n} questões inéditas, fiéis ao estilo da banca, cada uma com fundamento legal exato e comentário didático. Não invente artigos nem números de prova. Em "examRef" cite a banca/ano de referência apenas se tiver certeza; caso contrário use a banca selecionada.\n\nResponda SOMENTE com um array JSON no esquema: [{"level":"${L.label}","topic":string,"incidence":"Alta Incidência"|"Cobrança Recente"|"Pegadinha de Prova","examRef":string,"type":"CE"|"MC","statement":string,"options":[string],"answer":"C"|"E"|"A"|"B"|"D","lawBasis":string (citação direta do artigo/parágrafo/inciso),"explanation":string (por que está certo/errado ou por que a alternativa correta prevalece),"easyTip":string (macete ou exemplo policial em linguagem simples para o nível ${L.label})}]`;
+            const law=(CUR.guide&&CUR.guide.lawName)||$('law-text-title')?.value||$('law-input')?.value||'Material fornecido';
+            const fmt=$('q-format')?.value==='MC'?'MC':'CE',level=LEVELS_SAFE_LEVEL($('q-level')?.value||LEVEL),bank=$('q-board')?.value||'Cebraspe';
+            const texts=[];
+            if(CUR.guide)for(const group of ['highIncidence','mediumIncidence','lowIncidence'])
+                for(const a of safeArray(CUR.guide.articlesMapping?.[group])){
+                    const t=String(a.sourceText||a.plainExplanation||'').trim();
+                    if(t)texts.push((a.article||'Tópico')+'\n'+t);
+                }
+            return [
+                'PROMPT MESTRE — ELABORADOR PROFISSIONAL DE QUESTÕES PARA CONCURSOS',
+                'Atue como uma equipe examinadora composta por especialistas em conteúdo, elaboração de provas e auditoria de gabaritos. Reproduza características técnicas do estilo CEBRASPE/CESPE sem copiar provas existentes ou declarar autoria oficial.',
+                'NORMA OU DOCUMENTO: '+law,
+                'BANCA DE REFERÊNCIA: '+bank,
+                'FORMATO: '+(fmt==='CE'?'CERTO OU ERRADO':'MÚLTIPLA ESCOLHA (quatro ou cinco alternativas, preferencialmente cinco)'),
+                'NÍVEL CONFIGURADO: '+LEVELS[level].label,
+                '1. Leia integralmente o conteúdo efetivamente disponível, identifique sua estrutura e registre artigos, parágrafos, incisos, seções e fontes de cada proposição.',
+                '2. Antes de criar questões, faça uma matriz de cobertura: literalidade, conceitos, requisitos, condições, exceções, permissões, vedações, competências, prazos, quantidades, consequências, classificações, procedimentos, relações entre dispositivos e casos de aplicação.',
+                '3. Gere o maior número possível de questões tecnicamente distintas e sustentadas pelo documento, sem limite arbitrário. Um dispositivo pode gerar várias questões válidas; elimine variações que avaliem o mesmo raciocínio.',
+                '4. Priorize questões rigorosas: inversões de competência, troca entre regra e exceção, condições cumulativas ou alternativas, qualificadores, prazos, distinções conceituais e situações hipotéticas contextualizadas. Não crie ambiguidade artificial.',
+                '5. Em CERTO/ERRADO, cada afirmação deverá ser inequívoca, com resposta C ou E, fundamento textual verificável e explicação do elemento decisivo. Não force alternância artificial de gabaritos.',
+                '6. Em MÚLTIPLA ESCOLHA, exija apenas uma correta e alternativas plausíveis, semanticamente distintas e fundamentadas; explique por que cada distrator está errado. Descarte itens sem quatro opções seguras.',
+                '7. Classifique a dificuldade em fácil (literalidade), média (requisitos/interpretação) e difícil (integração/aplicação), usando como referência aproximada 20%, 50% e 30%, adaptável à fonte.',
+                '8. Restrinja-se ao conteúdo entregue. Não invente leis, artigos, doutrina, jurisprudência, datas, interpretações ou exceções. Só inclua informação externa por solicitação expressa e quando verificável. Sinalize texto ilegível ou vigência não conferida.',
+                '9. Cada questão deve ter ID, assunto, subassunto, nível, tipo, enunciado, alternativas (apenas MC), gabarito, dispositivo, trecho original de apoio, justificativa e análise individual dos distratores MC.',
+                '10. Revise como três examinadores independentes: especialista na matéria, elaborador da banca e auditor do gabarito. Corrija ou rejeite itens ambíguos, duplicados, sem apoio documental e de múltipla resposta.',
+                '11. Organize a geração por lotes de 30 questões. Ao comando CONTINUAR, retome os pontos examináveis ainda não cobertos, sem reiniciar a sequência ou repetir enunciados. A cobertura deve controlar documento, tópico e unidade examinável.',
+                '12. Em estudo interativo, mantenha gabarito e justificativa ocultos até a resposta. Em exportação, separe perguntas e gabarito comentado.',
+                '13. Ao fim de cada lote, relate total gerado, temas cobertos, pendências, distribuição de dificuldade e limitações. Somente declare a cobertura esgotada quando não houver outras questões relevantes e sustentáveis no material.',
+                '14. Saída estruturada: [{id,sourceKey,topic,subtopic,difficulty,type,statement,options,answer,lawBasis,sourceQuote,explanation,optionAnalysis}]. Em CE, options deve ser []; em MC, quatro ou cinco opções e uma única letra correta. Não divulgue resposta no enunciado.',
+                'PRIORIDADE: fidelidade técnica > diversidade cognitiva > cobertura da fonte > quantidade.',
+                '--- MATERIAL DISPONÍVEL ---',
+                texts.length?texts.join('\n\n'):'[Cole aqui o documento integral. Sem acesso ao texto, a exaustividade não pode ser garantida.]',
+                '--- FIM DO MATERIAL ---'
+            ].join('\n\n');
         }
         function cutAlt(i) { const e = $('alt-' + 'ABCDE'[i]); if (e && !SIM.lock) { e.classList.toggle('line-through'); e.classList.toggle('opacity-40'); } }
         function drawSim() {
