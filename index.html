@@ -2794,6 +2794,7 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
                             <button type="button" id="q-ai-load" class="qstudio-secondary hidden" onclick="prepareQuestionAI()">Carregar IA experimental</button>
                             <button type="button" id="q-ai-stop" class="qstudio-danger hidden" onclick="stopQuestionAI()">Interromper e liberar memória</button>
                             <span id="q-ai-compat" class="text-xs text-slate-400" role="status">Modo seguro ativo: sem download e sem WebGPU.</span>
+                            <p id="q-ai-diagnostic" class="text-xs text-slate-400 basis-full" role="status" aria-live="polite"></p>
                         </div>
                         <div id="q-ai-progress-wrap" class="hidden space-y-1">
                             <div class="qstudio-meter" role="progressbar" aria-label="Progresso da geração com IA" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="q-ai-progress"><span id="q-ai-progress-fill" style="width:0%"></span></div>
@@ -2933,7 +2934,7 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
     </footer>
 
     <script defer src="assets/pmdf-webllm.js?v=20261103-adaptive2"></script>
-    <script defer src="assets/pmdf-question-ai.js?v=20261103-compact-schema"></script>
+    <script defer src="assets/pmdf-question-ai.js?v=20261103-compact-qa2"></script>
         <script>
         // ============================================================================
         // BASE DE CONHECIMENTO TÁTICA INTEGRADA (AS 5 LEIS PRINCIPAIS DA PMDF)
