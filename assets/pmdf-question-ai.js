@@ -24,14 +24,21 @@ async function checkCompatibility(){
 async function prepare(){
   if(job)return notify('A geração está em andamento.',true);
   if(!L())return notify('Módulo WebLLM não foi carregado.',true);
-  const b=E('q-ai-load');if(b)b.disabled=true;
+  const b=E('q-ai-load'),stopButton=E('q-ai-stop');if(b)b.disabled=true;
+  stopButton?.classList.remove('hidden');
   try{
     await L().load(E('q-ai-model')?.value,r=>progress(r.progress,'Carregando modelo: '+r.text));
     progress(1,'Modelo pronto para geração no navegador.');notify('WebLLM pronto.');return true;
   }catch(e){progress(null,'Falha: '+e.message);notify(e.message,true);return false;}
-  finally{if(b)b.disabled=false;}
+  finally{if(b)b.disabled=false;if(!job)stopButton?.classList.add('hidden');}
 }
-function stop(){if(job){job.cancelled=true;L()?.interrupt?.();progress(null,'Interrupção solicitada. Os itens aprovados serão preservados.');}}
+function stop(){
+  if(job)job.cancelled=true;
+  if(job||L()?.status?.()?.loading){
+    L()?.interrupt?.();
+    progress(null,'Processamento interrompido e memória do Worker liberada. Os itens aprovados foram preservados.');
+  }
+}
 function units(guides){
   const result=[];
   for(const row of H().sourceUnits(guides)){
