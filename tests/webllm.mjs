@@ -338,4 +338,24 @@ assert(ptMC.h.result?.items.length===3,'Não gerou o lote MC com campos em portu
 assert(ptMC.h.result.items.every(q=>q.options.length===4&&q.optionAnalysis.length===4&&q.answer==='B'));
 assert.equal(ptMC.h.safeCalls||0,0,'MC válido em português não deve migrar para geração por regras');
 
+
+// Uma resposta cujo array raiz foi truncado pode conter uma questão inteira.
+// O parser deve recuperar somente o objeto completo, preservando o gabarito.
+const truncatedRoot=makeHarness('CE');
+truncatedRoot.find('q-ai-target').value='1';
+truncatedRoot.win.PMDFWebLLM.generate=async messages=>{
+  const text=messages[1].content.split('\n').at(-1);
+  const item={
+    statement:'A autoridade administrativa deverá registrar os fatos no procedimento e observar os critérios de motivação expressa presentes no material jurídico disponibilizado.',
+    answer:'C',
+    explanation:'A obrigação de registrar fatos e justificar a decisão decorre dos requisitos jurídicos previstos no trecho-base.',
+    evidence:text.slice(0,75)
+  };
+  return {text:'{"questions":['+JSON.stringify(item)};
+};
+await truncatedRoot.win.PMDFQuestionAI.start(false);
+assert.equal(truncatedRoot.h.result?.items.length,1,'Questão completa inserida em JSON truncado não foi recuperada');
+assert.equal(truncatedRoot.h.result.items[0].answer,'C');
+assert.equal(truncatedRoot.h.safeCalls||0,0,'Não deveria haver fallback com uma questão íntegra validada');
+
 console.log('PASSOU: WebLLM em Worker, fallback automático padrão, sessões CE/MC de até 6/3, acumulação de 30 questões, evidência e fallback WebGPU.');
