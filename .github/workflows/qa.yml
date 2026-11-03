@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: '22'
       - name: Smoke tests - três níveis, questões e sincronização simulada
-        run: node tests/smoke.mjs && node tests/webllm.mjs
+        run: node tests/smoke.mjs && node tests/gemini.mjs
 
   online:
     name: Operação online em Chromium (desktop e celular)
