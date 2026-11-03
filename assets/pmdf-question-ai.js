@@ -18,7 +18,8 @@ async function checkCompatibility(){
   const e=E('q-ai-compat');if(!e)return;
   if(!L()){e.textContent='Módulo WebLLM indisponível. Recarregue a página.';return;}
   const r=await L().compatibility();
-  e.textContent=r.ok?(r.f16?'WebGPU disponível · GPU aceita f16':'WebGPU disponível · escolha modelo Compatível ou Leve'):r.reason;
+  const low=r.memoryGB&&r.memoryGB<=4;
+  e.textContent=r.ok?(low?'Modo leve: dispositivo com até 4 GB RAM · utilize Qwen 0,5B':r.f16?'WebGPU disponível · inferência em Web Worker':'WebGPU disponível · escolha Qwen 0,5B'):r.reason;
 }
 async function prepare(){
   if(job)return notify('A geração está em andamento.',true);
@@ -37,8 +38,8 @@ function units(guides){
     const text=String(row.text||'').replace(/\s+/g,' ').trim();
     if(text.length<30||text.includes('…'))continue;
     for(let pos=0,i=0;pos<text.length;i++){
-      let end=Math.min(text.length,pos+1150);
-      if(end<text.length){const sep=text.lastIndexOf(' ',end);if(sep>pos+650)end=sep;}
+      let end=Math.min(text.length,pos+620);
+      if(end<text.length){const sep=text.lastIndexOf(' ',end);if(sep>pos+350)end=sep;}
       const quote=text.slice(pos,end).trim();
       if(quote.length>=30)result.push({id:'s-'+(H().hash(row.law+'|'+row.article+'|'+i+'|'+quote)>>>0).toString(36),
         law:row.law,article:row.article,quote});
@@ -94,10 +95,10 @@ function validate(q,u,fmt,level,prior){
   return H().validateItem(item)?item:null;
 }
 function messages(u,fmt,level,n,focus,old){
-  const rubric=H().rubric().split('--- MATERIAL DISPONÍVEL ---')[0].slice(0,2000);
+  const rubric='Somente questões inéditas, bem redigidas, com resposta única e justificativa verificável no trecho. Atue como examinador CEBRASPE; teste regra, exceção e condição sem inventar fatos. Rejeite itens duvidosos.';
   const type=fmt==='CE'?'CERTO/ERRADO: answer=C ou E, options=[].':
     'MÚLTIPLA ESCOLHA: exatamente quatro alternativas e uma correta. Inclua optionAnalysis: quatro justificativas por alternativa, na mesma ordem de options.';
-  const prev=old.slice(-3).map(x=>x.statement.slice(0,100)).join(' | ');
+  const prev=old.slice(-2).map(x=>x.statement.slice(0,75)).join(' | ');
   return [
     {role:'system',content:'Você é um examinador criterioso de concursos. Não invente fundamentos. Responda SOMENTE JSON com chave questions. Revise cada gabarito conforme o trecho-fonte.\n'+rubric},
     {role:'user',content:'Crie ATÉ '+n+' questões genuinamente distintas. Nível: '+level+'. Banca: '+(E('q-board')?.value||'Cebraspe')+'. Ênfase: '+focus+'. '+type+
@@ -134,8 +135,11 @@ async function start(more=false){
   if(!source.length)return notify('O documento não contém trechos completos suficientes.',true);
   const key=H().bankKey(guides,fmt,level),bank=loadBank(key);
   const desired=Math.max(1,Math.min(200,Number(E('q-ai-target')?.value)||100));
-  const target=Math.min(500,more?bank.questions.length+desired:desired);
-  if(bank.questions.length>=target){showBank(bank,key,model);return;}
+  const target=Math.min(250,desired);
+  if(bank.questions.length>=target){showBank(bank,key,model);return notify('A meta acumulada já foi alcançada. Escolha uma meta maior para continuar.');}
+  // Em cada clique, produza apenas poucas questões, mantendo o uso de GPU controlado.
+  const batchLimit=fmt==='CE'?6:3;
+  const roundTarget=Math.min(target,bank.questions.length+batchLimit);
   const compatible=await L().compatibility();
   if(H().mode?.()==='local')return;
   if(!compatible.ok){progress(null,compatible.reason+' Use o modo Tradicional.');return notify(compatible.reason,true);}
@@ -146,22 +150,22 @@ async function start(more=false){
   for(const id of locked)if(E(id))E(id).disabled=true;
   for(const id of buttons)if(E(id))E(id).disabled=true;
   E('q-ai-stop')?.classList.remove('hidden');
-  const per=fmt==='CE'?5:3;
-  const end=Math.min(source.length*9,bank.cursor+Math.max(12,Math.ceil((target-bank.questions.length)/per)*4));
+  const per=1;
+  const end=Math.min(source.length*9,bank.cursor+Math.max(6,batchLimit*2));
   let empty=0,failures=0;
   try{
     progress(0,'Preparando WebLLM...');
     await L().load(model,report=>progress(report.progress,'Baixando/preparando modelo: '+report.text));
-    while(!run.cancelled&&bank.questions.length<target&&bank.cursor<end){
+    while(!run.cancelled&&bank.questions.length<roundTarget&&bank.cursor<end){
       const i=bank.cursor++,u=source[i%source.length],
         focus=STEPS[Math.floor(i/source.length)%STEPS.length],
-        requestCount=Math.min(per,target-bank.questions.length);
+        requestCount=1;
       progress(bank.questions.length/target,'Elaborando '+bank.questions.length+'/'+target+' · '+u.article+' · '+focus);
       let values;
       try{
         const old=bank.questions.filter(x=>x.sourceKey===u.id);
         const reply=await L().generate(messages(u,fmt,level,requestCount,focus,old),
-          {max_tokens:fmt==='CE'?1450:1750,temperature:0.35});
+          {max_tokens:fmt==='CE'?480:740,temperature:0.3});
         if(run.cancelled)break;
         values=parse(reply.text);
         failures=0;
@@ -177,14 +181,16 @@ async function start(more=false){
         if(q){bank.questions.push(q);added++;}else bank.rejected++;
       }
       saveBank(key,bank);empty=added?0:empty+1;
-      if(empty>=10)break;
-      await new Promise(resolve=>setTimeout(resolve,0));
+      if(empty>=5)break;
+      // Deixe um intervalo entre lotes para a GPU e a interface atualizarem.
+      await new Promise(resolve=>setTimeout(resolve,120));
     }
     showBank(bank,key,model);
     const reason=run.cancelled?'Interrompido pelo usuário.':
-      bank.questions.length>=target?'Meta atingida.':'Limite de cobertura desta rodada alcançado.';
-    progress(bank.questions.length/target,reason+' '+bank.questions.length+' aceitas, '+bank.rejected+' rejeitadas.');
-    if(E('q-status'))E('q-status').textContent=reason+' Disponíveis: '+bank.questions.length+' questões.';
+      bank.questions.length>=target?'Meta acumulada atingida.':
+      bank.questions.length>=roundTarget?'Lote leve concluído; use Gerar mais para continuar.':'Lote finalizado com o conteúdo válido obtido.';
+    progress(bank.questions.length/target,reason+' '+bank.questions.length+'/'+target+' aceitas; '+bank.rejected+' rejeitadas.');
+    if(E('q-status'))E('q-status').textContent=reason+' Total: '+bank.questions.length+'/'+target+' questões.';
     if(E('q-coverage'))E('q-coverage').textContent='IA local: '+bank.questions.length+' itens aceitos estruturalmente; '+bank.rejected+' descartados. A exatidão jurídica exige conferência.';
     if(!bank.questions.length)notify('Nenhuma questão válida foi produzida. Tente outra fonte ou modelo.',true);
   }catch(e){
