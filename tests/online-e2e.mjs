@@ -53,10 +53,13 @@ async function setup(page){
 }
 async function generate(page,format){
   await page.locator('#q-format').selectOption(format);
+  // O estado do simulado anterior permanece visível até a geração assíncrona
+  // terminar. Aguardar apenas o tipo permite falso positivo MC -> MIX.
+  await page.evaluate(()=>{window.__pmdfQaPreviousState=window.eval('Q_STATE');});
   await page.locator('#q-generate-button').click();
   await page.waitForFunction(wanted=>{
     const q=window.eval('Q_STATE');
-    return !!q&&q.engine==='neural'&&q.items.length>0&&
+    return !!q&&q!==window.__pmdfQaPreviousState&&q.engine==='neural'&&q.items.length>0&&
       q.items.every(item=>wanted==='MIX'?['CE','MC'].includes(item.type):item.type===wanted);
   },format,{timeout:30000});
   const result=await page.evaluate(()=>{
