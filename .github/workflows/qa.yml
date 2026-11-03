@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Smoke tests: três níveis, gerador neural, questões e sincronização simulada
+      - name: 'Smoke tests: três níveis, gerador neural, questões e sincronização simulada'
         run: node tests/smoke.mjs && node tests/neural-questions.test.cjs
 
   online:
