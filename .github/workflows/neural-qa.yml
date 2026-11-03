@@ -1,0 +1,27 @@
+name: QA Motor Neural
+on:
+  push:
+    paths:
+      - 'index.html'
+      - 'assets/pmdf-neural-questions.js'
+      - 'tests/neural-questions.test.cjs'
+      - 'supabase/migrations/**'
+      - '.github/workflows/neural-qa.yml'
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'assets/pmdf-neural-questions.js'
+      - 'tests/neural-questions.test.cjs'
+      - 'supabase/migrations/**'
+permissions:
+  contents: read
+jobs:
+  neural-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check assets/pmdf-neural-questions.js
+      - run: node tests/neural-questions.test.cjs
