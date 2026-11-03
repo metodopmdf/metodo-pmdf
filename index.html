@@ -3971,7 +3971,7 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
         // =====================================================
         const $ = id => document.getElementById(id);
         const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-        const BACKUP_KEY_RE = /^(lvl|summaryFormat|lastKey|sim:stats|sim:errs|pmdf:session:v4|exam:imports|pmdf:results:events|pmdf:results:aggregates|q:coverage:v2:|essay:totals|(st|fc|leitner|leitnerDue|note|custom|essay):)/;
+        const BACKUP_KEY_RE = /^(lvl|summaryFormat|lastKey|sim:stats|sim:errs|pmdf:session:v4|exam:imports|pmdf:results:events|pmdf:results:aggregates|q:coverage:v2:|essay:totals|(st|fc|leitner|leitnerDue|note|custom|essay):)/; // bancos de IA extensos ficam no dispositivo
         const SCRIPT_CACHE=Object.create(null);
         let AUTH_USER=null,CLOUD_SAVE_TIMER=null,CLOUD_SAVE_BUSY=false,CLOUD_DIRTY=false,CLOUD_LAST_ERROR='',CLOUD_MUTATION_SERIAL=0;
         const SYNC_LOCAL_META='__pmdf_sync_meta_v1',SYNC_REMOTE_META='__pmdfSync';
@@ -5756,6 +5756,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             toast('Filtros do mapeador limpos.','ok');
         }
         function clearQuestionFilters(){
+            stopQuestionAI();setQuestionEngine('local');
             $('q-source').value='current';$('q-format').value='CE';$('q-level').value='intermediario';$('q-board').value='Cebraspe';if($('q-batch'))$('q-batch').value='30';
             $('q-status').textContent='Filtros limpos.';$('q-panel').classList.add('hidden');Q_STATE=null;
         }
@@ -5795,6 +5796,12 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             return 'q:coverage:v2:'+(hash(fingerprint)>>>0).toString(36);
         }
         function resetQuestionCycle(){
+            if(QUESTION_ENGINE==='webllm'){
+                stopQuestionAI(); const guides=pickStudyGuides('q'),format=$('q-format').value==='MC'?'MC':'CE';
+                const key=aiBankKey(guides,format,LEVELS_SAFE_LEVEL($('q-level').value));
+                store.del(key);delete AI_MEMORY_BANKS[key];if($('q-coverage'))$('q-coverage').textContent='Banco de IA reiniciado nesta fonte e configuração.';
+                toast('Questões geradas por IA descartadas apenas para esta configuração.','ok');return;
+            }
             const imported=$('q-source').value==='imported';
             const guides=imported?[]:pickStudyGuides('q');
             const fmt=$('q-format').value==='MC'?'MC':'CE';
@@ -5804,6 +5811,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             toast('Histórico de lotes reiniciado; suas estatísticas de estudo foram mantidas.','ok');
         }
         async function startQuestions(nextBatch=false){
+            if(QUESTION_ENGINE==='webllm')return startAIQuestions(nextBatch);
             if(!AUTH_USER)return toast('Faça login para gerar questões.','error');
             const imported=$('q-source').value==='imported';
             const guides=imported?[]:pickStudyGuides('q');
@@ -5847,7 +5855,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             selected.forEach(q=>done.add(questionCoverageId(q)));
             const coverageSaved=store.set(key,JSON.stringify([...done]));
             if(!coverageSaved)toast('Armazenamento local cheio: este lote não poderá ser recuperado após fechar a página.','error');
-            Q_STATE={items:selected,index:0,hits:0,wrong:0,blank:0,pending:0,answered:false,questionStart:Date.now(),
+            Q_STATE={items:selected,engine:'local',index:0,hits:0,wrong:0,blank:0,pending:0,answered:false,questionStart:Date.now(),
                 coverage:{total:pool.length,shown:pool.length-unseen.length+selected.length,remaining:unseen.length-selected.length,cycleKey:key}};
             saveStudySession();
             $('q-status').textContent='Fonte: '+(imported?'Provas importadas':guides.length===1?guides[0].lawName:guides.length+' leis')+' · Nível: '+LEVELS[lvl].label+' · Critério: '+EXAMINER_RUBRIC[lvl].label+' · Lote: '+selected.length+' questões.';
@@ -5859,7 +5867,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const el=$('q-panel'),s=Q_STATE;if(!el||!s)return;
             if(s.index>=s.items.length){
                 const pct=Math.round(s.hits/Math.max(1,s.items.length-(s.pending||0))*100);saveStudySession();
-                el.innerHTML='<h3 class="text-lg font-bold text-[#E5C158]">Simulado concluído</h3><p class="mt-2 text-slate-100">'+s.hits+' acertos de '+s.items.length+' questões ('+pct+'%). '+s.wrong+' erros · '+s.blank+' em branco · '+(s.pending||0)+' aguardando gabarito.</p><p class="mt-2 text-xs text-[#E5C158]">'+(s.coverage?s.coverage.shown+' de '+s.coverage.total+' itens gerados · '+s.coverage.remaining+' pendentes':'')+'</p><button class="mt-4 px-4 py-2 rounded-xl bg-[#D4AF37] text-[#050B16] font-bold" onclick="startQuestions(true)">Próximo lote inédito</button> <button class="mt-4 px-4 py-2 rounded-xl border border-[#334155] text-slate-100" onclick="resetQuestionCycle();startQuestions()">Reiniciar ciclo</button>';
+                el.innerHTML='<h3 class="text-lg font-bold text-[#E5C158]">Simulado concluído</h3><p class="mt-2 text-slate-100">'+s.hits+' acertos de '+s.items.length+' questões ('+pct+'%). '+s.wrong+' erros · '+s.blank+' em branco · '+(s.pending||0)+' aguardando gabarito.</p><p class="mt-2 text-xs text-[#E5C158]">'+(s.coverage?s.coverage.shown+' de '+s.coverage.total+' itens gerados · '+s.coverage.remaining+' pendentes':'')+'</p><button class="mt-4 px-4 py-2 rounded-xl bg-[#D4AF37] text-[#050B16] font-bold" onclick="startQuestions(true)">'+(s.engine==='webllm'?'Gerar mais questões com IA':'Próximo lote inédito')+'</button> <button class="mt-4 px-4 py-2 rounded-xl border border-[#334155] text-slate-100" onclick="resetQuestionCycle();startQuestions()">Reiniciar ciclo</button>';
                 return;
             }
             const q=s.items[s.index],mc=q.type==='MC',choices=mc?q.options:['Certo','Errado'];
@@ -5959,7 +5967,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 Q_STATE=s.question?.items?.length?s.question:null;
                 if(Q_STATE?.answered){Q_STATE.index=Math.min(Q_STATE.items.length,Q_STATE.index+1);Q_STATE.answered=false;}
                 ANKI_STATE=s.anki?.cards?.length?s.anki:null;
-                if(Q_STATE){$('q-panel').classList.remove('hidden');Q_STATE.questionStart=Date.now();if(Q_STATE.items.some(q=>q.origin==='official-import')){$('q-source').value='imported';$('q-format').value=Q_STATE.items[0]?.type==='CE'?'CE':'MC';}drawQuestions();}
+                if(Q_STATE){$('q-panel').classList.remove('hidden');Q_STATE.questionStart=Date.now();if(Q_STATE.engine==='webllm'){setQuestionEngine('webllm');if(Q_STATE.modelId&&$('q-ai-model'))$('q-ai-model').value=Q_STATE.modelId;}if(Q_STATE.items.some(q=>q.origin==='official-import')){$('q-source').value='imported';$('q-format').value=Q_STATE.items[0]?.type==='CE'?'CE':'MC';}drawQuestions();}
                 if(ANKI_STATE){$('anki-panel').classList.remove('hidden');drawAnki();}
                 restoreEssayLastResult();showTab(['leis','questoes','anki','redacao','resultados'].includes(s.tab)?s.tab:'leis');
             }else{Q_STATE=null;ANKI_STATE=null;$('q-panel')?.classList.add('hidden');$('anki-panel')?.classList.add('hidden');showTab('leis');}
