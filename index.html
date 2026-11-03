@@ -5823,6 +5823,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             return window.PMDFQuestionAI.start(Boolean(more));
         }
         function questionUseSource(text,title){
+            if(window.PMDFQuestionAI?.status?.().running)throw Error('Interrompa a geração de IA antes de trocar o material.');
             const raw=String(text||'').trim();
             if(raw.length<60)throw Error('Forneça ao menos 60 caracteres de texto legível.');
             const g=analyzeLawText(raw,String(title||'Material personalizado').slice(0,160));
@@ -5859,7 +5860,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     text:String(a.sourceText||a.plainExplanation||'')})))),
             bankKey:(guides,fmt,level)=>aiBankKey(guides,fmt,level),
             rubric:()=>scanPrompt(),
-            user:()=>AUTH_USER,
+            user:()=>AUTH_USER,mode:()=>QUESTION_ENGINE,
             setQuestions:(items,model,key)=>{
                 Q_STATE={items:items.slice(),engine:'webllm',modelId:model,index:0,hits:0,wrong:0,blank:0,
                     pending:0,answered:false,questionStart:Date.now(),
@@ -5882,7 +5883,8 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         }
         function resetQuestionCycle(){
             if(QUESTION_ENGINE==='webllm'){
-                stopQuestionAI(); const guides=pickStudyGuides('q'),format=$('q-format').value==='MC'?'MC':'CE';
+                if(window.PMDFQuestionAI?.status?.().running)return toast('Interrompa a geração e aguarde a conclusão antes de reiniciar o banco.','error');
+                const guides=pickStudyGuides('q'),format=$('q-format').value==='MC'?'MC':'CE';
                 const key=aiBankKey(guides,format,LEVELS_SAFE_LEVEL($('q-level').value));
                 store.del(key);delete AI_MEMORY_BANKS[key];if($('q-coverage'))$('q-coverage').textContent='Banco de IA reiniciado nesta fonte e configuração.';
                 toast('Questões geradas por IA descartadas apenas para esta configuração.','ok');return;
