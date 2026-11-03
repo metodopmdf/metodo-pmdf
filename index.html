@@ -2769,7 +2769,7 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
 <label id="q-neural-command-wrap" class="text-xs font-semibold text-[#E5C158]">Comando de múltipla escolha
 <select id="q-neural-command" class="qstudio-input block w-full mt-1"><option value="correta">Assinale a CORRETA</option><option value="incorreta">Assinale a INCORRETA</option></select></label>
 </div>
-<p class="text-xs text-slate-400">Geração ampliada: múltiplos itens de Certo/Errado e diferentes composições de múltipla escolha por trecho. Selecione lotes de até 300 e use «Próximo lote neural» para continuar. A quantidade depende da variedade do material. O motor não é uma IA generativa e não verifica a vigência das normas.</p>
+<p class="text-xs text-slate-400">Elaboração local ampliada: combina o motor neural com o banco de questões do próprio Método PMDF, respeitando o nível e a banca selecionados. Inclui comparação de dispositivos, alternativas comentadas e novos lotes de até 300 itens. A quantidade depende da fonte. Não utiliza IA generativa nem verifica a vigência das normas.</p>
 <button type="button" class="qstudio-secondary" onclick="stopQuestionAI()">Interromper geração</button>
 <p id="q-neural-status" class="text-xs text-slate-300" role="status" aria-live="polite">Motor neural pronto.</p>
 </div>
@@ -2908,7 +2908,7 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
     </footer>
 
 
-    <script defer src="assets/pmdf-neural-questions.js?v=20261103-neural-v1"></script>
+    <script defer src="assets/pmdf-neural-questions.js?v=20261103-neural-v4"></script>
         <script>
         // ============================================================================
         // BASE DE CONHECIMENTO TÁTICA INTEGRADA (AS 5 LEIS PRINCIPAIS DA PMDF)
@@ -5838,7 +5838,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         function saveNeuralQuestions(){return window.PMDFNeuralQuestions?.save?.();}
         function exportNeuralQuestions(){return window.PMDFNeuralQuestions?.json?.();}
                 function questionUseSource(text,title){
-            if(window.PMDFQuestionAI?.status?.().running)throw Error('Interrompa a geração de IA antes de trocar o material.');
+            if(window.PMDFNeuralQuestions?.status?.().running)throw Error('Interrompa a geração antes de trocar o material.');
             const raw=String(text||'').trim();
             if(raw.length<60)throw Error('Forneça ao menos 60 caracteres de texto legível.');
             const g=analyzeLawText(raw,String(title||'Material personalizado').slice(0,160));
@@ -5874,6 +5874,23 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 safeArray(g.articlesMapping?.[group]).map(a=>({law:g.lawName,article:String(a.article||'Tópico'),
                 text:String(a.sourceText||a.plainExplanation||'')})))),
             auth:()=>AUTH_USER,
+            // Reaproveita o elaborador por banca e nível já auditado no site.
+            // Intercala C/E e múltipla escolha; preserva cota por assunto para
+            // que selecionar TODO o catálogo não exclua as últimas disciplinas.
+            referenceQuestions:(guides,level)=>{
+                const result=[];
+                const perGuide=guides.length>1?Math.max(24,Math.floor(1300/guides.length)):500;
+                for(const guide of guides){
+                    const ce=questionPool(guide,'CE',level);
+                    const mc=questionPool(guide,'MC',level,5);
+                    let taken=0;
+                    for(let i=0;i<Math.max(ce.length,mc.length)&&taken<perGuide;i++){
+                        if(ce[i]&&taken<perGuide){result.push(ce[i]);taken++;}
+                        if(mc[i]&&taken<perGuide){result.push(mc[i]);taken++;}
+                    }
+                }
+                return result.slice(0,1500);
+            },
             setQuestions:(items,{model,key,total,target})=>{
                 Q_STATE={items:items.slice(),engine:'neural',modelId:model,index:0,hits:0,wrong:0,blank:0,
                     pending:0,answered:false,questionStart:Date.now(),
