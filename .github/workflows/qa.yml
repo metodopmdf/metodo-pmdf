@@ -18,4 +18,4 @@ jobs:
         with:
           node-version: '22'
       - name: Smoke tests - três níveis, login simulado e sincronização
-        run: node tests/smoke.mjs
+        run: node tests/smoke.mjs && node tests/webllm.mjs
