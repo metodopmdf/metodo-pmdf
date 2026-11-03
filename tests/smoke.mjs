@@ -357,5 +357,47 @@ aiBridge.$('q-format').value='CE';
 await aiApp.startQuestions();
 assert(aiApp.questionState()?.items.length>0,'Retorno ao motor tradicional falhou');
 
+
+// Fluxo real da interface no modo adaptativo (não simular a lógica do fallback):
+// não deve iniciar modelo, GPU nem serviços de inferência e mantém CE/MC e gabarito.
+const safeBrowser=createClient(),safeApp=safeBrowser.application;
+safeApp.auth('qa-adaptativo');safeApp.choose('lai');
+let unsafeGPUAttempts=0;
+safeBrowser.win.PMDFWebLLM={
+  async compatibility(){unsafeGPUAttempts++;throw Error('O modo seguro consultou GPU indevidamente');},
+  async load(){unsafeGPUAttempts++;throw Error('O modo seguro carregou modelo indevidamente');},
+  async generate(){unsafeGPUAttempts++;throw Error('O modo seguro executou IA indevidamente');}
+};
+const safeController=readFileSync(new URL('../assets/pmdf-question-ai.js',import.meta.url),'utf8');
+new Function('window',safeController)(safeBrowser.win);
+safeBrowser.$('q-ai-backend').value='safe';
+safeBrowser.$('q-source').value='current';
+safeBrowser.$('q-format').value='CE';
+safeBrowser.$('q-level').value='intermediario';
+safeApp.setQuestionEngine('webllm');
+await safeApp.startQuestions();
+const safeCE=safeApp.questionState();
+assert.equal(safeCE.engine,'adaptive','Fallback não sinalizou origem por regras');
+assert(safeCE.items.length>0&&safeCE.items.length<=15,'Modo seguro ultrapassou lote máximo de 15');
+assert(safeCE.items.every(q=>q.type==='CE'&&['C','E'].includes(q.answer)),'Modo seguro perdeu gabaritos CE');
+assert.equal(unsafeGPUAttempts,0,'Modo adaptativo iniciou operação WebGPU');
+safeBrowser.$('q-format').value='MC';
+await safeApp.startQuestions();
+const safeMC=safeApp.questionState();
+assert.equal(safeMC.engine,'adaptive','Modalidade MC não preservou modo seguro');
+assert(safeMC.items.length>0&&safeMC.items.length<=15,'MC deve respeitar lote seguro');
+assert(safeMC.items.every(q=>q.type==='MC'&&[4,5].includes(q.options.length)&&
+  'ABCDE'.slice(0,q.options.length).includes(q.answer)),'Modo seguro perdeu MC/gabarito');
+assert.equal(unsafeGPUAttempts,0,'Modo seguro MC inicializou modelo');
+// Catálogo inteiro em modo seguro deve processar uma lei por lote, não todas de uma vez.
+safeBrowser.$('q-source').value='all';
+safeBrowser.$('q-format').value='CE';
+await safeApp.startQuestions();
+assert(safeApp.questionState().items.length>0,'Catálogo seguro não gerou lote');
+assert.equal(safeApp.store.get('q:adaptive:all:cursor'),'1','Cursor por lei não avançou');
+await safeApp.startQuestions(true);
+assert.equal(safeApp.store.get('q:adaptive:all:cursor'),'2','Segundo lote não avançou para próxima lei');
+assert.equal(unsafeGPUAttempts,0,'Catálogo seguro tentou carregar IA');
+
 console.log('PASSOU: integração do elaborador, 75 dispositivos, lotes inéditos, 26 normas, 3 níveis, 468 resumos, questões MC/CE, importação, redação A4, flashcards e sincronização simulada.');
 console.log(JSON.stringify({counts,walkthrough},null,2));
