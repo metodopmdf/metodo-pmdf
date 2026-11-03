@@ -60,9 +60,10 @@ function makeHarness(format='CE',gpu=true){
       const wordsets=['formalidade','legalidade','motivação','competência','documentação','revisão','publicidade','eficiência','motivação','proporcionalidade'];
       const questions=Array.from({length:format==='CE'?5:3},(_,i)=>{
         const serial=runs*10+i, unique=wordsets[(serial+i)%wordsets.length];
+        const aspects=Array.from({length:7},(_,n)=>'elemento'+serial+'fase'+n).join(' ');
         return {
-          statement:'No procedimento administrativo simulado nº '+serial+', a avaliação da '+unique+
-            ' pressupõe registro adequado dos fatos e consideração da competência da autoridade que decide o pedido de maneira fundamentada.',
+          statement:'No procedimento administrativo simulado nº '+serial+', os tópicos '+aspects+' e a avaliação da '+unique+
+            ' pressupõem registro adequado dos fatos e consideração da competência da autoridade que decide o pedido de maneira fundamentada.',
           evidence:excerpt.slice(0,83).trim(),
           answer:format==='CE'?'C':'B',
           explanation:'O trecho-fonte estabelece exigências expressas de motivação, registro documental e competência da autoridade responsável.',
