@@ -4,12 +4,17 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: pmdf-qa-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   smoke:
-    name: Testar funcionalidades principais
+    name: Testar funcionalidades principais (JavaScript)
     runs-on: ubuntu-latest
+    timeout-minutes: 6
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -17,5 +22,36 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Smoke tests - três níveis, login simulado e sincronização
+      - name: Smoke tests - três níveis, questões e sincronização simulada
         run: node tests/smoke.mjs && node tests/webllm.mjs
+
+  online:
+    name: Operação online em Chromium (desktop e celular)
+    needs: smoke
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Checkout do commit testado
+        uses: actions/checkout@v4
+      - name: Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Playwright
+        run: npm install --no-save --no-package-lock playwright@1.57.0
+      - name: Instalar Chromium e dependências
+        run: npx playwright install --with-deps chromium
+      - name: Testar o GitHub Pages REAL após a publicação desta revisão
+        env:
+          PMDF_ONLINE_URL: https://metodopmdf.github.io/metodo-pmdf/
+          PMDF_DEPLOY_ATTEMPTS: '65'
+        run: node tests/online-e2e.mjs
+      - name: Guardar relatório e capturas (inclusive falhas)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pmdf-online-qa-${{ github.run_id }}
+          path: test-artifacts/
+          if-no-files-found: ignore
+          retention-days: 14
