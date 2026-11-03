@@ -246,28 +246,43 @@ class MotorNeuralSupabase {
 }
 
 class MotorNeuralPMDF extends MotorNeuralSupabase {
-  gerarDistratores(frase, quantidade=4) {
+  gerarDistratores(frase, quantidade=8) {
     const base=String(frase||"").trim().replace(/[.;:]$/,"");
-    const vistos=new Set([this.normalizar(base)]), resultado=[];
-    const regrasAdicionais=[
-      {tipo:"Faculdade vs. obrigação",regex:/\b(poderá|poderão|poderiam)\b/i,substituir:"deverá obrigatoriamente",explicacao:"Substituição de faculdade por dever"},
-      {tipo:"Dever vs. faculdade",regex:/\b(deve|deverá|devem)\b/i,substituir:"poderá facultativamente",explicacao:"Substituição de dever por mera permissão"},
-      {tipo:"Prazo legal",regex:/\b(\d+)\s*(dias|meses|anos|horas)\b/i,substituir:(_,n,u)=>(Number(n)+7)+" "+u,explicacao:"Adulteração de prazo"},
-      {tipo:"Possibilidade vs. obrigação",regex:/\b(possível|possibilidade)\b/i,substituir:"obrigatório",explicacao:"Mudança de possibilidade em obrigação"},
-      {tipo:"Exceção",regex:/\b(ressalvadas?|exceto|salvo)\b/i,substituir:"inclusive",explicacao:"Alteração de ressalva"},
-      {tipo:"Negação expressa",regex:/\b(não podem|não poderá|não deve|não se admite)\b/i,substituir:"podem livremente",explicacao:"Inversão de negação"}
+    const result=[],seen=new Set([this.normalizar(base)]);
+    // Cria vários itens independentes alterando SOMENTE termos expressos na fonte.
+    const rules=[
+      {tipo:"Permissão para dever",re:/\b(poderá|poderão|pode|podem)\b/i,to:"deverá obrigatoriamente",why:"Alteração de permissão em obrigação"},
+      {tipo:"Dever para faculdade",re:/\b(deve|deverá|devem|deverão)\b/i,to:"poderá facultativamente",why:"Alteração de obrigação em faculdade"},
+      {tipo:"Proibição para permissão",re:/\b(vedad[oa]s?|proibid[oa]s?)\b/i,to:"permitido",why:"Alteração de vedação em permissão"},
+      {tipo:"Negação removida",re:/\b(não podem|não poderá|não deve|não se admite|não cabe)\b/i,to:"é expressamente permitido",why:"Inversão de negativa expressa"},
+      {tipo:"Exceção retirada",re:/\b(ressalvad[oa]s?|salvo|exceto)\b/i,to:"inclusive",why:"Eliminação de exceção"},
+      {tipo:"Condicional removida",re:/\b(desde que|contanto que|mediante)\b/i,to:"independentemente de",why:"Retirada de condição"},
+      {tipo:"Exigência retirada",re:/\b(é obrigatório|é obrigatória|obrigatoriamente|é exigido)\b/i,to:"é facultativo",why:"Mudança de exigência em faculdade"},
+      {tipo:"Dispensa invertida",re:/\b(prescinde|dispensa|independe)\b/i,to:"exige obrigatoriamente",why:"Dispensa substituída por exigência"},
+      {tipo:"Limitação retirada",re:/\b(exclusivamente|somente|apenas)\b/i,to:"também fora das hipóteses previstas",why:"Ampliação indevida do alcance"},
+      {tipo:"Competência reservada alterada",re:/\b(exclusiva|privativa|indelegável)\b/i,to:"compartilhada e delegável",why:"Alteração de atributo de competência"},
+      {tipo:"Quórum adulterado",re:/\b(maioria absoluta|maioria simples|unanimidade)\b/i,to:"maioria qualificada de dois terços",why:"Alteração do quórum"},
+      {tipo:"Efeitos temporais alterados",re:/\b(ex tunc|ex nunc)\b/i,to:m=>/tunc/i.test(m)?"ex nunc":"ex tunc",why:"Inversão de efeitos temporais"},
+      {tipo:"Prazo ampliado",re:/\b(\d+)\s*(dias|meses|anos|horas)\b/i,to:(m,n,u)=>String(Number(n)+1)+" "+u,why:"Ampliação do prazo numérico"},
+      {tipo:"Prazo reduzido",re:/\b(\d+)\s*(dias|meses|anos|horas)\b/i,to:(m,n,u)=>String(Math.max(0,Number(n)-1))+" "+u,why:"Redução do prazo numérico"},
+      {tipo:"Percentual adulterado",re:/\b(\d{1,3})\s*%/i,to:(m,n)=>String((Number(n)+5)%101)+"%",why:"Alteração de percentual"}
     ];
-    for(const regra of [...regrasAdicionais,...this.regrasMutacao]){
-      if(!regra.regex.test(base))continue;
-      const texto=base.replace(regra.regex,regra.substituir).replace(/[.;:]?$/,".") ;
-      const chave=this.normalizar(texto);
-      if(chave.length<25||vistos.has(chave))continue;
-      vistos.add(chave);
-      resultado.push({texto,correta:false,tipoPegadinha:regra.tipo,
-        comentario:"Alteração de "+regra.tipo+": "+regra.explicacao});
-      if(resultado.length>=quantidade)break;
+    for(const r of rules){
+      const regex=new RegExp(r.re.source,r.re.flags.replace(/g/g,"")+"g");
+      let m,n=0;
+      while((m=regex.exec(base))&&n++<2){
+        const changed=m[0].replace(r.re,r.to);
+        if(changed===m[0])continue;
+        const texto=base.slice(0,m.index)+changed+base.slice(m.index+m[0].length)+".";
+        const sig=this.normalizar(texto);
+        if(sig.length<30||seen.has(sig)||texto.length>1400)continue;
+        seen.add(sig);
+        result.push({texto,correta:false,tipoPegadinha:r.tipo,
+          comentario:r.why+". A redação original continha “"+m[0]+"”."});
+        if(result.length>=quantidade)return result;
+      }
     }
-    return resultado;
+    return result;
   }
   normalizar(texto){return String(texto||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").replace(/[.;:]$/,"").trim();}
   gerarHash(texto) {
@@ -286,7 +301,7 @@ class MotorNeuralPMDF extends MotorNeuralSupabase {
         if(sentence.length<42||sentence.length>1400||unique.has(sig)||/[.…]$/.test(sentence.slice(0,-1)))continue;
         unique.add(sig);
         result.push({text:sentence,law:row.law||"Material",article:row.article||"Texto-base"});
-        if(result.length>=500)return result;
+        if(result.length>=450)return result;
       }
     }
     return result;
@@ -294,7 +309,7 @@ class MotorNeuralPMDF extends MotorNeuralSupabase {
   criarBanco(rows,config){
     const unidades=this.gerarUnidades(rows),out=[],seen=new Set();
     const modo=config.formato,lista=unidades.map((u,i)=>({...u,i,
-      d:this.gerarDistratores(u.text,4)}));
+      d:this.gerarDistratores(u.text,8)}));
     const incluir=(raw,origin)=>{
       const choices=raw.alternativas;
       const id=raw.formato+"|"+raw.enunciado+"|"+(choices||[]).map(x=>x.texto).join("|")+"|"+raw.texto_origem;
