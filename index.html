@@ -5885,14 +5885,16 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 if(Q_STATE&&Q_STATE!==before&&Q_STATE.engine==='local'){
                     Q_STATE.engine='adaptive';
                     const count=Q_STATE.items.length;
-                    $('q-status').textContent='Modo seguro (regras locais): '+count+' questões neste lote. Não foi executada IA generativa.';
+                    $('q-status').textContent='Modo seguro (regras locais): '+count+' questões neste lote. '+
+                        (Q_STATE.review?'Rodada de REVISÃO: itens já estudados, sem novas questões inéditas.':'Itens inéditos deste ciclo de cobertura.')+
+                        ' Não foi executada IA generativa.';
                     $('q-coverage').textContent='Sem GPU ou download. '+Q_STATE.coverage.shown+' de '+Q_STATE.coverage.total+
-                        ' questões disponíveis neste recorte; '+Q_STATE.coverage.remaining+' ainda inéditas.';
+                        ' questões verificáveis neste recorte; '+Q_STATE.coverage.remaining+' restantes nesta rodada.';
                     saveStudySession();
                     return {ok:true,count,engine:'adaptive'};
                 }
                 // Não declarar sucesso quando nenhum item verificável foi produzido.
-                return {ok:false,reason:'O material não possui novas questões verificáveis neste recorte. Revise a fonte ou reinicie a cobertura.'};
+                return {ok:false,reason:'Não foram identificadas proposições completas suficientes nesta fonte para formar questões confiáveis. Envie a íntegra da lei em PDF textual ou cole seus artigos e parágrafos; o gerador não preencherá lacunas inventando regras.'};
             }catch(e){
                 toast('Não foi possível montar o lote seguro: '+String(e?.message||e||'erro inesperado'),'error');
                 return {ok:false,reason:'Falha ao elaborar questões com regras locais.'};
@@ -5958,9 +5960,15 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         function questionCycleKey(guides,fmt,lvl,imported){
             const sources=imported ? [...new Set(IMPORTED_QUESTIONS.map(q=>q.law||'Prova'))].sort().join('|')
                 : guides.map(g=>g._baseLawName||g.lawName||'Material').sort().join('|');
-            const sourceId=imported ? 'importadas' : (guides.length===1 && CUR.key ? CUR.key : sources);
-            const fingerprint=sourceId+'|'+sources+'|'+fmt+'|'+lvl+'|'+($('q-board')?.value||'');
-            return 'q:coverage:v2:'+(hash(fingerprint)>>>0).toString(36);
+            // A fonte, não o último guia aberto, determina a identidade do ciclo.
+            // O hash do conteúdo impede utilizar histórico de uma edição antiga
+            // de lei como se as questões novas já tivessem sido apresentadas.
+            const sourceId=imported?'importadas':(guides.length===1&&CUR.guide===guides[0]&&CUR.key?CUR.key:sources);
+            const sourceDigest=imported?hash(IMPORTED_QUESTIONS.map(q=>q.law+'|'+q.statement+'|'+q.answer).join('¦')):
+                hash(guides.map(g=>['highIncidence','mediumIncidence','lowIncidence'].map(group=>
+                    safeArray(g.articlesMapping?.[group]).map(a=>(hash(String(a.article||'')+'|'+String(a.sourceText||a.plainExplanation||''))>>>0).toString(36)).join(',')).join(';')).join('§'));
+            const fingerprint=sourceId+'|'+sources+'|'+sourceDigest+'|'+fmt+'|'+lvl+'|'+($('q-board')?.value||'');
+            return 'q:coverage:v3:'+(hash(fingerprint)>>>0).toString(36);
         }
         function resetQuestionCycle(){
             if(QUESTION_ENGINE==='webllm'&&$('q-ai-backend')?.value==='safe'){
@@ -6033,10 +6041,20 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             if(!pool.length)return toast('Não foram encontrados itens completos e verificáveis neste material. Amplie a fonte ou escolha outra norma.','error');
             const key=questionCycleKey(guides,baseFmt,lvl,imported),stored=jget(key,[]);
             const done=new Set(Array.isArray(stored)?stored.filter(x=>typeof x==='string'):[]);
-            const unseen=shuffle(pool.filter(q=>!done.has(questionCoverageId(q))));
+            let unseen=shuffle(pool.filter(q=>!done.has(questionCoverageId(q))));
+            let reviewRound=false;
             if(!unseen.length){
-                if($('q-coverage'))$('q-coverage').textContent='Cobertura esgotada: '+pool.length+' questões distintas já apresentadas. Reinicie para revisar.';
-                return toast('Todos os itens deste recorte já foram apresentados. Use “Reiniciar cobertura” para revisar.','ok');
+                if(SAFE_FALLBACK_ACTIVE){
+                    // A ausência de inéditas não impede estudar. Recomeça uma
+                    // rodada claramente identificada como REVISÃO, sem fingir
+                    // que o motor determinístico criou questões novas.
+                    reviewRound=true;
+                    done.clear();
+                    unseen=shuffle(pool);
+                }else{
+                    if($('q-coverage'))$('q-coverage').textContent='Cobertura esgotada: '+pool.length+' questões distintas já apresentadas. Reinicie para revisar.';
+                    return toast('Todos os itens deste recorte já foram apresentados. Use “Reiniciar cobertura” para revisar.','ok');
+                }
             }
             const configured=Number($('q-batch')?.value??30);
             const limit=configured===0?unseen.length:Math.min(Math.max(1,configured),unseen.length);
@@ -6044,11 +6062,13 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             selected.forEach(q=>done.add(questionCoverageId(q)));
             const coverageSaved=store.set(key,JSON.stringify([...done]));
             if(!coverageSaved)toast('Armazenamento local cheio: este lote não poderá ser recuperado após fechar a página.','error');
-            Q_STATE={items:selected,engine:'local',index:0,hits:0,wrong:0,blank:0,pending:0,answered:false,questionStart:Date.now(),
+            Q_STATE={items:selected,engine:'local',review:reviewRound,index:0,hits:0,wrong:0,blank:0,pending:0,answered:false,questionStart:Date.now(),
                 coverage:{total:pool.length,shown:pool.length-unseen.length+selected.length,remaining:unseen.length-selected.length,cycleKey:key}};
             saveStudySession();
-            $('q-status').textContent='Fonte: '+(imported?'Provas importadas':guides.length===1?guides[0].lawName:guides.length+' leis')+' · Nível: '+LEVELS[lvl].label+' · Critério: '+EXAMINER_RUBRIC[lvl].label+' · Lote: '+selected.length+' questões.';
-            if($('q-coverage'))$('q-coverage').textContent='Cobertura: '+Q_STATE.coverage.shown+' de '+pool.length+' itens gerados · '+Q_STATE.coverage.remaining+' inéditos restantes.'+(nextBatch?' Novo lote iniciado.':'');
+            $('q-status').textContent=(reviewRound?'Rodada de revisão de questões já apresentadas. ':'Fonte: '+(imported?'Provas importadas':guides.length===1?guides[0].lawName:guides.length+' leis')+' · ')+
+                'Nível: '+LEVELS[lvl].label+' · Critério: '+EXAMINER_RUBRIC[lvl].label+' · Lote: '+selected.length+' questões.';
+            if($('q-coverage'))$('q-coverage').textContent=(reviewRound?'Revisão (não são questões inéditas): ':'Cobertura: ')+
+                Q_STATE.coverage.shown+' de '+pool.length+' itens verificáveis no material · '+Q_STATE.coverage.remaining+' itens restantes no ciclo.';
             $('q-panel').classList.remove('hidden');
             drawQuestions();
         }
