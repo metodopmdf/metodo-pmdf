@@ -2892,7 +2892,13 @@ body .pmdf-more-actions:not([open])>.pmdf-import-body{display:none!important}
             <div class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
                 <div><h2 class="font-bold text-lg text-white">🃏 Flashcards — revisão estilo Anki</h2>
                     <p class="text-sm text-slate-400">Flashcards com perguntas específicas por artigo, lacunas de prazos e requisitos, fundamento rastreável e comparação de dispositivos no nível avançado. Revele a resposta e informe se lembrou para programar corretamente a próxima revisão.</p></div>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <label class="text-xs text-[#E5C158] font-semibold">Elaboração dos cartões
+                        <select id="anki-generation-mode" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]">
+                          <option value="advanced" selected>Motor neural local · alta cobertura</option>
+                          <option value="classic">Gerador clássico (compatibilidade)</option>
+                        </select>
+                    </label>
                     <label class="text-xs text-[#E5C158] font-semibold">Material / lei
                         <select id="anki-source" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="current">Conteúdo selecionado / enviado</option><option value="all">Todas as leis cadastradas</option></select></label>
                     
@@ -2901,7 +2907,19 @@ body .pmdf-more-actions:not([open])>.pmdf-import-body{display:none!important}
                     <label class="text-xs text-[#E5C158] font-semibold">Cartões por sessão
                         <select id="anki-batch-size" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="25">25</option><option value="50" selected>50</option><option value="100">100</option><option value="200">200</option><option value="all">Todos (pode ser longo)</option></select></label>
                 </div>
-                <div class="flex gap-2 flex-wrap"><button type="button" id="anki-start" onclick="startAnki()" class="px-5 py-2.5 rounded-xl bg-[#D4AF37] text-[#050B16] font-extrabold">Iniciar revisão</button><button type="button" onclick="clearAnkiFilters()" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">↺ Limpar filtros</button></div>
+                <div class="flex gap-2 flex-wrap items-center">
+                    <button type="button" id="anki-start" onclick="startAnki()" class="px-5 py-2.5 rounded-xl bg-[#D4AF37] text-[#050B16] font-extrabold">Gerar e iniciar revisão</button>
+                    <button type="button" id="anki-stop" onclick="stopAnkiGeneration()" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs hidden">Interromper geração</button>
+                    <button type="button" onclick="clearAnkiFilters()" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">↺ Limpar filtros</button>
+                    <button type="button" id="anki-export-csv" onclick="exportAnkiCards('csv')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Exportar CSV (Anki)</button>
+                    <button type="button" id="anki-export-tsv" onclick="exportAnkiCards('tsv')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Exportar TSV</button>
+                </div>
+                <p class="text-xs text-slate-400">O banco é elaborado até esgotar os fatos extraíveis da fonte. A quantidade por sessão regula somente a revisão na tela, não limita o banco gerado. Três modalidades: pergunta/resposta, lacunas e julgamento Cebraspe. Motor local sem IA generativa externa; confira a vigência e a interpretação da norma.</p>
+                <p id="anki-generation-status" class="text-xs text-[#E5C158]" role="status" aria-live="polite"></p>
+                <details id="anki-coverage-details" class="rounded-xl border border-[#334155] p-3">
+                   <summary class="text-xs font-bold text-[#E5C158] cursor-pointer">Relatório de cobertura e modalidades</summary>
+                   <div id="anki-coverage" class="text-xs text-slate-300 mt-2" role="status" aria-live="polite">Gere uma revisão para consultar o inventário do conteúdo.</div>
+                </details>
                 <p id="anki-status" class="text-sm text-slate-400" role="status" aria-live="polite"></p>
             </div>
             <div id="anki-panel" class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 hidden" aria-live="polite"></div>
@@ -2989,6 +3007,7 @@ body .pmdf-more-actions:not([open])>.pmdf-import-body{display:none!important}
 
 
     <script defer src="assets/pmdf-neural-questions.js?v=20261103-mix-flash-v5"></script>
+    <script defer src="assets/pmdf-neural-flashcards.js?v=20261103-atomic-v1"></script>
         <script>
         // ============================================================================
         // BASE DE CONHECIMENTO TÁTICA INTEGRADA (AS 5 LEIS PRINCIPAIS DA PMDF)
@@ -5692,7 +5711,17 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 body+'<footer class="pmdf-report-footer"><span>⚖ MÉTODO PMDF</span><span>Material didático · Confira a norma oficial vigente</span></footer></div>'+
                 '';
         }
+        // A função pública de flashcards utiliza o novo motor local de alta
+        // cobertura. O método anterior permanece acessível como modo clássico.
         function buildStudyCards(g){
+            const engine=window.PMDFNeuralFlashcards;
+            if(engine?.build){
+                try{const generated=engine.build(g,{level:LEVEL});if(generated.cards.length)return generated.cards;}
+                catch(e){console.warn('Flashcards: usando compatibilidade clássica.',e);}
+            }
+            return buildStudyCardsLegacy(g);
+        }
+        function buildStudyCardsLegacy(g){
             // Flashcards baseados apenas em afirmações efetivamente presentes na fonte.
             // Evita perguntas vagas, "pegadinhas" sem resposta e truncamento de premissas.
             if(!g)return [];
@@ -5930,7 +5959,9 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             $('q-status').textContent='Filtros limpos.';$('q-panel').classList.add('hidden');Q_STATE=null;
         }
         function clearAnkiFilters(){
+            stopAnkiGeneration();
             $('anki-source').value='current';$('anki-mode').value='due';
+            if($('anki-generation-mode'))$('anki-generation-mode').value='advanced';
             if($('anki-batch-size'))$('anki-batch-size').value='50';
             $('anki-status').textContent='Filtros limpos.';$('anki-panel').classList.add('hidden');ANKI_STATE=null;
         }
@@ -6195,17 +6226,121 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         function nextQuestion(){if(!Q_STATE||!Q_STATE.answered)return;Q_STATE.index++;Q_STATE.answered=false;Q_STATE.questionStart=Date.now();saveStudySession();drawQuestions();}
         function showQuestionTotals(){ const st=jget('sim:stats',{}),a=Object.values(st).reduce((n,x)=>n+(x.a||0),0),c=Object.values(st).reduce((n,x)=>n+(x.c||0),0);
             const el=$('question-progress-summary');if(el)el.textContent='Histórico no dispositivo: '+a+' respondidas · '+c+' certas · '+(a-c)+' erradas'; }
-        let ANKI_STATE=null;
+        let ANKI_STATE=null,ANKI_BANK=[],ANKI_GENERATION=0;
+        function stopAnkiGeneration(){
+            ANKI_GENERATION++;
+            $('anki-generation-status').textContent='Geração interrompida. A revisão anterior foi preservada.';
+            $('anki-start').disabled=false;
+            $('anki-stop')?.classList.add('hidden');
+        }
+        function exportAnkiCards(format='csv'){
+            const cards=ANKI_BANK.length?ANKI_BANK:(ANKI_STATE?.cards||[]);
+            if(!cards.length)return toast('Gere ou abra um baralho antes de exportar.','error');
+            const tab=format==='tsv',sep=tab?'\t':';',ext=tab?'tsv':'csv';
+            const quote=v=>{
+                // Desarma fórmulas em planilhas sem modificar o texto de estudo exibido.
+                let s=String(v??'').replace(/\r\n?/g,'\n');
+                if(/^[\s]*[=+@]/.test(s))s="'"+s;
+                return '"'+s.replace(/"/g,'""')+'"';
+            };
+            const rows=[['Frente','Verso','Extra','Tags']];
+            for(const c of cards)rows.push([c.cloze||c.front,c.back,
+                (c.extra||c.source||'')+'\nReferência: '+(c.reference||c.article||'')+'\nAlerta: '+(c.warning||'Confira o trecho-fonte.'),c.tags||'#MetodoPMDF']);
+            const output='\uFEFF'+rows.map(row=>row.map(quote).join(sep)).join('\r\n');
+            const url=URL.createObjectURL(new Blob([output],{type:tab?'text/tab-separated-values;charset=utf-8':'text/csv;charset=utf-8'}));
+            const link=document.createElement('a');link.href=url;link.download='pmdf-flashcards-'+cards.length+'-'+Date.now()+'.'+ext;
+            link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+            toast(cards.length+' flashcards exportados. Para lacunas, escolha o tipo Cloze no Anki.','ok');
+        }
         function startAnki(){
+            const guides=pickStudyGuides('anki');
+            if($('anki-generation-mode')?.value!=='classic'&&window.PMDFNeuralFlashcards?.buildAsync)
+                return startAnkiAdvanced(guides);
+            return startAnkiLegacy();
+        }
+        async function startAnkiAdvanced(guides){
+            if(!guides.length)return toast('Selecione um guia ou envie um documento para gerar flashcards.','error');
+            const token=++ANKI_GENERATION,decks=[],reports=[],button=$('anki-start'),status=$('anki-generation-status');
+            button.disabled=true;$('anki-stop')?.classList.remove('hidden');
+            status.textContent='Lendo as unidades de conhecimento e gerando cartões atômicos...';
+            try{
+                for(let index=0;index<guides.length;index++){
+                    if(token!==ANKI_GENERATION)return;
+                    const guide=guides[index];
+                    const result=await window.PMDFNeuralFlashcards.buildAsync(guide,{level:LEVEL,
+                        cancelled:()=>token!==ANKI_GENERATION,
+                        onProgress:(done,total,count)=>{if(token===ANKI_GENERATION)
+                            status.textContent='Fonte '+(index+1)+'/'+guides.length+' · '+done+'/'+total+
+                            ' dispositivos · '+count+' cartões identificados';}});
+                    if(token!==ANKI_GENERATION||result.cancelled)return;
+                    let deck=result.cards;
+                    if(!deck.length)deck=buildStudyCardsLegacy(guide);
+                    decks.push(deck.map(card=>({...card,law:guide.lawName})));
+                    reports.push(result.report);
+                    if(index%4===3)await new Promise(resolve=>setTimeout(resolve,0));
+                }
+                if(token!==ANKI_GENERATION)return;
+                // Rodada justa entre todas as disciplinas, sem concentrar o primeiro lote.
+                const all=[],max=Math.max(0,...decks.map(deck=>deck.length));
+                for(let i=0;i<max;i++)for(const deck of decks)if(deck[i])all.push(deck[i]);
+                const bank=[...new Map(all.map(c=>[c.id,c])).values()];
+                if(!bank.length)throw Error('O material não contém unidades legíveis suficientes para cartões verificáveis.');
+                ANKI_BANK=bank;
+                const sourceUnits=reports.reduce((n,r)=>n+(r?.sourceUnits||0),0);
+                const modes={'Básico (P&R)':0,'Cloze (Lacuna)':0,'Gatilho de Banca':0};
+                const levels={'Fácil':0,'Médio':0,'Difícil':0};
+                for(const c of bank){
+                    const kind=c.modality||'Básico (P&R)';modes[kind]=(modes[kind]||0)+1;
+                    const difficulty=c.difficulty||'Médio';levels[difficulty]=(levels[difficulty]||0)+1;
+                }
+                const uniqueTopics=new Set(bank.map(c=>c.law+'|'+(c.reference||c.article))).size;
+                let cards=bank.slice(),mode=$('anki-mode').value;
+                if(mode==='due'){
+                    cards=cards.filter(c=>{const state=getCardBox(c.id);return !state.due||Date.now()>=state.due;});
+                    cards.sort((a,b)=>getCardBox(a.id).due-getCardBox(b.id).due);
+                }
+                const available=cards.length,requested=$('anki-batch-size')?.value||'50';
+                const limit=requested==='all'?available:Math.max(1,Number(requested)||50);
+                if(mode==='all'&&cards.length){
+                    const key='anki:batch:v4:'+(hash(bank.map(c=>c.id).join('¦')+'|'+LEVEL)>>>0).toString(36);
+                    let cursor=Math.max(0,Number(store.get(key))||0);
+                    if(cursor>=cards.length)cursor=0;
+                    const selected=cards.slice(cursor,cursor+limit);
+                    store.set(key,String(cursor+selected.length));
+                    cards=selected;
+                }else cards=cards.slice(0,limit);
+                ANKI_STATE={cards,index:0,seen:0,back:false,graded:null,correct:0,wrong:0};
+                saveStudySession();$('anki-panel').classList.remove('hidden');
+                $('anki-status').textContent='Motor neural local · banco de '+bank.length+' cartões válidos · '+
+                    cards.length+' neste lote · '+available+' elegíveis para revisão.';
+                status.textContent='Cobertura: '+uniqueTopics+' tópicos · '+sourceUnits+
+                    ' unidades processadas · '+bank.length+' cartões distintos extraídos.';
+                $('anki-coverage').textContent='Banco: '+bank.length+' cartões de '+uniqueTopics+
+                    ' tópicos · '+sourceUnits+' unidades de texto. Modalidades: básico '+(modes['Básico (P&R)']||0)+
+                    ', lacunas '+(modes['Cloze (Lacuna)']||0)+', julgamento '+(modes['Gatilho de Banca']||0)+
+                    '. Dificuldade: fácil '+levels['Fácil']+', média '+levels['Médio']+', difícil '+
+                    levels['Difícil']+'. Conteúdo não legível ou sem fato verificável pode ficar de fora.';
+                if(!cards.length)$('anki-panel').innerHTML='<div class="g-card"><h3 class="font-bold text-[#E5C158]">Nenhum cartão vencido</h3><p class="mt-2">Você está em dia. Altere para Todos (treino livre) se desejar continuar.</p></div>';
+                else drawAnki();
+                return {count:cards.length,bank:bank.length};
+            }catch(e){
+                status.textContent='Erro na geração: '+String(e.message||e);
+                toast('Não foi possível gerar os flashcards: '+String(e.message||e),'error');
+            }finally{
+                if(token===ANKI_GENERATION){button.disabled=false;$('anki-stop')?.classList.add('hidden');}
+            }
+        }
+        function startAnkiLegacy(){
             const guides=pickStudyGuides('anki');
             if(!guides.length)return toast('Selecione um guia ou envie um conteúdo antes de revisar.','error');
             // Intercala os materiais antes de formar os lotes: ao estudar todas as
             // leis, a revisão não fica concentrada apenas nas primeiras normas.
-            const decks=guides.map(g=>buildStudyCards(g).map(card=>({...card,law:g.lawName})));
+            const decks=guides.map(g=>buildStudyCardsLegacy(g).map(card=>({...card,law:g.lawName})));
             let cards=[];
             const max=Math.max(0,...decks.map(deck=>deck.length));
             for(let i=0;i<max;i++)for(const deck of decks)if(deck[i])cards.push(deck[i]);
             cards=[...new Map(cards.map(c=>[c.id,c])).values()];
+            ANKI_BANK=cards.slice();
             const mode=$('anki-mode').value;
             if(mode==='due'){
                 cards=cards.filter(c=>{const state=getCardBox(c.id);return !state.due||Date.now()>=state.due;});
@@ -6250,11 +6385,15 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 '" aria-valuenow="'+s.index+'" aria-label="Progresso da revisão"><span style="width:'+percent+'%"></span></div>'+
                 '<div class="anki-meta"><span>Cartão '+(s.index+1)+' de '+s.cards.length+'</span>'+
                 '<span>'+esc(LEVELS[LEVEL].label)+'</span><span>Caixa Leitner '+state.box+'</span></div>'+
-                '<div class="anki-tags"><span>'+label+'</span><span>'+article+'</span></div>'+
+                '<div class="anki-tags"><span>'+label+'</span><span>'+article+'</span>'+
+                    (c.modality?'<span>'+esc(c.modality)+'</span>':'')+
+                    (c.difficulty?'<span>'+esc(c.difficulty)+'</span>':'')+'</div>'+
                 '<p class="anki-law">'+law+'</p>'+
                 '<div class="anki-study-surface"><p class="anki-kicker">'+focus+'</p>'+
                 '<p class="anki-question">'+esc(s.back?c.back:c.front)+'</p></div>'+
-                (s.back?'<div class="anki-proof"><b>Fundamento rastreável</b><p>'+esc(c.source||c.back)+'</p>'+
+                (s.back?'<div class="anki-proof"><b>Fundamento / Extra</b><p>'+esc(c.extra||c.source||c.back)+'</p>'+
+                    (c.warning?'<p class="anki-source-note"><strong>Alerta:</strong> '+esc(c.warning)+'</p>':'')+
+                    (c.tags?'<p class="anki-source-note">Tags: '+esc(c.tags)+'</p>':'')+
                     '<p class="anki-source-note">Fonte de estudo: '+law+' · '+article+
                     '. Confira a redação oficial vigente antes de utilizar em prova.</p></div>':
                     '<p class="anki-hint">Tente responder sem consultar o material. Revele a resposta para conferir.</p>')+
