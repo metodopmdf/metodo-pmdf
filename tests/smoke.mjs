@@ -10,6 +10,15 @@ assert(!html.includes("fetch('/api/"),'O site estático ainda chama uma rota /ap
 assert(html.includes("https://metodopmdf.github.io/metodo-pmdf/"),'URL nova ausente');
 assert(!html.includes("caioveloso.github.io"),'URL antiga remanescente');
 assert(html.includes('name="viewport"'),'Viewport móvel ausente');
+for(const id of ['pmdf-context-bar','pmdf-primary-jump','pmdf-advanced-law','q-extra-actions','auto-questions-section','anki-start']){
+  assert(html.includes('id="'+id+'"'),'UX: controle ausente '+id);
+}
+assert(html.includes('function pmdfTabKeydown(e)'),'Navegação por teclado ausente');
+for(const [k,panel] of Object.entries({leis:'tab-leis',questoes:'tab-questoes',anki:'tab-anki',resultados:'tab-resultados',redacao:'tab-redacao'})){
+  assert(html.includes('id="tab-btn-'+k+'" role="tab" aria-controls="'+panel+'"'),'ARIA: aba '+k);
+  assert(html.includes('id="'+panel+'" role="tabpanel"'),'ARIA: painel '+k);
+}
+
 
 function createClient(fetchImpl=async()=>({ok:true,status:200,json:async()=>[]})){
   const map=new Map(),elements=new Map();

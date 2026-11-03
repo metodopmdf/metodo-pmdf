@@ -51,6 +51,43 @@ async function setup(page){
   await page.locator('#q-source').selectOption('current');
   await page.locator('#q-neural-target').selectOption('30');
 }
+async function checkUsability(page,view){
+  for(const t of ['leis','questoes','anki','resultados','redacao']){
+    await page.locator('#tab-btn-'+t).click();
+    assert.equal(await page.locator('#tab-btn-'+t).getAttribute('aria-selected'),'true','ARIA active tab '+t);
+    assert.equal(await page.locator('#tab-btn-'+t).getAttribute('tabindex'),'0','Focus order '+t);
+    assert.equal(await page.locator('#tab-'+t).getAttribute('role'),'tabpanel','Tab panel semantics '+t);
+    assert(await page.locator('#pmdf-context-'+t).isVisible(),'Tool guidance '+t);
+  }
+  await page.locator('#tab-btn-leis').focus();
+  await page.keyboard.press('ArrowRight');
+  assert.equal(await page.locator('#tab-btn-questoes').getAttribute('aria-selected'),'true','Keyboard ArrowRight');
+  await page.keyboard.press('End');
+  assert.equal(await page.locator('#tab-btn-redacao').getAttribute('aria-selected'),'true','Keyboard End');
+  await page.locator('#tab-btn-leis').click();
+  assert(!(await page.locator('#role-select').isVisible()),'Advanced law filters should start closed');
+  await page.locator('#pmdf-advanced-law > summary').click();
+  assert(await page.locator('#role-select').isVisible(),'Advanced law filters cannot be opened');
+  await page.locator('#pmdf-primary-jump').click();
+  assert.equal(await page.evaluate(()=>document.activeElement?.id),'generate-btn','Primary action navigation');
+  await page.locator('#tab-btn-questoes').click();
+  assert(await page.locator('#q-generate-button').isVisible(),'Question generation button hidden');
+  const reset=page.locator('#q-extra-actions button[onclick="resetQuestionCycle()"]');
+  assert(!(await reset.isVisible()),'Secondary actions should be collapsed');
+  await page.locator('#q-extra-actions > summary').click();
+  assert(await reset.isVisible(),'Secondary actions not reachable');
+  assert(!(await page.locator('#exam-answer-source').isVisible()),'Import tools should start collapsed');
+  await page.locator('#auto-questions-section > summary').click();
+  assert(await page.locator('#exam-answer-source').isVisible(),'Import tools not reachable');
+  if(view.name==='mobile'){
+    const menu=await page.locator('nav.pmdf-app-tabs').evaluate(el=>({
+      scroll:el.scrollWidth,width:el.clientWidth,
+      taps:[...el.querySelectorAll('button')].map(b=>b.getBoundingClientRect().width)
+    }));
+    assert(menu.scroll<=menu.width+2,'Mobile navigation overflow: '+JSON.stringify(menu));
+    assert(menu.taps.every(n=>n>=88),'Mobile navigation touch targets too narrow');
+  }
+}
 async function generate(page,format){
   await page.locator('#q-format').selectOption(format);
   // O estado do simulado anterior permanece visível até a geração assíncrona
@@ -152,6 +189,7 @@ async function main(){
       page.on('crash',()=>errors.push('Chromium renderer crashed'));
       try{
         await setup(page);
+        await checkUsability(page,view);
         const ce=await generate(page,'CE');
         const mc=await generate(page,'MC');
         const mix=await generate(page,'MIX');
@@ -171,6 +209,6 @@ async function main(){
       sha:process.env.GITHUB_SHA||'local',report},null,2));
     await browser.close();
   }
-  console.log('QA ONLINE PASS: versão publicada, tema, neural CE/MC/MIX, flashcards avaliados, gabarito, lote inédito, desktop e celular.');
+  console.log('QA ONLINE PASS: navegação, acessibilidade, controles opcionais, CE/MC/MIX, flashcards, desktop e mobile.');
 }
 await main();

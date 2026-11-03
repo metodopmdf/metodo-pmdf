@@ -2283,6 +2283,10 @@ body :is(.pmdf-advanced-settings,.pmdf-more-actions)>summary:focus-visible{outli
  body .pmdf-question-actions>.pmdf-more-actions{margin-top:.7rem}
  body .pmdf-extra-actions{flex-direction:column;align-items:stretch}
 }
+/* A área interna de details permanece realmente oculta quando recolhida, inclusive com CSS autoral. */
+body .pmdf-advanced-settings:not([open])>.pmdf-advanced-grid,
+body .pmdf-more-actions:not([open])>.pmdf-extra-actions,
+body .pmdf-more-actions:not([open])>.pmdf-import-body{display:none!important}
 @media print{body .pmdf-flow{display:none!important}}
 </style>
 <style id="pmdf-a4-color-print">
