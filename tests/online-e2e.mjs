@@ -12,6 +12,7 @@ import {chromium} from 'playwright';
 const BASE=(process.env.PMDF_ONLINE_URL||'https://metodopmdf.github.io/metodo-pmdf/').replace(/\/?$/,'/');
 const expected=readFileSync(new URL('../index.html',import.meta.url));
 const expectedNeural=readFileSync(new URL('../assets/pmdf-neural-questions.js',import.meta.url));
+const expectedFlashcards=readFileSync(new URL('../assets/pmdf-neural-flashcards.js',import.meta.url));
 const hash=b=>createHash('sha256').update(b).digest('hex');
 const output='test-artifacts';
 mkdirSync(output,{recursive:true});
@@ -26,7 +27,11 @@ async function published(){
       if(response.ok&&hash(Buffer.from(await response.arrayBuffer()))===expectedHash){
         const asset=await fetch(BASE+'assets/pmdf-neural-questions.js?qa_build='+Date.now(),{
           headers:{'Cache-Control':'no-cache'},signal:AbortSignal.timeout(15000)});
-        if(asset.ok&&hash(Buffer.from(await asset.arrayBuffer()))===hash(expectedNeural))return true;
+        if(asset.ok&&hash(Buffer.from(await asset.arrayBuffer()))===hash(expectedNeural)){
+          const flash=await fetch(BASE+'assets/pmdf-neural-flashcards.js?qa_build='+Date.now(),{
+            headers:{'Cache-Control':'no-cache'},signal:AbortSignal.timeout(15000)});
+          if(flash.ok&&hash(Buffer.from(await flash.arrayBuffer()))===hash(expectedFlashcards))return true;
+        }
       }
     }catch(e){console.log('[QA ONLINE] Verificação indisponível: '+String(e.message||e));}
     await pause(8000);
@@ -37,7 +42,8 @@ async function setup(page){
   const response=await page.goto(BASE+'?qa_browser='+Date.now(),{waitUntil:'domcontentloaded',timeout:60000});
   assert.equal(response?.status(),200,'Site não respondeu HTTP 200');
   await page.waitForFunction(()=>typeof window.beginStudies==='function'&&
-    typeof window.PMDFNeuralQuestions?.start==='function',{},{timeout:30000});
+    typeof window.PMDFNeuralQuestions?.start==='function'&&
+    typeof window.PMDFNeuralFlashcards?.buildAsync==='function',{},{timeout:30000});
   assert.equal(await page.locator('#q-engine-neural').count(),1,'Seletor neural ausente');
   const oldTheme=await page.evaluate(()=>document.body.dataset.theme);
   await page.locator('.welcome-actions button[onclick="toggleTheme()"]').click();
@@ -121,6 +127,7 @@ async function generate(page,format){
 }
 async function checkFlashcards(page){
   await page.locator('#tab-btn-anki').click();
+  await page.locator('#anki-generation-mode').selectOption('advanced');
   await page.locator('#anki-mode').selectOption('all');
   await page.locator('#anki-batch-size').selectOption('50');
   await page.locator('button[onclick="startAnki()"]').click();
@@ -128,6 +135,14 @@ async function checkFlashcards(page){
     null,{timeout:20000});
   assert((await page.evaluate(()=>window.eval('ANKI_STATE.cards.length')))<=50,
     'Quantidade de flashcards por sessão ultrapassou o limite');
+  const cards=await page.evaluate(()=>window.eval('ANKI_BANK.map(c=>({law:c.law,kind:c.modality,source:c.source}))'));
+  assert(cards.length>=50,'Novo banco de flashcards insuficiente');
+  assert(cards.some(c=>c.kind==='Básico (P&R)'),'Sem perguntas diretas');
+  assert(cards.some(c=>c.kind==='Cloze (Lacuna)'),'Sem lacunas');
+  assert(cards.some(c=>c.kind==='Gatilho de Banca'),'Sem julgamento de banca');
+  assert(cards.every(c=>c.source?.length>20),'Cartão sem fonte');
+  assert.equal(new Set(cards.slice(0,26).map(c=>c.law)).size,26,'Distribuição das 26 leis insuficiente');
+  assert.match(await page.locator('#anki-coverage').innerText(),/Modalidades:/,'Relatório de cobertura ausente');
   const first=await page.locator('#anki-panel .anki-question').innerText();
   assert(first.length>35,'Flashcard sem pergunta substantiva');
   assert(!first.includes('Identifique o instituto, seu requisito principal'),
@@ -171,7 +186,18 @@ async function longSource(page){
   const second=await page.evaluate(()=>window.eval('Q_STATE').items.map(q=>q.coverageId));
   assert(second.every(x=>!first.includes(x)),'Lote seguinte repetiu questões antes da cobertura');
   assert(first.length+second.length>=120,'Documento com 90 regras gerou poucas questões verificáveis');
-  return {first:first.length,second:second.length};
+  await page.locator('#tab-btn-anki').click();
+  await page.locator('#anki-source').selectOption('current');
+  await page.locator('#anki-generation-mode').selectOption('advanced');
+  await page.locator('#anki-mode').selectOption('all');
+  await page.locator('#anki-batch-size').selectOption('100');
+  await page.locator('#anki-start').click();
+  await page.waitForFunction(()=>window.eval('ANKI_STATE')?.cards?.length>=90,
+    null,{timeout:45000});
+  const flash=await page.evaluate(()=>window.eval('ANKI_BANK.length'));
+  assert(flash>90,'Documento com 90 dispositivos produziu poucos flashcards');
+  assert.match(await page.locator('#anki-generation-status').innerText(),/Cobertura:/);
+  return {first:first.length,second:second.length,flashcards:flash};
 }
 async function main(){
   await published();
