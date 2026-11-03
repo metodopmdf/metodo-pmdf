@@ -121,33 +121,35 @@ function parse(raw){
   }
   if(Array.isArray(parsed))return parsed;
   if(!parsed||typeof parsed!=='object')throw Error('A resposta do modelo não contém questões.');
-  const list=parsed.questions||parsed.questoes||parsed['questões']||parsed.items;
+  const list=parsed.questions||parsed.questoes||parsed['questões']||parsed.items||parsed.resultado?.questions;
   if(Array.isArray(list))return list;
   const single=parsed.question||parsed.questao||parsed['questão'];
   if(single&&typeof single==='object'&&!Array.isArray(single))return [single];
-  if(typeof parsed.statement==='string'&&typeof parsed.answer==='string')return [parsed];
+  if(typeof (parsed.statement||parsed.enunciado)==='string'&&typeof (parsed.answer||parsed.gabarito)==='string')return [parsed];
   throw Error('O modelo não entregou uma lista de questões reconhecível.');
 }
 function validate(q,u,fmt,level,prior){
   if(!q||typeof q!=='object')return null;
-  const st=String(q.statement||'').replace(/\s+/g,' ').trim(),
-    exp=String(q.explanation||'').replace(/\s+/g,' ').trim(),
-    evidence=String(q.evidence||'').replace(/\s+/g,' ').trim();
-  if(st.length<56||st.length>1100||st.includes('…')||exp.length<35)return null;
+  const st=String(q.statement||q.enunciado||q.pergunta||'').replace(/\s+/g,' ').trim(),
+    exp=String(q.explanation||q.justificativa||q.comentario||q['comentário']||'').replace(/\s+/g,' ').trim(),
+    evidence=String(q.evidence||q.trecho||q.trechoBase||q.sourceQuote||'').replace(/\s+/g,' ').trim();
+  if(st.length<45||st.length>1100||st.includes('…')||exp.length<28)return null;
   if(evidence.length<16||evidence.length>300||!norm(u.quote).includes(norm(evidence)))return null;
   if(prior.some(p=>duplicate(st,p.statement)))return null;
-  let answer=String(q.answer||'').trim().toUpperCase(),opts=[],analysis=[];
+  let answer=String(q.answer||q.gabarito||q.correta||'').trim().toUpperCase(),opts=[],analysis=[];
   if(fmt==='CE'){
     if(answer==='CERTO')answer='C';if(answer==='ERRADO')answer='E';
     if(answer!=='C'&&answer!=='E')return null;
   }else{
-    if(!Array.isArray(q.options)||q.options.length!==4)return null;
-    opts=q.options.map(o=>String(o||'').replace(/^\s*[A-D]\s*[).:\-]\s*/i,'').trim());
+    const alternatives=q.options||q.alternativas;
+    if(!Array.isArray(alternatives)||alternatives.length!==4)return null;
+    opts=alternatives.map(o=>String(o||'').replace(/^\s*[A-D]\s*[).:\-]\s*/i,'').trim());
     if(opts.some(x=>x.length<12||x.includes('…'))||new Set(opts.map(norm)).size!==4)return null;
     if(!'ABCD'.includes(answer))return null;
-    analysis=Array.isArray(q.optionAnalysis)?q.optionAnalysis.map(x=>String(x||'').trim()):
-      'ABCD'.split('').map(k=>String(q.optionAnalysis?.[k]||'').trim());
-    if(analysis.length!==4||analysis.some(x=>x.length<15))return null;
+    const reviews=q.optionAnalysis||q.analiseAlternativas||q.comentariosAlternativas;
+    analysis=Array.isArray(reviews)?reviews.map(x=>String(x||'').trim()):
+      'ABCD'.split('').map(k=>String(reviews?.[k]||'').trim());
+    if(analysis.length!==4||analysis.some(x=>x.length<10))return null;
   }
   const item={origin:'webllm-local',type:fmt,statement:st,options:opts,answer,
     explanation:exp,optionAnalysis:analysis,sourceKey:u.id,sourceQuote:evidence,
