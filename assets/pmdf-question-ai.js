@@ -159,17 +159,23 @@ function validate(q,u,fmt,level,prior){
   return H().validateItem(item)?item:null;
 }
 function messages(u,fmt,level,n,focus,old){
-  const rubric='Somente questões inéditas, bem redigidas, com resposta única e justificativa verificável no trecho. Atue como examinador CEBRASPE; teste regra, exceção e condição sem inventar fatos. Rejeite itens duvidosos.';
-  const type=fmt==='CE'?'CERTO/ERRADO: answer=C ou E, options=[].':
-    'MÚLTIPLA ESCOLHA: exatamente quatro alternativas e uma correta. Inclua optionAnalysis: quatro justificativas por alternativa, na mesma ordem de options.';
-  const prev=old.slice(-2).map(x=>x.statement.slice(0,75)).join(' | ');
+  // A saída precisa caber no orçamento de tokens do modelo pequeno.
+  // O bloco de referência é a última linha para fins de validação e testes.
+  const ce=fmt==='CE';
+  const format=ce?
+    '{"questions":[{"statement":"Afirmação jurídica clara, uma frase completa.","answer":"C","explanation":"Justificativa objetiva vinculada à regra citada.","evidence":"TRECHO EXATO DA FONTE"}]}':
+    '{"questions":[{"statement":"Pergunta sobre a regra da fonte?","options":["Primeira opção completa","Segunda opção completa","Terceira opção completa","Quarta opção completa"],"answer":"B","explanation":"Justificativa da única correta.","optionAnalysis":["Motivo de A estar errada","Motivo de B estar correta","Motivo de C estar errada","Motivo de D estar errada"],"evidence":"TRECHO EXATO DA FONTE"}]}';
+  const history=old.length?' Não repita: '+old.slice(-1)[0].statement.slice(0,80):'';
   return [
-    {role:'system',content:'Você é um examinador criterioso de concursos. Não invente fundamentos. Responda SOMENTE JSON com chave questions. Revise cada gabarito conforme o trecho-fonte.\n'+rubric},
-    {role:'user',content:'Crie ATÉ '+n+' questões genuinamente distintas. Nível: '+level+'. Banca: '+(E('q-board')?.value||'Cebraspe')+'. Ênfase: '+focus+'. '+type+
-      '\nCada item deve conter statement, answer, explanation (mínimo 35 caracteres), evidence (copie literalmente entre 16 e 300 caracteres do TRECHO), subtopic; para MC inclua também options e optionAnalysis.'+
-      '\nNão invente outros dispositivos, jurisprudência nem casos com informações ausentes. Se não puder sustentar uma questão, gere menos. Não inclua markdown.'+
-      (prev?'\nEvite repetir: '+prev:'')+
-      '\nTEXTO DE REFERÊNCIA EXCLUSIVO: '+u.law+' / '+u.article+'\n'+u.quote}
+    {role:'system',content:'Você é elaborador de concurso CEBRASPE. Escreva apenas um objeto JSON válido em português. Use somente o trecho dado. Não invente artigos, consequências ou regras. É preferível devolver {"questions":[]} a inventar respostas.'},
+    {role:'user',content:'Crie UMA questão '+(ce?'CERTO/ERRADO':'MÚLTIPLA ESCOLHA com 4 alternativas, apenas 1 correta')+
+      '. Nível: '+level+'. Foco: '+focus+'.'+history+
+      ' Use as mesmas CHAVES do exemplo JSON abaixo, substituindo os valores pelos seus. '+
+      'O campo evidence deve conter uma CÓPIA LITERAL, de 16 a 150 caracteres, de uma parte do texto da fonte. '+
+      'A explicação deve demonstrar o gabarito. Não copie as frases do exemplo como conteúdo.'+
+      '\nEXEMPLO DE FORMATO (não é resposta): '+format+
+      '\nFONTE: '+u.law+' / '+u.article+
+      '\n'+u.quote}
   ];
 }
 function loadBank(key){
