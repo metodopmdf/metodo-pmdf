@@ -1,4 +1,0 @@
-# O acesso é restrito a usuários autenticados do Método PMDF.
-# A função também verifica o JWT contra /auth/v1/user antes de consumir cota.
-[functions.gemini-questions]
-verify_jwt = true
