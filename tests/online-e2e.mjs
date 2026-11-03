@@ -96,6 +96,7 @@ async function checkLongDocumentAndExhaustion(page){
   ).join('\n');
   await page.locator('#q-engine-webllm').click();
   await page.locator('#q-ai-backend').selectOption('safe');
+  await page.locator('details.qstudio-paste summary').click();
   await page.locator('#q-inline-title').fill('Regulamento fictício de 80 dispositivos para QA online');
   await page.locator('#q-inline-text').fill(law);
   await page.locator('button[onclick="questionUseText()"]').click();
