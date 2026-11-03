@@ -40,7 +40,7 @@ function createClient(fetchImpl=async()=>({ok:true,status:200,json:async()=>[]})
     'document','window','localStorage','location','navigator','setInterval','setTimeout','clearTimeout','fetch',
     code+'\nreturn {BUILTIN_PMDF_GUIDES,questionPool,buildStudyCards,fullQuestionSentences,getCardBox,'+
     'store,accountData,accountFetch,mergeProgressData,applyProgressSnapshot,getSyncMeta,'+
-    'startQuestions,resetQuestionCycle,scanPrompt,answerQuestion,nextQuestion,startAnki,revealAnki,nextAnki,correctEssay,renderResultsChart,'+
+    'startQuestions,resetQuestionCycle,scanPrompt,setQuestionEngine,questionUseSource,answerQuestion,nextQuestion,startAnki,revealAnki,nextAnki,correctEssay,renderResultsChart,'+
     'setSummaryFormat,renderGuide,guideHtml,exportEssayPdfA4,addOfficialQuestions,importOfficialAnswerFile,refreshImportedExamSources,analyzeLawText,beginStudies,saveStudySession,readStudySession,'+
     'choose(k){CUR={key:k,guide:BUILTIN_PMDF_GUIDES[k],_poolCache:{}}},'+
     'level(l){LEVEL=l},auth(id){AUTH_USER={username:id,displayName:id};saveSbSession({access_token:"jwt",refresh_token:"refresh",expires_in:3600})},'+
@@ -337,6 +337,25 @@ for(const g of Object.values(examApp.BUILTIN_PMDF_GUIDES)){
     assert(q.optionAnalysis.filter(t=>/\) CORRETA\./.test(t)).length===1,'Auditoria identificou gabarito MC inconsistente');
   }
 }
+
+// Teste do roteador real da interface: o modo WebLLM deve chamar o controlador
+// externo, sem modificar o motor determinístico em modo Tradicional.
+const aiBridge=createClient(),aiApp=aiBridge.application;
+aiApp.auth('qa-bridge');aiApp.choose('cpm');
+let aiCalls=0;
+aiBridge.win.PMDFQuestionAI={
+  start:async more=>{aiCalls++;return more?'continuacao':'novo';},
+  stop(){},checkCompatibility:async()=>{}
+};
+aiApp.setQuestionEngine('webllm');
+await aiApp.startQuestions();
+assert.equal(aiCalls,1,'Botão principal não foi roteado para WebLLM');
+await aiApp.startQuestions(true);
+assert.equal(aiCalls,2,'Próximo lote não encaminhou para WebLLM');
+aiApp.setQuestionEngine('local');
+aiBridge.$('q-format').value='CE';
+await aiApp.startQuestions();
+assert(aiApp.questionState()?.items.length>0,'Retorno ao motor tradicional falhou');
 
 console.log('PASSOU: integração do elaborador, 75 dispositivos, lotes inéditos, 26 normas, 3 níveis, 468 resumos, questões MC/CE, importação, redação A4, flashcards e sincronização simulada.');
 console.log(JSON.stringify({counts,walkthrough},null,2));
