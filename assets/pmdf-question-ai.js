@@ -16,12 +16,24 @@ function progress(p,m){
 }
 async function checkCompatibility(){
   const e=E('q-ai-compat');if(!e)return;
+  if(E('q-ai-backend')?.value!=='experimental'){
+    e.textContent='Modo seguro ativo: sem GPU, modelo ou download.';return;
+  }
+  if(/Android|iPhone|iPad|iPod|Mobile|Silk/i.test(String(root.navigator?.userAgent||''))){
+    e.textContent='Neste dispositivo móvel, a IA experimental será substituída por geração segura sem GPU.';return;
+  }
   if(!L()){e.textContent='Módulo WebLLM indisponível. Recarregue a página.';return;}
   const r=await L().compatibility();
   const low=r.memoryGB&&r.memoryGB<=4;
   e.textContent=r.ok?(low?'Modo leve: dispositivo com até 4 GB RAM · utilize Qwen 0,5B':r.f16?'WebGPU disponível · inferência em Web Worker':'WebGPU disponível · escolha Qwen 0,5B'):r.reason;
 }
 async function prepare(){
+  if(E('q-ai-backend')?.value!=='experimental'){
+    progress(null,'Modo seguro ativado: não é necessário carregar IA nem reservar memória de GPU.');
+    return true;
+  }
+  if(/Android|iPhone|iPad|iPod|Mobile|Silk/i.test(String(root.navigator?.userAgent||'')))
+    return notify('IA experimental desativada em celulares. Utilize a geração segura.',true);
   if(job)return notify('A geração está em andamento.',true);
   if(!L())return notify('Módulo WebLLM não foi carregado.',true);
   const b=E('q-ai-load'),stopButton=E('q-ai-stop');if(b)b.disabled=true;
@@ -135,6 +147,12 @@ async function start(more=false){
   if(job)return notify('A geração de IA já está em andamento.',true);
   if(!H()?.user())return notify('Faça login para gerar questões.',true);
   if(E('q-source')?.value==='imported')return notify('Provas importadas devem usar o gerador Tradicional.',true);
+  if(E('q-ai-backend')?.value!=='experimental')
+    return H()?.safe?.(more,'Geração por regras locais, sem modelo de linguagem.');
+  if(/Android|iPhone|iPad|iPod|Mobile|Silk/i.test(String(root.navigator?.userAgent||''))){
+    notify('Para proteger o celular, o site selecionou o gerador seguro sem GPU.','ok');
+    return H()?.safe?.(more,'IA generativa bloqueada em dispositivos móveis.');
+  }
   const guides=H().guides();if(!guides.length)return notify('Selecione uma lei ou envie um arquivo.',true);
   if(!L())return notify('WebLLM indisponível. Recarregue a página.',true);
   const fmt=E('q-format')?.value==='MC'?'MC':'CE',level=H().level(E('q-level')?.value),
@@ -149,7 +167,10 @@ async function start(more=false){
   const roundTarget=Math.min(target,bank.questions.length+batchLimit);
   const compatible=await L().compatibility();
   if(H().mode?.()==='local')return;
-  if(!compatible.ok){progress(null,compatible.reason+' Use o modo Tradicional.');return notify(compatible.reason,true);}
+  if(!compatible.ok){
+    notify(compatible.reason+' O modo seguro será utilizado.','error');
+    return H()?.safe?.(more,'Hardware incompatível com inferência generativa local.');
+  }
   const run={cancelled:false};job=run;
   const buttons=['q-generate-button','q-next-button'];
   const locked=['q-source','q-format','q-level','q-board','q-ai-model','q-ai-target'];
@@ -204,6 +225,8 @@ async function start(more=false){
     saveBank(key,bank);showBank(bank,key,model);
     progress(null,'Geração pausada: '+e.message+'. Foram preservadas '+bank.questions.length+' questões.');
     notify('Falha de geração: '+e.message,true);
+    if(!bank.questions.length&&!run.cancelled)
+      await H()?.safe?.(more,'IA local indisponível; o sistema preservou as questões por regras.');
   }finally{
     job=null;
     for(const id of buttons)if(E(id))E(id).disabled=false;
