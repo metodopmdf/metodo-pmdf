@@ -40,7 +40,7 @@ function createClient(fetchImpl=async()=>({ok:true,status:200,json:async()=>[]})
     'document','window','localStorage','location','navigator','setInterval','setTimeout','clearTimeout','fetch',
     code+'\nreturn {BUILTIN_PMDF_GUIDES,questionPool,buildStudyCards,fullQuestionSentences,getCardBox,'+
     'store,accountData,accountFetch,mergeProgressData,applyProgressSnapshot,getSyncMeta,'+
-    'startQuestions,answerQuestion,nextQuestion,startAnki,revealAnki,nextAnki,correctEssay,renderResultsChart,'+
+    'startQuestions,resetQuestionCycle,scanPrompt,answerQuestion,nextQuestion,startAnki,revealAnki,nextAnki,correctEssay,renderResultsChart,'+
     'setSummaryFormat,renderGuide,guideHtml,exportEssayPdfA4,addOfficialQuestions,importOfficialAnswerFile,refreshImportedExamSources,analyzeLawText,beginStudies,saveStudySession,readStudySession,'+
     'choose(k){CUR={key:k,guide:BUILTIN_PMDF_GUIDES[k],_poolCache:{}}},'+
     'level(l){LEVEL=l},auth(id){AUTH_USER={username:id,displayName:id};saveSbSession({access_token:"jwt",refresh_token:"refresh",expires_in:3600})},'+
@@ -289,5 +289,54 @@ assert((await b.accountFetch('progresso',{method:'PUT'})).ok,'CAS não resolveu 
 a.store.set('note:offline','mantido no aparelho');offline=true;
 assert(!(await a.accountFetch('progresso',{method:'PUT'})).ok,'Falha de rede não sinalizada');
 assert.equal(a.store.get('note:offline'),'mantido no aparelho');
-console.log('PASSOU: 26 normas, 3 níveis, 468 resumos, questões MC/CE, importação, redação A4, flashcards e sincronização simulada.');
+
+// Cobertura ampliada: nenhum artigo de textos extensos pode ser descartado pelo limite anterior de 40.
+const examiner=createClient();
+const examApp=examiner.application;
+const largeSource=Array.from({length:75},(_,i)=>
+  'Art. '+(i+1)+'º A autoridade responsável deverá observar os requisitos de legalidade, registrar os fatos e garantir o direito à informação no procedimento administrativo número '+(i+1)+'.'
+).join('\n');
+const largeGuide=examApp.analyzeLawText(largeSource,'Norma fictícia extensa');
+const sections=['highIncidence','mediumIncidence','lowIncidence'].flatMap(k=>largeGuide.articlesMapping[k]);
+assert.equal(sections.length,75,'Análise perdeu dispositivos após o antigo limite de 40');
+assert(sections.every(x=>x.sourceText?.includes('A autoridade responsável deverá observar')),'Conteúdo integral de referência não preservado');
+const expanded=examApp.questionPool(largeGuide,'CE','intermediario');
+assert(expanded.length>=75,'Gerador não percorreu todas as 75 unidades');
+
+examApp.auth('qa-examinador');
+examApp.choose('cpm');
+examiner.$('q-source').value='all';
+examiner.$('q-format').value='CE';
+examiner.$('q-level').value='intermediario';
+examiner.$('q-batch').value='15';
+const master=examApp.scanPrompt();
+assert(master.includes('matriz de cobertura'),'Prompt mestre sem matriz de cobertura');
+assert(master.includes('CEBRASPE/CESPE'),'Prompt mestre sem metodologia da banca');
+assert(master.includes('CONTINUAR'),'Prompt mestre sem continuidade');
+await examApp.startQuestions();
+const batchA=examApp.questionState();
+assert.equal(batchA.items.length,15,'Lote solicitado de 15 questões não foi respeitado');
+const firstIds=new Set(batchA.items.map(q=>q.coverageId));
+assert.equal(firstIds.size,15,'Lote inicial com questões duplicadas');
+await examApp.startQuestions(true);
+const batchB=examApp.questionState();
+assert.equal(batchB.items.length,15,'Próximo lote deveria ter 15 questões');
+assert(batchB.items.every(q=>!firstIds.has(q.coverageId)),'O próximo lote repetiu questões');
+assert.equal(batchB.coverage.shown,30,'Matriz de cobertura não atualizou progresso');
+assert.equal(batchB.coverage.remaining,batchB.coverage.total-30,'Total pendente inconsistente');
+assert(examApp.store.get(batchB.coverage.cycleKey),'Histórico de cobertura não foi persistido');
+examApp.resetQuestionCycle();
+assert.equal(examApp.store.get(batchB.coverage.cycleKey),null,'Reiniciar cobertura não limpou o ciclo');
+await examApp.startQuestions();
+assert.equal(examApp.questionState().coverage.shown,15,'Reinício não começou nova cobertura');
+
+for(const g of Object.values(examApp.BUILTIN_PMDF_GUIDES)){
+  const qs=examApp.questionPool(g,'MC','intermediario',4);
+  for(const q of qs){
+    assert.equal(q.optionAnalysis.length,q.options.length,'Comentário individual de alternativa ausente');
+    assert(q.optionAnalysis.filter(t=>t.includes('CORRETA')).length===1,'Auditoria identificou gabarito MC inconsistente');
+  }
+}
+
+console.log('PASSOU: integração do elaborador, 75 dispositivos, lotes inéditos, 26 normas, 3 níveis, 468 resumos, questões MC/CE, importação, redação A4, flashcards e sincronização simulada.');
 console.log(JSON.stringify({counts,walkthrough},null,2));
