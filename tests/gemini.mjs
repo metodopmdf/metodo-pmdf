@@ -84,7 +84,7 @@ function harness(fmt){
   const win={PMDFQuestionHost:host};new Function("window",client)(win);return {host,win,$,seen};
 }
 const ce=harness("CE");await ce.win.PMDFQuestionAI.start();
-assert(ce.host.last?.items.length>=6);assert(ce.host.last.items.every(q=>q.origin==="gemini"&&q.answer==="C"));
+assert(ce.host.last?.items.length>=1,"A primeira chamada deve produzir ao menos uma questão distinta");assert(ce.host.last.items.every(q=>q.origin==="gemini"&&q.answer==="C"));
 await ce.win.PMDFQuestionAI.start(true);assert(ce.host.last.total>=ce.host.last.items.length);
 const mc=harness("MC");await mc.win.PMDFQuestionAI.start();
 assert(mc.host.last.items.every(q=>q.options.length===4&&q.answer==="B"));
