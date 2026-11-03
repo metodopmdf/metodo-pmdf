@@ -89,6 +89,54 @@ async function checkQuestionFlow(page,type){
     'A navegação para a próxima questão não funciona');
   log('Fluxo '+type+' online OK: '+number+' opções, gabarito, explicação e avanço.');
 }
+async function checkLongDocumentAndExhaustion(page){
+  const law=Array.from({length:80},(_,i)=>
+    'Art. '+(i+1)+'º O setor de fiscalização '+(i+1)+
+    ' deve registrar cada decisão administrativa em documento próprio, deve apresentar motivação expressa, pode consultar a autoridade competente e deve assegurar que o relatório seja acessível aos interessados.'
+  ).join('\n');
+  await page.locator('#q-engine-webllm').click();
+  await page.locator('#q-ai-backend').selectOption('safe');
+  await page.locator('#q-inline-title').fill('Regulamento fictício de 80 dispositivos para QA online');
+  await page.locator('#q-inline-text').fill(law);
+  await page.locator('button[onclick="questionUseText()"]').click();
+  await page.waitForFunction(()=>document.getElementById('q-document-indicator').textContent.includes('Regulamento fictício'),
+    null,{timeout:20000});
+  await page.locator('#q-format').selectOption('MC');
+  await page.locator('#q-level').selectOption('intermediario');
+  await page.locator('#q-source').selectOption('current');
+  const identifiers=new Set();
+  let seenReview=false,lastCount=0;
+  for(let i=0;i<20;i++){
+    const current=i===0?'#q-generate-button':'#q-next-button';
+    await page.locator(current).click();
+    await page.waitForFunction(prev=>{
+      const q=window.eval('Q_STATE');
+      return !!q&&q.engine==='adaptive'&&q.items.length>0&&
+        (q.review||q.coverage.shown>prev);
+    },lastCount,{timeout:20000});
+    const result=await page.evaluate(()=>{
+      const s=window.eval('Q_STATE');
+      return {review:s.review||false,shown:s.coverage.shown,total:s.coverage.total,
+        items:s.items.map(q=>({id:q.coverageId,answer:q.answer,options:q.options.length}))};
+    });
+    assert(result.items.every(q=>q.options===4||q.options===5),
+      'Documento próprio retornou MC com alternativas inválidas');
+    if(result.review){
+      seenReview=true;
+      assert.match(await page.locator('#q-status').innerText(),/REVISÃO/);
+      break;
+    }
+    for(const item of result.items){
+      assert(!identifiers.has(item.id),'Questão repetida antes da revisão: '+item.id);
+      identifiers.add(item.id);
+    }
+    lastCount=result.shown;
+  }
+  assert(identifiers.size>=100,'O documento com 80 regras completas gerou menos de 100 questões MC distintas: '+identifiers.size);
+  assert(seenReview,'A plataforma não reiniciou uma rodada explícita de revisão ao terminar a cobertura.');
+  log('Documento fictício longo online: '+identifiers.size+
+    ' questões de múltipla escolha distintas e reinício explícito da revisão (sem GPU).');
+}
 async function run(){
   await waitForPublishedVersion();
   const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
@@ -125,6 +173,7 @@ async function run(){
         await startSyntheticStudy(page);
         await checkQuestionFlow(page,'CE');
         await checkQuestionFlow(page,'MC');
+        if(variant.name==='desktop')await checkLongDocumentAndExhaustion(page);
         if(variant.name==='mobile'){
           // Simular escolha experimental em aparelho móvel: proibir modelo pesado.
           await page.locator('#q-ai-backend').selectOption('experimental');
