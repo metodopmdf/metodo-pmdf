@@ -5498,6 +5498,40 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                         if(choices.length>=requestedCount)break;
                     }
                 }
+                // Segundo formato de MC: identificar a única associação ALTERADA.
+                // As três associações corretas são extraídas literalmente de
+                // dispositivos identificáveis. A incorreta possui uma mutação
+                // explícita e rastreável; nunca são inventadas sanções/regras.
+                const canonical=[{text:item.head+' — '+item.sentence,correct:false,why:'Associação literal do dispositivo '+item.head+'.'}];
+                const referencedHeads=new Set([item.head]);
+                for(const other of all){
+                    if(referencedHeads.has(other.head)||other.sentence===item.sentence)continue;
+                    if(!examSourceQuality(other.sentence,'iniciante'))continue;
+                    const label=other.head+' — '+other.sentence;
+                    if(canonical.some(x=>x.text===label))continue;
+                    referencedHeads.add(other.head);
+                    canonical.push({text:label,correct:false,why:'Trecho literal associado a '+other.head+'.'});
+                    if(canonical.length>=3)break;
+                }
+                if(canonical.length===3&&changes.length){
+                    const caps=level==='avancado'?2:1;
+                    for(const altered of changes.slice(0,caps)){
+                        const swapped=item.head+' — '+altered.text;
+                        if(canonical.some(x=>x.text===swapped))continue;
+                        const arranged=shuffle([...canonical,{text:swapped,correct:true,why:altered.hint+' Texto original: "'+altered.original+'".'}]);
+                        const letter='ABCD'[arranged.findIndex(x=>x.correct)];
+                        const analysis=arranged.map((choice,i)=>{
+                            const label='ABCD'[i];
+                            return label+') '+(choice.correct?'INCORRETA. ':'CORRETA. ')+choice.why;
+                        });
+                        mc.push({...base,type:'MC',coverageId:sourceKey+'|MC|alteracao|'+(hash(altered.text)>>>0).toString(36),
+                            statement:'Considerando os dispositivos e respectivos trechos do documento, qual associação contém uma alteração em relação ao texto-fonte?',
+                            options:arranged.map(x=>x.text),answer:letter,optionAnalysis:analysis,
+                            explanation:'A associação com redação alterada é a alternativa '+letter+'. '+altered.hint+
+                                ' No texto de '+item.head+', a expressão correta é "'+altered.original+'". As demais associações são transcrições dos dispositivos indicados.',
+                            easyTip:'Compare cada dispositivo com o trecho original e identifique a única modificação.'});
+                    }
+                }
                 // São aceitas 4 ou 5 opções fundamentadas, nunca distratores artificiais.
                 // O enunciado associativo identifica a correspondência dispositivo/conteúdo.
                 if(choices.length>=requestedCount){
