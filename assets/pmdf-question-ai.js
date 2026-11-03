@@ -15,17 +15,24 @@ function describeError(error){
   return 'o modelo não conseguiu produzir uma resposta estruturada e válida';
 }
 async function failOverToSafe(more,reason){
-  // Encerrar primeiro o Worker e liberar a GPU para que o fallback não
-  // concorra por memória com o modelo local. Nenhuma assinatura/API é usada.
+  // Libere a GPU antes de gerar questões determinísticas para não disputar memória.
   try{L()?.interrupt?.();}catch(_){}
   H()?.activateSafe?.();
-  progress(null,'O modelo experimental não concluiu a geração. Usando o gerador seguro sem GPU.');
-  notify('A IA experimental não conseguiu estruturar questões válidas. O modo seguro foi ativado automaticamente.');
   try{
-    return await H()?.safe?.(more,'Substituição automática: '+String(reason||'resposta inválida').slice(0,95));
+    const result=await H()?.safe?.(more,String(reason||'resposta inválida').slice(0,95));
+    if(result?.ok){
+      notify('Modo seguro: '+result.count+' questões elaboradas com base no material, sem depender do modelo experimental.');
+      return result;
+    }
+    const issue=result?.reason||'A fonte não forneceu questões inéditas verificáveis neste recorte.';
+    if(E('q-status'))E('q-status').textContent=issue;
+    notify('Não foram geradas questões nesta tentativa. '+issue,true);
+    return {ok:false,reason:issue};
   }catch(e){
-    notify('Não foi possível concluir o modo seguro: '+describeError(e),true);
-    return null;
+    const issue=describeError(e);
+    if(E('q-status'))E('q-status').textContent='Falha no gerador seguro: '+issue;
+    notify('Falha no gerador seguro: '+issue,true);
+    return {ok:false,reason:issue};
   }
 }
 function progress(p,m){
