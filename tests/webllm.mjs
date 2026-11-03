@@ -86,7 +86,7 @@ function makeHarness(format='CE',gpu=true){
           }:{})
         };
       });
-      if(runs===1)questions.push({...questions[0],evidence:'Esta frase nunca esteve na fonte.'});
+      if(runs===1)questions.unshift({...questions[0],evidence:'Esta frase nunca esteve na fonte.'});
       return {text:JSON.stringify({questions})};
     }
   };
@@ -103,9 +103,10 @@ assert.equal(new Set(ce.h.result.items.map(q=>q.statement)).size,30,'Questões r
 assert(ce.h.result.items.every(q=>q.origin==='webllm-local'),'Origem local ausente');
 const recorded=JSON.parse(ce.storeMap.values().next().value);
 assert(recorded.rejected>=1,'Auditoria não rejeitou a evidência falsa');
+const completedRuns=ce.runs;
 await ce.win.PMDFQuestionAI.start(false);
 assert.equal(ce.h.result?.items.length,30,'Retomada perdeu questões');
-assert.equal(ce.runs,6,'Um banco já concluído não deve chamar o modelo novamente');
+assert.equal(ce.runs,completedRuns,'Um banco já concluído não deve chamar o modelo novamente');
 
 const mc=makeHarness('MC');
 await mc.win.PMDFQuestionAI.start(false);
