@@ -2282,6 +2282,40 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
  body #printable-area .no-print,body #printable-area .mm-nav{display:none!important}
 }
 </style>
+
+    <style id="qstudio-styles">
+      .qstudio{--qs-bg:#0a1426;--qs-layer:#0e1b33;--qs-border:#263b58;--qs-text:#e7edf7;--qs-accent:#d4af37;--qs-muted:#aab9cf;background:var(--qs-bg);border:1px solid #172642}
+      .qstudio .qstudio-eyebrow{font-size:10px;letter-spacing:.15em;font-weight:800;color:var(--qs-accent)}
+      .qstudio .qstudio-brand{width:46px;height:46px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(212,175,55,.12);border:1px solid rgba(212,175,55,.28);border-radius:14px;color:#e5c158}
+      .qstudio .qstudio-brand svg{width:23px;height:23px}
+      .qstudio .qstudio-block{background:var(--qs-layer);border:1px solid var(--qs-border);border-radius:15px;padding:16px}
+      .qstudio .qstudio-input{font-size:13px;color:var(--qs-text);background:var(--qs-bg);border:1px solid var(--qs-border);border-radius:10px;padding:10px 12px;min-height:41px;outline:none}
+      .qstudio .qstudio-input:focus{border-color:var(--qs-accent);box-shadow:0 0 0 2px rgba(212,175,55,.2)}
+      .qstudio .qstudio-engine{display:flex;align-items:center;gap:12px;background:var(--qs-bg);border:1px solid var(--qs-border);border-radius:13px;padding:14px;min-height:96px;color:var(--qs-text);transition:border-color .15s ease,background-color .15s ease}
+      .qstudio .qstudio-engine:hover,.qstudio .qstudio-engine.active{border-color:var(--qs-accent);background:rgba(212,175,55,.07)}
+      .qstudio .qstudio-engine.active{box-shadow:inset 0 0 0 1px var(--qs-accent)}
+      .qstudio .qstudio-engine-symbol{width:39px;height:39px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:11px;background:rgba(212,175,55,.13);color:#e5c158}
+      .qstudio .qstudio-engine-symbol svg{width:21px;height:21px}
+      .qstudio .qstudio-upload,.qstudio .qstudio-secondary,.qstudio .qstudio-danger{border:1px solid var(--qs-border);border-radius:10px;padding:10px 13px;background:var(--qs-bg);color:var(--qs-text);font-weight:600;min-height:41px}
+      .qstudio .qstudio-upload:hover,.qstudio .qstudio-secondary:hover{border-color:var(--qs-accent)}
+      .qstudio .qstudio-danger{border-color:#b95058;color:#ffb4b4}
+      .qstudio .qstudio-primary{background:linear-gradient(135deg,#e7c35c,#c69b27);border-radius:11px;color:#091321;padding:12px 19px;min-height:44px;box-shadow:0 6px 18px rgba(212,175,55,.12)}
+      .qstudio .qstudio-primary:hover{filter:brightness(1.06)}
+      .qstudio button:disabled{opacity:.5;cursor:not-allowed}
+      .qstudio .qstudio-paste{border-top:1px solid var(--qs-border);padding-top:12px}
+      .qstudio .qstudio-ai-info{background:rgba(41,94,145,.13);border:1px solid rgba(63,139,191,.26)}
+      .qstudio .qstudio-audit{border:1px solid var(--qs-border);background:rgba(29,103,83,.09)}
+      .qstudio .qstudio-meter{height:9px;overflow:hidden;border-radius:8px;background:#263b58}
+      .qstudio .qstudio-meter span{display:block;height:100%;border-radius:8px;background:#d4af37;transition:width .2s ease}
+      body[data-theme="light"] .qstudio{--qs-bg:#fff;--qs-layer:#f4f7fc;--qs-border:#cbd5e1;--qs-text:#172238;--qs-muted:#50627b;border-color:#ccd8e8}
+      body[data-theme="light"] .qstudio .qstudio-engine-symbol{color:#856009}
+      body[data-theme="light"] .qstudio .qstudio-engine.active{background:#fff7de}
+      body[data-theme="light"] .qstudio .qstudio-ai-info{background:#ecf5ff}
+      body[data-theme="light"] .qstudio .qstudio-audit{background:#f1faf6}
+      body[data-theme="light"] .qstudio .qstudio-ai-info p{color:#1e3854!important}
+      body[data-theme="light"] .qstudio .qstudio-primary{color:#091321!important}
+      @media (max-width:380px){.qstudio .qstudio-engine{padding:11px}.qstudio .qstudio-block{padding:12px}}
+    </style>
 </head>
 <body class="landing-active min-h-screen flex flex-col font-sans antialiased selection:bg-[#D4AF37] selection:text-[#050B16]">
 
@@ -2658,31 +2692,126 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
         </div><!-- /tab-leis -->
 
 
-        <section id="tab-questoes" class="hidden space-y-5" aria-label="Banco de questões">
-            <div class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
-                <div><h2 class="font-bold text-lg text-white">📝 Questões — prática ampliada</h2>
-                    <p class="text-sm text-slate-400">Questões inéditas elaboradas localmente a partir de leis, textos e guias, com matriz de cobertura, revisão do gabarito e lotes sem repetição. Sem IA externa obrigatória; não são questões oficiais de bancas.</p></div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <label class="text-xs text-[#E5C158] font-semibold">Material / lei
-                        <select id="q-source" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="current">Conteúdo selecionado / enviado</option><option value="all">Todas as leis cadastradas</option><option value="imported">Questões de provas importadas</option></select>
-                    </label>
-                    <label class="text-xs text-[#E5C158] font-semibold">Formato
-                        <select id="q-format" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="CE">Certo / Errado</option><option value="MC">Múltipla escolha</option></select>
-                    </label>
-                    <label class="text-xs text-[#E5C158] font-semibold">Nível
-                        <select id="q-level" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="iniciante">Iniciante</option><option value="intermediario" selected>Intermediário</option><option value="avancado">Avançado</option></select>
-                    </label>
-                    <label class="text-xs text-[#E5C158] font-semibold">Estilo da banca (geração local)
-                        <select id="q-board" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option>Cebraspe</option><option>FGV</option><option>FCC</option><option>Vunesp</option><option>Iades</option><option>Idecan</option><option>AOCP</option><option>Cesgranrio</option><option>Quadrix</option><option value="todas">Todas</option></select>
-                    </label>
-                    
-                    
+        <section id="tab-questoes" class="hidden space-y-5" aria-label="Elaborador de questões">
+            <div class="qstudio rounded-2xl p-5 sm:p-6 space-y-5 shadow-xl">
+                <div class="flex items-start gap-3">
+                    <div class="qstudio-brand" aria-hidden="true"><i data-lucide="brain-circuit"></i></div>
+                    <div class="min-w-0 flex-1">
+                        <p class="qstudio-eyebrow">MÉTODO PMDF · BANCO INTELIGENTE</p>
+                        <h2 class="text-xl sm:text-2xl font-extrabold text-white">Elaborador Inteligente de Questões</h2>
+                        <p class="text-sm text-slate-400 mt-1">Transforme leis e documentos em questões de concursos. Selecione o gerador tradicional ou a IA local, sem assinatura e sem API paga.</p>
+                    </div>
                 </div>
-                <div class="flex flex-wrap items-end gap-3"><label class="text-xs font-semibold text-[#E5C158]">Tamanho do lote<select id="q-batch" aria-label="Tamanho do lote de questões" class="block mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="15">15 questões</option><option value="30" selected>30 questões</option><option value="50">50 questões</option><option value="0">Todas as disponíveis</option></select></label><button type="button" onclick="startQuestions()" class="px-5 py-2.5 rounded-xl bg-[#D4AF37] text-[#050B16] font-extrabold">Gerar e iniciar questões</button><button type="button" onclick="startQuestions(true)" class="px-3 py-2 rounded-xl border border-[#D4AF37] bg-[#0E1B33] text-[#E5C158] font-semibold text-xs">Próximo lote inédito</button><button type="button" onclick="resetQuestionCycle()" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Reiniciar cobertura</button>
-                    <button type="button" onclick="clearQuestionFilters()" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">↺ Limpar filtros</button>
-                    <button type="button" onclick="openErrors()" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">📕 Caderno de erros</button></div>
+
+                <div class="qstudio-block space-y-3">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <h3 class="font-bold text-white text-sm"><i data-lucide="file-text" class="inline w-4 h-4 mr-1"></i> Material de estudo</h3>
+                        <span id="q-document-indicator" class="text-xs text-slate-400">Use a lei selecionada ou envie conteúdo</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
+                        <label class="text-xs text-[#E5C158] font-semibold">Fonte do conteúdo
+                            <select id="q-source" onchange="refreshQuestionStudio()" class="qstudio-input mt-1 w-full"><option value="current">Documento / lei selecionada</option><option value="all">Todas as leis cadastradas</option><option value="imported">Provas anteriores importadas</option></select>
+                        </label>
+                        <label class="qstudio-upload cursor-pointer text-sm font-bold text-center">
+                            <i data-lucide="file-up" class="inline w-4 h-4 mr-1"></i> Enviar PDF / DOCX / TXT
+                            <input type="file" accept=".pdf,.docx,.txt,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="hidden" onchange="questionUploadFile(this)">
+                        </label>
+                    </div>
+                    <details class="qstudio-paste">
+                        <summary class="cursor-pointer text-xs font-semibold text-[#E5C158]">Ou colar diretamente uma lei / texto</summary>
+                        <label class="text-xs text-slate-300 block mt-3">Título do conteúdo
+                            <input id="q-inline-title" class="qstudio-input w-full mt-1" maxlength="160" placeholder="Ex.: Lei nº ... / Direito Administrativo">
+                        </label>
+                        <label class="text-xs text-slate-300 block mt-3">Texto para análise
+                            <textarea id="q-inline-text" rows="5" class="qstudio-input w-full mt-1" placeholder="Cole aqui artigos, parágrafos e demais disposições da lei."></textarea>
+                        </label>
+                        <button type="button" class="qstudio-secondary mt-2" onclick="questionUseText()">Analisar este texto</button>
+                    </details>
+                </div>
+
+                <div class="qstudio-block space-y-3">
+                    <h3 class="font-bold text-white text-sm"><i data-lucide="layers-3" class="inline w-4 h-4 mr-1"></i> Modo de elaboração</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" role="group" aria-label="Escolha o mecanismo de elaboração">
+                        <button id="q-engine-local" type="button" class="qstudio-engine active text-left" aria-pressed="true" onclick="setQuestionEngine('local')">
+                            <span class="qstudio-engine-symbol"><i data-lucide="list-checks"></i></span>
+                            <span><strong class="block text-sm">Tradicional</strong><span class="block text-xs text-slate-400 mt-1">Questões elaboradas por regras locais, sem baixar modelos.</span></span>
+                        </button>
+                        <button id="q-engine-webllm" type="button" class="qstudio-engine text-left" aria-pressed="false" onclick="setQuestionEngine('webllm')">
+                            <span class="qstudio-engine-symbol"><i data-lucide="brain-circuit"></i></span>
+                            <span><strong class="block text-sm">IA avançada</strong><span class="block text-xs text-slate-400 mt-1">WebLLM no navegador · requer WebGPU e download inicial.</span></span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="qstudio-block space-y-3">
+                    <h3 class="font-bold text-white text-sm"><i data-lucide="sliders-horizontal" class="inline w-4 h-4 mr-1"></i> Configurações da prova</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                        <label class="text-xs text-[#E5C158] font-semibold">Tipo de questão
+                            <select id="q-format" class="qstudio-input w-full mt-1"><option value="CE">Certo / Errado</option><option value="MC">Múltipla escolha</option></select>
+                        </label>
+                        <label class="text-xs text-[#E5C158] font-semibold">Nível
+                            <select id="q-level" class="qstudio-input w-full mt-1"><option value="iniciante">Iniciante</option><option value="intermediario" selected>Intermediário</option><option value="avancado">Avançado</option></select>
+                        </label>
+                        <label class="text-xs text-[#E5C158] font-semibold">Banca de referência
+                            <select id="q-board" class="qstudio-input w-full mt-1"><option>Cebraspe</option><option>FGV</option><option>FCC</option><option>Vunesp</option><option>Iades</option><option>Idecan</option><option>AOCP</option><option>Cesgranrio</option><option>Quadrix</option><option value="todas">Todas</option></select>
+                        </label>
+                    </div>
+                    <div id="q-local-settings" class="flex items-center gap-3 flex-wrap">
+                        <label class="text-xs font-semibold text-[#E5C158]">Questões por lote
+                            <select id="q-batch" class="qstudio-input block mt-1"><option value="15">15 questões</option><option value="30" selected>30 questões</option><option value="50">50 questões</option><option value="0">Todas as disponíveis</option></select>
+                        </label>
+                        <p class="text-xs text-slate-400 flex-1">O gerador tradicional usa trechos verificáveis e respeita as limitações da fonte.</p>
+                    </div>
+                    <div id="q-ai-settings" class="hidden space-y-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <label class="text-xs font-semibold text-[#E5C158]">Modelo de IA local
+                                <select id="q-ai-model" class="qstudio-input block w-full mt-1">
+                                    <option value="Qwen2.5-0.5B-Instruct-q4f32_1-MLC">Qwen 0,5B · leve (≈1,1 GB GPU)</option>
+                                    <option selected value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC">Qwen 1,5B · equilibrado (≈1,6 GB GPU)</option>
+                                    <option value="Qwen2.5-1.5B-Instruct-q4f32_1-MLC">Qwen 1,5B · compatível (≈1,9 GB GPU)</option>
+                                    <option value="Qwen2.5-3B-Instruct-q4f16_1-MLC">Qwen 3B · avançado (≈2,5 GB GPU)</option>
+                                </select>
+                            </label>
+                            <label class="text-xs font-semibold text-[#E5C158]">Quantidade desejada
+                                <select id="q-ai-target" class="qstudio-input block w-full mt-1">
+                                    <option value="30">Até 30 questões</option>
+                                    <option value="50">Até 50 questões</option>
+                                    <option value="100" selected>Até 100 questões</option>
+                                    <option value="150">Até 150 questões</option>
+                                    <option value="200">Até 200 questões</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="qstudio-ai-info rounded-xl p-3">
+                            <p class="text-xs text-slate-200"><i data-lucide="info" class="inline w-4 h-4 mr-1"></i> A IA trabalha em lotes e pode produzir menos questões que a meta se não houver conteúdo suficientemente distinto. O download do modelo é feito pela primeira vez no seu navegador; o processamento usa sua GPU. Não enviamos sua lei para uma API de inferência.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button type="button" id="q-ai-load" class="qstudio-secondary" onclick="prepareQuestionAI()">Carregar modelo</button>
+                            <button type="button" id="q-ai-stop" class="qstudio-danger hidden" onclick="stopQuestionAI()">Interromper geração</button>
+                            <span id="q-ai-compat" class="text-xs text-slate-400" role="status">Verificação de WebGPU pendente.</span>
+                        </div>
+                        <div id="q-ai-progress-wrap" class="hidden space-y-1">
+                            <div class="qstudio-meter" role="progressbar" aria-label="Progresso da geração com IA" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="q-ai-progress"><span id="q-ai-progress-fill" style="width:0%"></span></div>
+                            <p id="q-ai-progress-text" class="text-xs text-slate-300" role="status" aria-live="polite">Pronto.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="qstudio-audit rounded-xl p-3 flex items-start gap-2">
+                    <i data-lucide="shield-check" class="w-5 h-5 shrink-0 text-emerald-400"></i>
+                    <div><p class="text-sm font-bold text-white">Auditoria de questões</p><p class="text-xs text-slate-400 mt-1">Validação estrutural de gabaritos, alternativas, rastreabilidade e duplicidades. O modelo local pode cometer erros jurídicos: confira a fundamentação na lei vigente antes de confiar no gabarito.</p></div>
+                </div>
+
+                <div class="flex flex-wrap gap-2 items-center">
+                    <button type="button" id="q-generate-button" onclick="startQuestions()" class="qstudio-primary text-sm font-extrabold">Gerar e iniciar questões</button>
+                    <button type="button" id="q-next-button" onclick="startQuestions(true)" class="qstudio-secondary">Próximo lote inédito</button>
+                    <button type="button" onclick="resetQuestionCycle()" class="qstudio-secondary">Reiniciar cobertura</button>
+                    <button type="button" onclick="clearQuestionFilters()" class="qstudio-secondary">Limpar filtros</button>
+                    <button type="button" onclick="openErrors()" class="qstudio-secondary">Caderno de erros</button>
+                </div>
                 <p id="question-progress-summary" class="text-xs text-[#E5C158]" aria-live="polite"></p>
-                <p id="q-status" class="text-sm text-slate-400" role="status" aria-live="polite"></p><p id="q-coverage" class="text-xs text-[#E5C158]" role="status" aria-live="polite"></p>
+                <p id="q-status" class="text-sm text-slate-400" role="status" aria-live="polite"></p>
+                <p id="q-coverage" class="text-xs text-[#E5C158]" role="status" aria-live="polite"></p>
             </div>
 
             <div class="bg-[#0A1426] border border-[#172642] rounded-xl p-4 space-y-2" id="auto-questions-section">
@@ -2798,7 +2927,8 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
         </div>
     </footer>
 
-    <script>
+    <script defer src="assets/pmdf-webllm.js"></script>
+        <script>
         // ============================================================================
         // BASE DE CONHECIMENTO TÁTICA INTEGRADA (AS 5 LEIS PRINCIPAIS DA PMDF)
         // Garante funcionamento 100% instantâneo e sem falhas mesmo em arquivo local
