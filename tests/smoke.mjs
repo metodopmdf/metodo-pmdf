@@ -25,7 +25,7 @@ function createClient(fetchImpl=async()=>({ok:true,status:200,json:async()=>[]})
     if(!elements.has(id))elements.set(id,{
       id,value:defaults[id]??'',innerHTML:'',textContent:'',className:'',disabled:false,hidden:false,style:{},
       classList:{add(){},remove(){},toggle(){},contains(){return false}},
-      replaceChildren(){},prepend(){},dispatchEvent(){},scrollIntoView(){},addEventListener(){},setAttribute(){},append(){},appendChild(){},remove(){},
+      replaceChildren(){},prepend(){},dispatchEvent(){},scrollIntoView(){},addEventListener(){},setAttribute(){},querySelector(){return null},append(){},appendChild(){},remove(){},
     });
     return elements.get(id);
   }
@@ -345,98 +345,44 @@ for(const g of Object.values(examApp.BUILTIN_PMDF_GUIDES)){
   }
 }
 
-// Teste do roteador real da interface: o modo WebLLM deve chamar o controlador
-// externo, sem modificar o motor determinístico em modo Tradicional.
-const aiBridge=createClient(),aiApp=aiBridge.application;
-aiApp.auth('qa-bridge');aiApp.choose('cpm');
-let aiCalls=0;
-aiBridge.win.PMDFQuestionAI={
-  start:async more=>{aiCalls++;return more?'continuacao':'novo';},
-  stop(){},checkCompatibility:async()=>{}
-};
-aiApp.setQuestionEngine('webllm');
-await aiApp.startQuestions();
-assert.equal(aiCalls,1,'Botão principal não foi roteado para WebLLM');
-await aiApp.startQuestions(true);
-assert.equal(aiCalls,2,'Próximo lote não encaminhou para WebLLM');
-aiApp.setQuestionEngine('local');
-aiBridge.$('q-format').value='CE';
-await aiApp.startQuestions();
-assert(aiApp.questionState()?.items.length>0,'Retorno ao motor tradicional falhou');
-
-
-// Fluxo real da interface no modo adaptativo (não simular a lógica do fallback):
-// não deve iniciar modelo, GPU nem serviços de inferência e mantém CE/MC e gabarito.
-const safeBrowser=createClient(),safeApp=safeBrowser.application;
-safeApp.auth('qa-adaptativo');safeApp.choose('lai');
-let unsafeGPUAttempts=0;
-safeBrowser.win.PMDFWebLLM={
-  async compatibility(){unsafeGPUAttempts++;throw Error('O modo seguro consultou GPU indevidamente');},
-  async load(){unsafeGPUAttempts++;throw Error('O modo seguro carregou modelo indevidamente');},
-  async generate(){unsafeGPUAttempts++;throw Error('O modo seguro executou IA indevidamente');}
-};
-const safeController=readFileSync(new URL('../assets/pmdf-question-ai.js',import.meta.url),'utf8');
-new Function('window',safeController)(safeBrowser.win);
-safeBrowser.$('q-ai-backend').value='safe';
-safeBrowser.$('q-source').value='current';
-safeBrowser.$('q-format').value='CE';
-safeBrowser.$('q-level').value='intermediario';
-safeApp.setQuestionEngine('webllm');
-await safeApp.startQuestions();
-const safeCE=safeApp.questionState();
-assert.equal(safeCE.engine,'adaptive','Fallback não sinalizou origem por regras');
-assert(safeCE.items.length>0&&safeCE.items.length<=15,'Modo seguro ultrapassou lote máximo de 15');
-assert(safeCE.items.every(q=>q.type==='CE'&&['C','E'].includes(q.answer)),'Modo seguro perdeu gabaritos CE');
-assert.equal(unsafeGPUAttempts,0,'Modo adaptativo iniciou operação WebGPU');
-safeBrowser.$('q-format').value='MC';
-await safeApp.startQuestions();
-const safeMC=safeApp.questionState();
-assert.equal(safeMC.engine,'adaptive','Modalidade MC não preservou modo seguro');
-assert(safeMC.items.length>0&&safeMC.items.length<=15,'MC deve respeitar lote seguro');
-assert(safeMC.items.every(q=>q.type==='MC'&&[4,5].includes(q.options.length)&&
-  'ABCDE'.slice(0,q.options.length).includes(q.answer)),'Modo seguro perdeu MC/gabarito');
-assert.equal(unsafeGPUAttempts,0,'Modo seguro MC inicializou modelo');
-// Catálogo inteiro em modo seguro deve processar uma lei por lote, não todas de uma vez.
-safeBrowser.$('q-source').value='all';
-safeBrowser.$('q-format').value='CE';
-await safeApp.startQuestions();
-assert(safeApp.questionState().items.length>0,'Catálogo seguro não gerou lote');
-assert.equal(safeApp.store.get('q:adaptive:all:cursor'),'1','Cursor por lei não avançou');
-await safeApp.startQuestions(true);
-assert.equal(safeApp.store.get('q:adaptive:all:cursor'),'2','Segundo lote não avançou para próxima lei');
-assert.equal(unsafeGPUAttempts,0,'Catálogo seguro tentou carregar IA');
-
-
-// Regressão do erro real: "O material não possui novas questões verificáveis".
-// Quando o candidato percorre todo o conjunto seguro, a rodada seguinte
-// deve ser identificada como revisão e continuar funcional, sem alegar ineditismo.
-const exhaustedBrowser=createClient(),exhaustedApp=exhaustedBrowser.application;
-exhaustedApp.auth('qa-ciclo-esgotado');
-exhaustedApp.choose('lai');
-new Function('window',safeController)(exhaustedBrowser.win);
-exhaustedBrowser.$('q-source').value='current';
-exhaustedBrowser.$('q-format').value='MC';
-exhaustedBrowser.$('q-level').value='intermediario';
-exhaustedBrowser.$('q-ai-backend').value='safe';
-exhaustedApp.setQuestionEngine('webllm');
-let gotReview=false,uniqueMC=new Set();
-for(let turn=0;turn<65;turn++){
-  await exhaustedApp.startQuestions(true);
-  const batch=exhaustedApp.questionState();
-  assert(batch?.items.length>0,'A geração segura parou após esgotar o banco');
-  assert(batch.items.every(q=>q.type==='MC'&&[4,5].includes(q.options.length)&&
-    'ABCDE'.slice(0,q.options.length).includes(q.answer)));
-  if(batch.review){
-    gotReview=true;
-    assert.match(exhaustedBrowser.$('q-status').textContent,/REVISÃO/,'A rodada repetida não foi rotulada');
-    assert.match(exhaustedBrowser.$('q-coverage').textContent,/rodada/i,'Cobertura da revisão ausente');
-    break;
-  }
-  for(const q of batch.items)uniqueMC.add(q.coverageId);
+// Testa o roteador real do motor neural, sem serviço pago nem GPU.
+const neuralCode=readFileSync(new URL('../assets/pmdf-neural-questions.js',import.meta.url),'utf8');
+function connectNeural(client){
+  new Function('window','localStorage','setTimeout',neuralCode)(
+    client.win,client.localStorage,(resolve)=>{queueMicrotask(resolve);return 0;});
+  assert(client.win.PMDFNeuralQuestions,'Motor neural não carregou');
 }
-assert(gotReview,'O modo seguro não retomou automaticamente a revisão depois de esgotar questões MC');
-assert(uniqueMC.size>=1,'O teste não percorreu questões inéditas antes da revisão');
-assert.equal(exhaustedBrowser.$('q-ai-backend').value,'safe');
+const bridge=createClient(),bridgeApp=bridge.application;
+connectNeural(bridge);bridgeApp.auth('qa-motor-neural');bridgeApp.choose('lai');
+bridge.$('q-source').value='current';bridge.$('q-level').value='intermediario';
+bridge.$('q-format').value='CE';bridge.$('q-neural-target').value='30';
+bridgeApp.setQuestionEngine('neural');
+await bridgeApp.startQuestions();
+let batch=bridgeApp.questionState();
+assert(batch?.items.length>0&&batch.engine==='neural','Motor neural não foi acionado');
+assert(batch.items.every(q=>q.type==='CE'&&['C','E'].includes(q.answer)),'Gabaritos CE neurais inválidos');
+const firstIDs=new Set(batch.items.map(q=>q.coverageId));
+await bridgeApp.startQuestions(true);
+batch=bridgeApp.questionState();
+assert(batch?.items.length>0,'Próximo lote neural não retornou questões');
+if(batch.coverage?.shown>30)assert(batch.items.every(q=>!firstIDs.has(q.coverageId)),'Lote repetido antes da cobertura');
+bridge.$('q-format').value='MC';
+await bridgeApp.startQuestions();
+batch=bridgeApp.questionState();
+assert(batch?.items.length>0,'Motor neural sem múltipla escolha no guia');
+assert(batch.items.every(q=>q.type==='MC'&&q.options.length===5&&
+  new Set(q.options).size===5&&'ABCDE'.includes(q.answer)),
+  'Múltipla escolha neural com alternativas ou gabaritos inconsistentes');
+bridge.$('q-format').value='MIX';
+await bridgeApp.startQuestions();
+batch=bridgeApp.questionState();
+assert(batch?.items.length>0,'Motor misto neural vazio');
+assert(batch.items.some(q=>q.type==='CE')&&batch.items.some(q=>q.type==='MC'),
+  'Motor misto precisa combinar CE e MC');
+bridgeApp.setQuestionEngine('local');
+bridge.$('q-format').value='CE';
+await bridgeApp.startQuestions();
+assert(bridgeApp.questionState()?.items.length>0,'Alternância para Tradicional falhou');
 
 // Documento longo e explícito: o gerador deve atingir mais de 100 questões
 // apenas se existirem dispositivos e alterações comprováveis na própria fonte.
@@ -459,13 +405,13 @@ assert(comprehensiveMC.every(q=>q.options.length===4&&
 const updatedSource=comprehensiveSource.replace('setor administrativo de referência 1','setor administrativo de referência 1 renovado');
 const updatedGuide=app.analyzeLawText(updatedSource,'Regulamento sintético de 80 dispositivos — QA');
 const changedClient=createClient(),changedApp=changedClient.application;
-changedApp.auth('qa-versao-fonte');
-changedApp.choose('lai');
-new Function('window',safeController)(changedClient.win);
-changedClient.$('q-ai-backend').value='safe';
-changedApp.setQuestionEngine('webllm');
+changedApp.auth('qa-versao-fonte');changedApp.choose('lai');
+changedClient.$('q-source').value='current';
+changedClient.$('q-neural-target').value='30';
+connectNeural(changedClient);
+changedApp.setQuestionEngine('neural');
 await changedApp.startQuestions();
-assert(changedApp.questionState()?.items.length>0,'Regressão do catálogo após mudança de fonte');
+assert(changedApp.questionState()?.items.length>0,'Gerador neural falhou após mudança de fonte');
 
-console.log('PASSOU: integração do elaborador, 75 dispositivos, lotes inéditos, 26 normas, 3 níveis, 468 resumos, questões MC/CE, importação, redação A4, flashcards e sincronização simulada.');
+console.log('PASSOU: integração do elaborador tradicional e motor neural, 75 dispositivos, lotes inéditos, 26 normas, 3 níveis, 468 resumos, questões MC/CE, importação, redação A4, flashcards e sincronização simulada.');
 console.log(JSON.stringify({counts,walkthrough},null,2));
