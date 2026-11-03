@@ -2241,6 +2241,50 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
     <!-- Segurança real: controle de gravação no GitHub e permissões no Supabase; não é possível impedir cópia do HTML público. -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
 
+
+<style id="pmdf-ux-audit-20261103">
+/* Simplificação visual sem alterar funções de estudo. */
+body .pmdf-flow{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.85rem 1rem;margin:-.35rem 0 1.35rem;border:1px solid var(--border-subtle);border-radius:14px;background:var(--bg-card);box-shadow:var(--shadow-card)}
+body .pmdf-flow-copy{display:flex;align-items:center;gap:.45rem .9rem;flex-wrap:wrap}
+body .pmdf-flow-copy strong{font-size:.78rem;color:var(--accent)}
+body .pmdf-flow-copy span{font-size:.84rem;line-height:1.55;color:var(--text-secondary)}
+body #pmdf-primary-jump{min-height:43px;flex-shrink:0;padding:.6rem .95rem;border:1px solid var(--border-strong);background:var(--bg-raised);color:var(--text-primary);font-weight:700;border-radius:10px}
+body #pmdf-primary-jump:hover{border-color:var(--accent);background:var(--accent-soft)}
+body .pmdf-advanced-settings,body .pmdf-more-actions{display:block;width:100%;min-width:0;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:12px}
+body .pmdf-advanced-settings>summary,body .pmdf-more-actions>summary{display:flex;align-items:center;gap:.65rem;flex-wrap:wrap;list-style:none;cursor:pointer;padding:.85rem 1rem;background:var(--bg-raised);color:var(--text-primary);border-radius:11px;font-weight:700}
+body .pmdf-advanced-settings>summary::-webkit-details-marker,body .pmdf-more-actions>summary::-webkit-details-marker{display:none}
+body .pmdf-advanced-settings>summary::after,body .pmdf-more-actions>summary::after{content:"⌄";margin-left:auto;color:var(--accent)}
+body .pmdf-advanced-settings[open]>summary::after,body .pmdf-more-actions[open]>summary::after{content:"⌃"}
+body .pmdf-advanced-settings small,body .pmdf-more-actions small{font-size:.75rem;color:var(--text-secondary);font-weight:500}
+body .pmdf-advanced-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;padding:1rem}
+body .pmdf-advanced-grid>.pmdf-param-role,body .pmdf-advanced-grid>.pmdf-param-board,body .pmdf-advanced-grid>.pmdf-param-level,body .pmdf-advanced-grid>.pmdf-param-summary{grid-column:span 1}
+body .pmdf-advanced-grid>:not(.pmdf-param-role):not(.pmdf-param-board):not(.pmdf-param-level):not(.pmdf-param-summary){grid-column:1/-1}
+body .pmdf-question-actions{display:flex;align-items:flex-start;gap:.75rem;flex-wrap:wrap}
+body .pmdf-primary-actions,body .pmdf-extra-actions{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+body .pmdf-primary-actions,body .pmdf-question-actions>.pmdf-more-actions{flex:1 1 295px}
+body .pmdf-extra-actions{padding:1rem}
+body #auto-questions-section{background:var(--bg-card)!important}
+body #auto-questions-section .pmdf-import-body{padding:1rem;display:grid;gap:.65rem}
+body #q-generate-button,body #generate-btn,body #essay-btn,body #anki-start{min-height:46px}
+body :is(.pmdf-advanced-settings,.pmdf-more-actions)>summary:focus-visible{outline:3px solid var(--accent)!important;outline-offset:3px}
+@media(max-width:1000px){body .pmdf-advanced-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){
+ body nav.pmdf-app-tabs{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:4px!important;overflow:visible!important}
+ body nav.pmdf-app-tabs>button{flex:none!important;width:100%;min-width:0;min-height:44px;padding:.52rem .3rem!important;font-size:.75rem!important;line-height:1.2;white-space:normal!important;gap:.25rem!important;justify-content:center}
+ body nav.pmdf-app-tabs>button:nth-child(-n+3){grid-column:span 2}
+ body nav.pmdf-app-tabs>button:nth-child(n+4){grid-column:span 3}
+ body nav.pmdf-app-tabs>button i{width:15px!important;height:15px!important;flex-shrink:0}
+ body .pmdf-flow{flex-direction:column;align-items:stretch}
+ body #pmdf-primary-jump{width:100%}
+ body .pmdf-advanced-grid{grid-template-columns:1fr;padding:.85rem}
+ body .pmdf-advanced-grid>.pmdf-param-role,body .pmdf-advanced-grid>.pmdf-param-board,body .pmdf-advanced-grid>.pmdf-param-level,body .pmdf-advanced-grid>.pmdf-param-summary{grid-column:1/-1}
+ body .pmdf-question-actions{display:block}
+ body .pmdf-primary-actions>button,body .pmdf-extra-actions>button{flex:1 1 100%}
+ body .pmdf-question-actions>.pmdf-more-actions{margin-top:.7rem}
+ body .pmdf-extra-actions{flex-direction:column;align-items:stretch}
+}
+@media print{body .pmdf-flow{display:none!important}}
+</style>
 <style id="pmdf-a4-color-print">
 /* Exportação fiel ao caderno escuro no A4. Incluída após os estilos legados
    para que a identidade de tela seja preservada no PDF. */
@@ -2446,7 +2490,7 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
                 </div>
             </div>
             <div class="pmdf-header-actions">
-                <div id="pomo" class="no-print flex items-center gap-2 text-xs bg-[#040912]/70 px-3 py-2 rounded-xl border border-[#172642]"><span id="pomo-mode" class="text-[#E5C158] font-bold">FOCO</span><span id="pomo-time" class="font-mono text-white text-sm" aria-label="Tempo de estudo decorrido">00:00</span><button onclick="pomoToggle()" id="pomo-btn" class="px-2.5 py-1 rounded-lg bg-[#D4AF37] text-[#050B16] font-bold">▶</button><button onclick="pomoReset()" class="px-2.5 py-1 rounded-lg bg-[#0E1B33] text-slate-300">↺</button></div>
+                <div id="pomo" class="no-print flex items-center gap-2 text-xs bg-[#040912]/70 px-3 py-2 rounded-xl border border-[#172642]"><span id="pomo-mode" class="text-[#E5C158] font-bold">FOCO</span><span id="pomo-time" class="font-mono text-white text-sm" aria-label="Tempo de estudo decorrido">00:00</span><button onclick="pomoToggle()" id="pomo-btn" type="button" title="Iniciar ou pausar cronômetro" aria-label="Iniciar ou pausar cronômetro" class="px-2.5 py-1 rounded-lg bg-[#D4AF37] text-[#050B16] font-bold">▶</button><button onclick="pomoReset()" type="button" title="Reiniciar cronômetro" aria-label="Reiniciar cronômetro" class="px-2.5 py-1 rounded-lg bg-[#0E1B33] text-slate-300">↺</button></div>
                 <button type="button" id="theme-toggle" onclick="toggleTheme()" aria-label="Alternar entre tema claro e escuro" aria-pressed="false" class="no-print inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#1E2E4F] bg-[#0E1B33] text-slate-100 font-semibold text-xs hover:border-[#D4AF37] transition"><span id="theme-symbol" aria-hidden="true">☀</span><span id="theme-label">Tema claro</span></button>
                 <span id="cloud-save-status" role="status" aria-live="polite" class="no-print text-xs font-semibold text-emerald-300">◌ Sincronização</span>
                 <details class="pmdf-account-menu">
@@ -2466,14 +2510,22 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
     <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 space-y-6">
 
 
-        <nav class="pmdf-app-tabs no-print flex gap-1 sm:gap-2 border-b border-[#172642] overflow-x-auto whitespace-nowrap" role="tablist">
-            <button id="tab-btn-leis" onclick="showTab('leis')" class="px-3 sm:px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="scale" class="w-4 h-4"></i>Mapeador de Leis</button>
-            <button type="button" id="tab-btn-questoes" onclick="showTab('questoes')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="list-checks" class="w-4 h-4"></i>Questões</button>
-            <button type="button" id="tab-btn-anki" onclick="showTab('anki')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="layers" class="w-4 h-4"></i>Flashcards Anki</button>
-            <button type="button" id="tab-btn-resultados" onclick="showTab('resultados');renderResults()" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="chart-column" class="w-4 h-4"></i>Resultados</button>
-            <button id="tab-btn-redacao" onclick="showTab('redacao')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="pen-line" class="w-4 h-4"></i><span class="sm:hidden">Redação</span><span class="hidden sm:inline">Corretor de Redação (Cebraspe)</span></button>
+        <nav class="pmdf-app-tabs no-print flex gap-1 sm:gap-2 border-b border-[#172642] overflow-x-auto whitespace-nowrap" role="tablist" aria-label="Ferramentas de estudo" onkeydown="pmdfTabKeydown(event)">
+            <button id="tab-btn-leis" role="tab" aria-controls="tab-leis" aria-selected="true" tabindex="0" onclick="showTab('leis')" class="px-3 sm:px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="scale" class="w-4 h-4"></i><span class="hidden sm:inline">Mapeador de Leis</span><span class="sm:hidden">Leis</span></button>
+            <button type="button" id="tab-btn-questoes" role="tab" aria-controls="tab-questoes" aria-selected="false" tabindex="-1" onclick="showTab('questoes')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="list-checks" class="w-4 h-4"></i>Questões</button>
+            <button type="button" id="tab-btn-anki" role="tab" aria-controls="tab-anki" aria-selected="false" tabindex="-1" onclick="showTab('anki')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="layers" class="w-4 h-4"></i>Flashcards</button>
+            <button type="button" id="tab-btn-resultados" role="tab" aria-controls="tab-resultados" aria-selected="false" tabindex="-1" onclick="showTab('resultados');renderResults()" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="chart-column" class="w-4 h-4"></i>Resultados</button>
+            <button id="tab-btn-redacao" role="tab" aria-controls="tab-redacao" aria-selected="false" tabindex="-1" onclick="showTab('redacao')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="pen-line" class="w-4 h-4"></i><span class="sm:hidden">Redação</span><span class="hidden sm:inline">Corretor de Redação (Cebraspe)</span></button>
         </nav>
-        <div id="tab-leis" class="space-y-6">
+        <div id="pmdf-context-bar" class="pmdf-flow no-print" aria-label="Orientações para uso das ferramentas">
+          <div id="pmdf-context-leis" class="pmdf-flow-copy"><strong>Como começar</strong><span>1 · Escolha a lei ou material · 2 · Personalize se desejar · 3 · Gere e estude</span></div>
+          <div id="pmdf-context-questoes" class="pmdf-flow-copy hidden"><strong>Como começar</strong><span>1 · Escolha a fonte · 2 · Configure o simulado · 3 · Gere e responda</span></div>
+          <div id="pmdf-context-anki" class="pmdf-flow-copy hidden"><strong>Como começar</strong><span>1 · Selecione a matéria · 2 · Inicie a revisão · 3 · Revele e avalie</span></div>
+          <div id="pmdf-context-resultados" class="pmdf-flow-copy hidden"><strong>Como começar</strong><span>Selecione um tema e acompanhe acertos, erros e tempo de estudo.</span></div>
+          <div id="pmdf-context-redacao" class="pmdf-flow-copy hidden"><strong>Como começar</strong><span>1 · Informe o tema · 2 · Cole a redação · 3 · Corrija e leia o relatório</span></div>
+          <button id="pmdf-primary-jump" type="button" onclick="pmdfFocusPrimary()">Ir para a ação ↓</button>
+        </div>
+        <div id="tab-leis" role="tabpanel" aria-labelledby="tab-btn-leis" class="space-y-6">
         <!-- Painel de Configuração e Entrada da Lei -->
         <section class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 shadow-xl no-print">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-4 mb-5 border-b border-[#172642]">
@@ -2603,6 +2655,7 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
                     <textarea id="law-file-preview" rows="9" placeholder="O texto extraído do arquivo aparecerá aqui para conferência e edição." class="w-full px-3 py-3 bg-[#040912] border border-[#1E2E4F] rounded-xl text-sm text-white focus:outline-none focus:border-[#D4AF37] leading-relaxed"></textarea>
                 </div>
                 <!-- Foco do Cargo -->
+                <details id="pmdf-advanced-law" class="pmdf-advanced-settings"><summary>Personalizar análise <small>Cargo, banca, nível, resumo e recorte (opcionais)</small></summary><div class="pmdf-advanced-grid">
                 <div class="md:col-span-12 flex justify-end"><button type="button" onclick="clearMainFilters()" class="px-3 py-2 rounded-xl border border-[#1E2E4F] bg-[#0E1B33] text-slate-200 text-xs font-semibold">↺ Limpar filtros do mapeador</button></div>
                 <div class="pmdf-param-role md:col-span-3">
                     <label for="role-select" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
@@ -2655,6 +2708,7 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
                         placeholder="Ex: Analisar a lei inteira com triagem de Títulos, ou focar apenas no Título II - Dos Crimes contra a Autoridade ou Disciplina Militar"
                         class="w-full px-4 py-2 bg-[#040912]/70 border border-[#172642] rounded-xl text-xs sm:text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-[#D4AF37] transition">
                 </div>
+                </div></details>
             </div>
 
             <!-- Botões de Ação -->
@@ -2712,7 +2766,7 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
         </div><!-- /tab-leis -->
 
 
-        <section id="tab-questoes" class="hidden space-y-5" aria-label="Elaborador de questões">
+        <section id="tab-questoes" role="tabpanel" aria-labelledby="tab-btn-questoes" class="hidden space-y-5" aria-label="Elaborador de questões">
             <div class="qstudio rounded-2xl p-5 sm:p-6 space-y-5 shadow-xl">
                 <div class="flex items-start gap-3">
                     <div class="qstudio-brand" aria-hidden="true"><i data-lucide="brain-circuit"></i></div>
@@ -2800,22 +2854,22 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
                     <div><p class="text-sm font-bold text-white">Auditoria de questões</p><p class="text-xs text-slate-400 mt-1">Verificação de estrutura, cinco alternativas distintas e rastreabilidade à fonte. Confira gabaritos e vigência jurídica: o motor neural não compreende normas como uma IA generativa.</p></div>
                 </div>
 
-                <div class="flex flex-wrap gap-2 items-center">
+                <div class="pmdf-question-actions"><div class="pmdf-primary-actions">
                     <button type="button" id="q-generate-button" onclick="startQuestions()" class="qstudio-primary text-sm font-extrabold">Gerar e iniciar questões</button>
                     <button type="button" id="q-next-button" onclick="startQuestions(true)" class="qstudio-secondary">Próximo lote inédito</button>
+                </div><details id="q-extra-actions" class="pmdf-more-actions"><summary>Outras ações <small>Salvar · Exportar · Filtros · Erros</small></summary><div class="pmdf-extra-actions">
 <button type="button" id="q-neural-save" onclick="saveNeuralQuestions()" class="qstudio-secondary hidden">Salvar lote no Supabase</button>
 <button type="button" id="q-neural-json" onclick="exportNeuralQuestions()" class="qstudio-secondary hidden">Exportar JSON</button>
                     <button type="button" onclick="resetQuestionCycle()" class="qstudio-secondary">Reiniciar cobertura</button>
                     <button type="button" onclick="clearQuestionFilters()" class="qstudio-secondary">Limpar filtros</button>
                     <button type="button" onclick="openErrors()" class="qstudio-secondary">Caderno de erros</button>
-                </div>
+                </div></details></div>
                 <p id="question-progress-summary" class="text-xs text-[#E5C158]" aria-live="polite"></p>
                 <p id="q-status" class="text-sm text-slate-400" role="status" aria-live="polite"></p>
                 <p id="q-coverage" class="text-xs text-[#E5C158]" role="status" aria-live="polite"></p>
             </div>
 
-            <div class="bg-[#0A1426] border border-[#172642] rounded-xl p-4 space-y-2" id="auto-questions-section">
-                <h3 class="font-bold text-[#E5C158] text-sm">📚 Provas anteriores — importação e referências</h3>
+            <details id="auto-questions-section" class="pmdf-more-actions"><summary>📚 Provas anteriores e gabaritos <small>Importação opcional</small></summary><div class="pmdf-import-body">
                 <p class="text-xs text-slate-400">O gerador utiliza o material estudado e não consulta automaticamente bases externas. Para treinar com questões reais, importe a prova e o gabarito; confira a autoria, a licença e a fundamentação.</p>
                 <p id="research-status" class="text-xs text-slate-300" role="status" aria-live="polite">Aguardando início de treino.</p>
                 <details><summary class="cursor-pointer text-xs text-[#E5C158]">Consultar links e fontes de provas</summary><div id="research-results" class="research-results space-y-2 mt-2"></div></details>
@@ -2827,10 +2881,10 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
                     <select id="exam-answer-source" class="block w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="">Importe uma prova primeiro</option></select>
                 </label>
                 <p class="text-xs text-slate-400">Selecione a prova correta antes de anexar o gabarito. O arquivo TXT deve ter uma resposta por linha, por exemplo: 1 A, 2 C, 3 Errado. O sistema não mistura gabaritos de provas diferentes.</p>
-            </div>
+            </div></details>
             <div id="q-panel" class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 hidden" aria-live="polite"></div>
         </section>
-        <section id="tab-anki" class="hidden space-y-5" aria-label="Flashcards com repetição espaçada">
+        <section id="tab-anki" role="tabpanel" aria-labelledby="tab-btn-anki" class="hidden space-y-5" aria-label="Flashcards com repetição espaçada">
             <div class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
                 <div><h2 class="font-bold text-lg text-white">🃏 Flashcards — revisão estilo Anki</h2>
                     <p class="text-sm text-slate-400">Flashcards com perguntas específicas por artigo, lacunas de prazos e requisitos, fundamento rastreável e comparação de dispositivos no nível avançado. Revele a resposta e informe se lembrou para programar corretamente a próxima revisão.</p></div>
@@ -2843,12 +2897,12 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
                     <label class="text-xs text-[#E5C158] font-semibold">Cartões por sessão
                         <select id="anki-batch-size" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="25">25</option><option value="50" selected>50</option><option value="100">100</option><option value="200">200</option><option value="all">Todos (pode ser longo)</option></select></label>
                 </div>
-                <div class="flex gap-2 flex-wrap"><button type="button" onclick="startAnki()" class="px-5 py-2.5 rounded-xl bg-[#D4AF37] text-[#050B16] font-extrabold">Iniciar revisão</button><button type="button" onclick="clearAnkiFilters()" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">↺ Limpar filtros</button></div>
+                <div class="flex gap-2 flex-wrap"><button type="button" id="anki-start" onclick="startAnki()" class="px-5 py-2.5 rounded-xl bg-[#D4AF37] text-[#050B16] font-extrabold">Iniciar revisão</button><button type="button" onclick="clearAnkiFilters()" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">↺ Limpar filtros</button></div>
                 <p id="anki-status" class="text-sm text-slate-400" role="status" aria-live="polite"></p>
             </div>
             <div id="anki-panel" class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 hidden" aria-live="polite"></div>
         </section>
-        <section id="tab-resultados" class="hidden space-y-5" aria-label="Resultados de estudos">
+        <section id="tab-resultados" role="tabpanel" aria-labelledby="tab-btn-resultados" class="hidden space-y-5" aria-label="Resultados de estudos">
           <div class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 space-y-4">
             <h2 class="font-bold text-white text-lg">📊 Meus resultados</h2>
             <p class="text-xs text-slate-400">Histórico privado sincronizado com sua conta, incluindo questões respondidas, acertos, erros, redações e tempo por tema. Itens sem gabarito não entram no percentual.</p>
@@ -2866,7 +2920,7 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
             <div id="results-rows" class="overflow-auto"></div>
           </div>
         </section>
-        <div id="tab-redacao" class="hidden space-y-6">
+        <div id="tab-redacao" role="tabpanel" aria-labelledby="tab-btn-redacao" class="hidden space-y-6">
             <section class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 shadow-xl no-print space-y-4">
                 <div>
                     <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2"><i data-lucide="pen-line" class="w-5 h-5 text-[#E5C158]"></i>Correção de Redação — Padrão CEBRASPE (CFP)</h2>
@@ -5809,11 +5863,28 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         function toggleTheme() { applyTheme(document.body.dataset.theme === 'light' ? 'dark' : 'light'); }
 
         // ---------- Abas e inicialização ----------
+        // UI: navegação acessível sem mudança nas rotinas de estudo.
+        function pmdfTabKeydown(e){
+            if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
+            const buttons=Array.from(document.querySelectorAll('nav.pmdf-app-tabs [role="tab"]'));
+            const i=buttons.indexOf(document.activeElement);if(i<0)return;
+            e.preventDefault();const n=e.key==='Home'?0:e.key==='End'?buttons.length-1:(i+(e.key==='ArrowRight'?1:-1)+buttons.length)%buttons.length;
+            buttons[n].click();buttons[n].focus();
+        }
+        function pmdfFocusPrimary(){
+            const ids={leis:'generate-btn',questoes:'q-generate-button',anki:'anki-start',resultados:'results-topic',redacao:'essay-theme'};
+            const el=$(ids[TAB]||'generate-btn');if(!el)return;
+            el.scrollIntoView({block:'center',behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?'auto':'smooth'});
+            el.focus({preventScroll:true});
+        }
         function showTab(t) {
             TAB = t;
             if(APP_STARTED&&!SESSION_RESTORING)saveStudySession();if(t==='resultados')setTimeout(renderResults,0);
             ['leis', 'questoes', 'anki', 'redacao','resultados'].forEach(k => { $('tab-' + k).classList.toggle('hidden', k !== t);$('tab-btn-'+k).setAttribute('role','tab');$('tab-btn-'+k).setAttribute('aria-selected',String(k===t));
+                $('tab-btn-'+k).setAttribute('tabindex',k===t?'0':'-1');
+                $('pmdf-context-'+k)?.classList.toggle('hidden',k!==t);
                 $('tab-btn-' + k).className = 'px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2 transition ' + (k === t ? 'bg-[#0A1426] text-[#E5C158] border-[#D4AF37]/40' : 'bg-[#040912] text-slate-400 border-[#172642] hover:text-slate-200'); });
+            const menu=document.querySelector('.pmdf-account-menu');if(menu)menu.open=false;
         }
 
 
