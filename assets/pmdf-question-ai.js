@@ -120,11 +120,45 @@ function parse(raw){
   let parsed;
   try{parsed=JSON.parse(text);}
   catch(first){
-    // Alguns modelos compactos acrescentam frases ao JSON solicitado.
+    // Modelos compactos podem acrescentar texto ao redor do JSON.
     const start=text.indexOf('{'),finish=text.lastIndexOf('}');
-    if(start<0||finish<=start)throw Error('O modelo não retornou um objeto JSON completo.');
-    try{parsed=JSON.parse(text.slice(start,finish+1));}
-    catch(_){throw Error('O modelo retornou JSON incompleto ou malformado.');}
+    if(start>=0&&finish>start){
+      try{parsed=JSON.parse(text.slice(start,finish+1));}catch(_){}
+    }
+    // Recupera UMA questão individual completa dentro de um array truncado.
+    // Nunca recupera objetos incompletos e nunca dispensa a validação legal.
+    if(!parsed){
+      const arrayStart=/"(?:questions|questoes|questões|items)"\s*:\s*\[/i.exec(text);
+      if(arrayStart){
+        const searchFrom=arrayStart.index+arrayStart[0].length;
+        const firstBrace=text.indexOf('{',searchFrom);
+        if(firstBrace>=0){
+          let depth=0,inString=false,escaped=false;
+          for(let i=firstBrace;i<text.length;i++){
+            const ch=text[i];
+            if(inString){
+              if(escaped)escaped=false;
+              else if(ch==='\\')escaped=true;
+              else if(ch==='"')inString=false;
+            }else{
+              if(ch==='"')inString=true;
+              else if(ch==='{')depth++;
+              else if(ch==='}'){
+                depth--;
+                if(depth===0){
+                  try{
+                    const complete=JSON.parse(text.slice(firstBrace,i+1));
+                    if(complete&&typeof complete==='object')parsed={questions:[complete]};
+                  }catch(_){}
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    if(!parsed)throw Error('O modelo retornou JSON incompleto ou malformado.');
   }
   if(Array.isArray(parsed))return parsed;
   if(!parsed||typeof parsed!=='object')throw Error('A resposta do modelo não contém questões.');
