@@ -246,8 +246,9 @@ async function start(more=false){
   if(E('q-ai-backend')?.value!=='experimental')
     return H()?.safe?.(more,'Geração por regras locais, sem modelo de linguagem.');
   if(/Android|iPhone|iPad|iPod|Mobile|Silk/i.test(String(root.navigator?.userAgent||''))){
-    notify('Para proteger o celular, o site selecionou o gerador seguro sem GPU.','ok');
-    return H()?.safe?.(more,'IA generativa bloqueada em dispositivos móveis.');
+    H()?.activateSafe?.();
+    notify('Dispositivo móvel detectado. Geração segura sem GPU ativada.');
+    return H()?.safe?.(more,'IA generativa indisponível neste dispositivo.');
   }
   const guides=H().guides();if(!guides.length)return notify('Selecione uma lei ou envie um arquivo.',true);
   if(!L())return failOverToSafe(more,'WebLLM indisponível neste navegador.');
