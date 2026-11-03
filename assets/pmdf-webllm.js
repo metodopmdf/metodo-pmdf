@@ -29,7 +29,11 @@
         if(!gpu.ok)throw Error(gpu.reason);
         if(item.f16&&!gpu.f16)throw Error('Esta GPU não aceita shader-f16. Selecione o modelo Compatível ou Leve.');
         if(engine&&loadedId===modelId)return engine;
-        if(loading)return loading;
+        if(loading){
+            await loading;
+            if(engine&&loadedId===modelId)return engine;
+            return load(modelId,progress);
+        }
         loading=(async()=>{
             const api=await (modulePromise||(modulePromise=import(CDN).catch(e=>{modulePromise=null;throw e;})));
             if(!api.prebuiltAppConfig?.model_list?.some(m=>m.model_id===modelId))
