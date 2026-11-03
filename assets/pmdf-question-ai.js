@@ -5,6 +5,29 @@ const STEPS=['literalidade','requisitos','exceções','caso hipotético','compet
 let job=null;
 const H=()=>root.PMDFQuestionHost, L=()=>root.PMDFWebLLM, E=id=>H()?.$(id);
 const notify=(m,bad=false)=>H()?.toast(m,bad?'error':'ok');
+function describeError(error){
+  if(typeof error==='string'&&error.trim())return error.trim().slice(0,240);
+  if(error&&typeof error==='object'){
+    for(const value of [error.message,error.reason,error.code,error.error]){
+      if(typeof value==='string'&&value.trim())return value.trim().slice(0,240);
+    }
+  }
+  return 'o modelo não conseguiu produzir uma resposta estruturada e válida';
+}
+async function failOverToSafe(more,reason){
+  // Encerrar primeiro o Worker e liberar a GPU para que o fallback não
+  // concorra por memória com o modelo local. Nenhuma assinatura/API é usada.
+  try{L()?.interrupt?.();}catch(_){}
+  H()?.activateSafe?.();
+  progress(null,'O modelo experimental não concluiu a geração. Usando o gerador seguro sem GPU.');
+  notify('A IA experimental não conseguiu estruturar questões válidas. O modo seguro foi ativado automaticamente.');
+  try{
+    return await H()?.safe?.(more,'Substituição automática: '+String(reason||'resposta inválida').slice(0,95));
+  }catch(e){
+    notify('Não foi possível concluir o modo seguro: '+describeError(e),true);
+    return null;
+  }
+}
 function progress(p,m){
   E('q-ai-progress-wrap')?.classList.remove('hidden');
   if(E('q-ai-progress-text'))E('q-ai-progress-text').textContent=String(m||'');
@@ -75,14 +98,28 @@ function duplicate(a,b){
   return U.size>9&&[...A].filter(v=>B.has(v)).length/U.size>.87;
 }
 function parse(raw){
-  let txt=String(raw||'').trim(),fence=String.fromCharCode(96).repeat(3);
-  if(txt.startsWith(fence))txt=txt.slice(3).replace(/^json\s*/i,'').trim();
-  if(txt.endsWith(fence))txt=txt.slice(0,-3).trim();
-  let obj;
-  try{obj=JSON.parse(txt);}
-  catch(e){const found=txt.match(/\{[\s\S]*\}/);if(!found)throw Error('JSON inválido gerado pela IA.');obj=JSON.parse(found[0]);}
-  if(!obj||!Array.isArray(obj.questions))throw Error('A resposta não contém a lista questions.');
-  return obj.questions;
+  const fence=String.fromCharCode(96).repeat(3);
+  let text=String(raw??'').trim();
+  if(!text)throw Error('O modelo devolveu uma resposta vazia.');
+  if(text.startsWith(fence))text=text.slice(3).replace(/^json\s*/i,'').trim();
+  if(text.endsWith(fence))text=text.slice(0,-3).trim();
+  let parsed;
+  try{parsed=JSON.parse(text);}
+  catch(first){
+    // Alguns modelos compactos acrescentam frases ao JSON solicitado.
+    const start=text.indexOf('{'),finish=text.lastIndexOf('}');
+    if(start<0||finish<=start)throw Error('O modelo não retornou um objeto JSON completo.');
+    try{parsed=JSON.parse(text.slice(start,finish+1));}
+    catch(_){throw Error('O modelo retornou JSON incompleto ou malformado.');}
+  }
+  if(Array.isArray(parsed))return parsed;
+  if(!parsed||typeof parsed!=='object')throw Error('A resposta do modelo não contém questões.');
+  const list=parsed.questions||parsed.questoes||parsed['questões']||parsed.items;
+  if(Array.isArray(list))return list;
+  const single=parsed.question||parsed.questao||parsed['questão'];
+  if(single&&typeof single==='object'&&!Array.isArray(single))return [single];
+  if(typeof parsed.statement==='string'&&typeof parsed.answer==='string')return [parsed];
+  throw Error('O modelo não entregou uma lista de questões reconhecível.');
 }
 function validate(q,u,fmt,level,prior){
   if(!q||typeof q!=='object')return null;
@@ -155,7 +192,7 @@ async function start(more=false){
     return H()?.safe?.(more,'IA generativa bloqueada em dispositivos móveis.');
   }
   const guides=H().guides();if(!guides.length)return notify('Selecione uma lei ou envie um arquivo.',true);
-  if(!L())return notify('WebLLM indisponível. Recarregue a página.',true);
+  if(!L())return failOverToSafe(more,'WebLLM indisponível neste navegador.');
   const fmt=E('q-format')?.value==='MC'?'MC':'CE',level=H().level(E('q-level')?.value),
     model=E('q-ai-model')?.value,source=units(guides);
   if(!source.length)return notify('O documento não contém trechos completos suficientes.',true);
@@ -166,12 +203,11 @@ async function start(more=false){
   // Em cada clique, produza apenas poucas questões, mantendo o uso de GPU controlado.
   const batchLimit=fmt==='CE'?6:3;
   const roundTarget=Math.min(target,bank.questions.length+batchLimit);
-  const compatible=await L().compatibility();
+  let compatible;
+  try{compatible=await L().compatibility();}
+  catch(e){return failOverToSafe(more,describeError(e));}
   if(H().mode?.()==='local')return;
-  if(!compatible.ok){
-    notify(compatible.reason+' O modo seguro será utilizado.','error');
-    return H()?.safe?.(more,'Hardware incompatível com inferência generativa local.');
-  }
+  if(!compatible?.ok)return failOverToSafe(more,compatible?.reason||'WebGPU indisponível');
   const run={cancelled:false};job=run;
   const buttons=['q-generate-button','q-next-button'];
   const locked=['q-source','q-format','q-level','q-board','q-ai-model','q-ai-target'];
@@ -201,7 +237,7 @@ async function start(more=false){
       }catch(e){
         if(run.cancelled)break;
         failures++;bank.rejected++;saveBank(key,bank);
-        if(failures>=4)throw Error('Quatro respostas consecutivas inválidas: '+e.message);
+        if(failures>=3)throw Error('O modelo retornou três respostas consecutivas sem estrutura válida: '+describeError(e));
         continue;
       }
       let added=0;
@@ -210,7 +246,7 @@ async function start(more=false){
         if(q){bank.questions.push(q);added++;}else bank.rejected++;
       }
       saveBank(key,bank);empty=added?0:empty+1;
-      if(empty>=5)break;
+      if(empty>=3)break;
       // Deixe um intervalo entre lotes para a GPU e a interface atualizarem.
       await new Promise(resolve=>setTimeout(resolve,120));
     }
@@ -221,13 +257,23 @@ async function start(more=false){
     progress(bank.questions.length/target,reason+' '+bank.questions.length+'/'+target+' aceitas; '+bank.rejected+' rejeitadas.');
     if(E('q-status'))E('q-status').textContent=reason+' Total: '+bank.questions.length+'/'+target+' questões.';
     if(E('q-coverage'))E('q-coverage').textContent='IA local: '+bank.questions.length+' itens aceitos estruturalmente; '+bank.rejected+' descartados. A exatidão jurídica exige conferência.';
-    if(!bank.questions.length)notify('Nenhuma questão válida foi produzida. Tente outra fonte ou modelo.',true);
-  }catch(e){
-    saveBank(key,bank);showBank(bank,key,model);
-    progress(null,'Geração pausada: '+e.message+'. Foram preservadas '+bank.questions.length+' questões.');
-    notify('Falha de geração: '+e.message,true);
     if(!bank.questions.length&&!run.cancelled)
-      await H()?.safe?.(more,'IA local indisponível; o sistema preservou as questões por regras.');
+      await failOverToSafe(more,'O modelo gerou itens sem evidências ou gabaritos verificáveis.');
+  }catch(e){
+    saveBank(key,bank);
+    const reason=describeError(e);
+    if(run.cancelled){
+      if(bank.questions.length)showBank(bank,key,model);
+      progress(null,'Geração interrompida; '+bank.questions.length+' questões experimentais preservadas.');
+    }else if(bank.questions.length){
+      showBank(bank,key,model);
+      H()?.activateSafe?.();
+      try{L()?.interrupt?.();}catch(_){}
+      progress(null,'O modelo falhou, mas '+bank.questions.length+' questões válidas foram preservadas. O próximo lote usará o modo seguro.');
+      notify('Questões experimentais válidas preservadas. Próximos lotes usarão o modo seguro.');
+    }else{
+      await failOverToSafe(more,reason);
+    }
   }finally{
     job=null;
     for(const id of buttons)if(E(id))E(id).disabled=false;
