@@ -19,7 +19,7 @@ const localStorage={getItem:k=>fakeStorage.get(k)||null,setItem:(k,v)=>fakeStora
 const rootWindow={};
 const api=new Function("window","localStorage","setTimeout",asset+";return window.PMDFNeuralQuestions;")(rootWindow,localStorage,fn=>fn());
 const neural=api.testModel();
-const textRows=Array.from({length:60},(_,i)=>({
+const textRows=Array.from({length:120},(_,i)=>({
   law:"Direito Administrativo",article:"Artigo "+(i+1),
   text:(i%3===0
     ?"A autoridade poderá rever os atos administrativos, observadas a competência legal e a motivação do respectivo procedimento."
@@ -31,7 +31,7 @@ const textRows=Array.from({length:60},(_,i)=>({
 for(const mode of ["APENAS_CE","ME_CORRETA","ME_INCORRETA","MISTO_IA"]){
   const result=neural.criarBanco(textRows,{formato:mode,disciplina:"Direito",assunto:"Atos"});
   assert.ok(result.questoes.length,mode+" deve gerar questões");
-  if(mode==="MISTO_IA")assert.ok(result.questoes.length>100,"Texto extenso deve gerar mais de 100 questões mistas");
+  if(mode==="MISTO_IA")assert.ok(result.questoes.length>100,"Texto extenso com variedade suficiente deve gerar mais de 100 questões mistas");
   for(const q of result.questoes){
     assert.ok(q.hash_unico&&q.enunciado&&q.gabarito);
     if(q.formato==="MULTIPLA_ESCOLHA"){
