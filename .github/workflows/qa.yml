@@ -22,8 +22,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Smoke tests - três níveis, questões e sincronização simulada
-        run: node tests/smoke.mjs && node tests/gemini.mjs
+      - name: Smoke tests: três níveis, gerador neural, questões e sincronização simulada
+        run: node tests/smoke.mjs && node tests/neural-questions.test.cjs
 
   online:
     name: Operação online em Chromium (desktop e celular)
@@ -47,16 +47,6 @@ jobs:
           PMDF_ONLINE_URL: https://metodopmdf.github.io/metodo-pmdf/
           PMDF_DEPLOY_ATTEMPTS: '65'
         run: node tests/online-e2e.mjs
-      - name: Testar Gemini real (somente com conta QA autorizada)
-        env:
-          PMDF_GEMINI_QA_USER: ${{ secrets.PMDF_GEMINI_QA_USER }}
-          PMDF_GEMINI_QA_PASSWORD: ${{ secrets.PMDF_GEMINI_QA_PASSWORD }}
-        run: |
-          if [ -z "$PMDF_GEMINI_QA_USER" ] || [ -z "$PMDF_GEMINI_QA_PASSWORD" ]; then
-            echo "::notice::QA do Gemini REAL não executado: credenciais de uma conta de testes não configuradas. Chromium testa a interface com backend simulado."
-          else
-            node tests/gemini-live.mjs
-          fi
       - name: Guardar relatório e capturas (inclusive falhas)
         if: always()
         uses: actions/upload-artifact@v4
