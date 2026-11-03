@@ -1460,7 +1460,27 @@
       body[data-theme="light"] .research-results a{color:#805b00}
       .research-results button{border:1px solid #7c8494;border-radius:9px;padding:5px 9px;min-height:36px}
       .flash-grade button{min-height:50px}
-    </style>
+    
+/* Flashcards v2 — tipografia, contraste e conteúdo não truncado */
+#anki-panel .anki-meta{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;justify-content:space-between;font-size:.78rem;color:var(--text-muted,#94a3b8);margin:.8rem 0}
+#anki-panel .anki-tags{display:flex;gap:.5rem;flex-wrap:wrap;margin:.9rem 0}
+#anki-panel .anki-tags span{border:1px solid var(--border-subtle,#334155);border-radius:999px;padding:.28rem .65rem;background:var(--bg-raised,#101e33);font-size:.74rem;color:var(--text-primary,#e2e8f0);font-weight:650}
+#anki-panel .anki-law{font-size:.87rem;color:var(--text-muted,#94a3b8);margin:.5rem 0 1rem;overflow-wrap:anywhere}
+#anki-panel .anki-study-surface{border:1px solid var(--border-subtle,#334155);border-radius:18px;background:var(--bg-raised,#101e33);padding:clamp(1.15rem,3vw,2rem);min-height:175px;box-shadow:0 8px 24px rgba(0,0,0,.08)}
+#anki-panel .anki-kicker{color:var(--text-accent,#d4af37);font-size:.77rem;font-weight:750;letter-spacing:.045em;margin:0 0 1rem}
+#anki-panel .anki-question{font-size:clamp(1.02rem,1.3vw,1.23rem);line-height:1.7;white-space:pre-line;overflow-wrap:anywhere;word-break:normal;color:var(--text-primary,#e2e8f0)}
+#anki-panel .anki-proof{border-left:3px solid var(--accent,#d4af37);padding:1rem 1.15rem;margin-top:1rem;background:var(--bg-raised,#101e33);border-radius:0 12px 12px 0}
+#anki-panel .anki-proof>b{font-size:.82rem;color:var(--text-accent,#d4af37)}
+#anki-panel .anki-proof>p{font-size:.88rem;line-height:1.6;margin-top:.55rem;white-space:pre-line;overflow-wrap:anywhere}
+#anki-panel .anki-proof .anki-source-note{font-size:.76rem;color:var(--text-muted,#94a3b8)}
+#anki-panel .anki-hint{margin-top:1rem;font-size:.83rem;color:var(--text-muted,#94a3b8)}
+#anki-panel .anki-actions{display:flex;gap:.65rem;flex-wrap:wrap;margin-top:1.2rem}
+#anki-panel .anki-actions button{flex:1;min-width:170px}
+#anki-panel .anki-finish{padding:1.5rem 0}
+#printable-area .study-card .front p,#printable-area .study-card .back p{white-space:pre-line;overflow-wrap:anywhere}
+@media(max-width:540px){#anki-panel .anki-actions button{flex:1 1 100%}#anki-panel .anki-study-surface{min-height:150px}}
+
+</style>
 
     <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -2813,7 +2833,7 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
         <section id="tab-anki" class="hidden space-y-5" aria-label="Flashcards com repetição espaçada">
             <div class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
                 <div><h2 class="font-bold text-lg text-white">🃏 Flashcards — revisão estilo Anki</h2>
-                    <p class="text-sm text-slate-400">Flashcards Anki de frente e verso, com conceitos, requisitos, exceções e casos práticos adaptados ao nível do candidato. Ao revelar o verso e avançar, o cartão recebe uma data de revisão automaticamente, sem avaliação Certo/Errado.</p></div>
+                    <p class="text-sm text-slate-400">Flashcards com perguntas específicas por artigo, lacunas de prazos e requisitos, fundamento rastreável e comparação de dispositivos no nível avançado. Revele a resposta e informe se lembrou para programar corretamente a próxima revisão.</p></div>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <label class="text-xs text-[#E5C158] font-semibold">Material / lei
                         <select id="anki-source" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="current">Conteúdo selecionado / enviado</option><option value="all">Todas as leis cadastradas</option></select></label>
@@ -5599,8 +5619,8 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 body=wrap('Mapa Mental Visual — Infográfico Editorial',pmdfMindHtml(g,rows)+
                     (interactive?'<div class="pmdf-mind-actions no-print"><button type="button" onclick="copyText(pmdfMindPrompt(CUR.guide))" class="'+BTN+'">📋 Copiar prompt do mapa mental</button><button type="button" onclick="openMindMap()" class="'+BTN+'">Abrir mapa ampliado</button></div>':''));
             }else if(SUMMARY_FORMAT==='flash'){
-                const cards=buildStudyCards(g), cardHtml=cards.map((c,i)=>interactive?'<button type="button" onclick="flipStudyCard(this)" class="study-card text-left" data-card-id="'+esc(c.id)+'"><span class="g-tag">Card '+(i+1)+' · Toque para virar</span><span class="front"><b>FRENTE</b><p>'+esc(c.front)+'</p></span><span class="back"><b>VERSO / FUNDAMENTO</b><p>'+esc(c.back)+'</p><span class="g-tag">Caixa Leitner: '+getCardBox(c.id).box+'</span></span></button>':'<div class="g-card"><b>Frente:</b><p>'+esc(c.front)+'</p><b>Verso:</b><p>'+esc(c.back)+'</p></div>').join('');
-                body=wrap('Flashcards de Estudo Ativo','<p>Toque em cada cartão para revelar resposta e fundamento. Os cartões são organizados em frente e verso, com dificuldade adaptada ao nível selecionado.</p>'+(interactive?'<div class="flex flex-wrap gap-2 no-print mb-3"><button onclick="startLeitner()" class="'+BTN+'">▶ Iniciar sessão Leitner</button></div>':'')+'<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">'+cardHtml+'</div>');
+                const cards=buildStudyCards(g), cardHtml=cards.slice(0,interactive?90:150).map((c,i)=>interactive?'<button type="button" onclick="flipStudyCard(this)" class="study-card text-left" data-card-id="'+esc(c.id)+'"><span class="g-tag">Card '+(i+1)+' · '+esc(c.kind||'Regra')+' · Toque para virar</span><span class="front"><b>FRENTE</b><p>'+esc(c.front)+'</p></span><span class="back"><b>VERSO / FUNDAMENTO</b><p>'+esc(c.back)+'</p><span class="g-tag">Caixa Leitner: '+getCardBox(c.id).box+'</span></span></button>':'<div class="g-card"><b>Frente:</b><p>'+esc(c.front)+'</p><b>Verso:</b><p>'+esc(c.back)+'</p></div>').join('');
+                body=wrap('Flashcards de Estudo Ativo','<p>Questões de recuperação ativa e lacunas com fundamento rastreável. Foram criados '+cards.length+' cartões; aqui aparecem os primeiros '+Math.min(cards.length,interactive?90:150)+'. Para revisar todos, use a aba Flashcards.</p>'+(interactive?'<div class="flex flex-wrap gap-2 no-print mb-3"><button onclick="startLeitner()" class="'+BTN+'">▶ Iniciar sessão Leitner</button></div>':'')+'<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">'+cardHtml+'</div>');
             }else{
                 const traps=safeArray(T.examTraps), questions=getCachedPool(g,boardFmt(),LEVEL).slice(0,20);
                 body=wrap('Fichamento de Pegadinhas & Questões',traps.map((t,i)=>'<div class="g-card"><b>Pegadinha '+(i+1)+'</b><p>'+esc(t)+'</p></div>').join('')+'<h3>Assertivas Certo/Errado comentadas</h3>'+questions.map((q,i)=>'<div class="g-card"><b>'+ (i+1)+'. '+esc(q.answer==='C'?'CERTO':'ERRADO')+'</b><p>'+esc(q.statement)+'</p><p class="g-ex">'+esc(q.explanation)+'</p></div>').join(''));
@@ -5613,37 +5633,90 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 '';
         }
         function buildStudyCards(g){
-            const level=LEVELS_SAFE_LEVEL(LEVEL);
-            const guideName=g.lawName||'Material de estudo';
-            const compact=v=>String(v||'').replace(/\s+/g,' ').trim();
-            const cleanExample=v=>compact(v).replace(/^(?:(?:Treino de prova|Treino|Exemplo(?: prático)?|Situação-problema)\s*:\s*)+/i,'');
-            const rows=getVisibleArticleRows(g);
-            const cards=[];
-            for(const a of rows){
-                const art=compact(a.article),rule=compact(a.plainExplanation),example=cleanExample(a.practicalExample);
-                if(!art||!rule)continue;
-                const limits=(rule.match(/\b(?:salvo|exceto|somente|apenas|desde que|quando|mediante|prazo|até|mínimo|máximo)\b[^.;]{0,130}/gi)||[]).slice(0,3);
-                const extra=limits.length?' Pontos de atenção: '+limits.join('; ')+'.':'';
-                const front=level==='iniciante'
-                    ? 'CONCEITO ESSENCIAL · '+art+' — Identifique o instituto, seu requisito principal e a consequência jurídica.'
-                    : level==='intermediario'
-                    ? 'ANÁLISE NORMATIVA · '+art+' — Relacione hipótese de incidência, requisitos e consequências; diferencie a regra de suas ressalvas.'
-                    : 'DOMÍNIO AVANÇADO · '+art+' — Delimite o alcance da norma, identifique condicionantes, exceções e riscos de interpretação em prova.';
-                const back=rule+'\n\nFundamento de estudo: '+art+'.'+(level==='iniciante'?'':extra);
-                cards.push({id:'art-'+hash(guideName+art+'|'+level),front,back});
-                if(level!=='iniciante'&&example){
-                    cards.push({id:'case-'+hash(guideName+art+'|'+level),front:'CASO APLICADO · '+example+(level==='avancado'?' Examine a solução, os limites jurídicos e eventual exceção.':' Identifique o enquadramento jurídico e a regra aplicável.'),back:'Enquadramento e fundamento ('+art+'): '+rule+(level==='avancado'?extra:'')});
-                } else if(level==='iniciante'&&example) {
-                    cards.push({id:'example-'+hash(guideName+art+'|'+level),front:'EXEMPLO PRÁTICO · '+example,back:'Regra aplicável ('+art+'): '+rule});
+            // Flashcards baseados apenas em afirmações efetivamente presentes na fonte.
+            // Evita perguntas vagas, "pegadinhas" sem resposta e truncamento de premissas.
+            if(!g)return [];
+            const level=LEVELS_SAFE_LEVEL(LEVEL),law=String(g.lawName||'Material de estudo');
+            const clean=v=>String(v||'').replace(/[\u200B-\u200D\uFEFF]/g,'').replace(/\s+/g,' ').trim();
+            const norm=v=>clean(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+            const topicOf=art=>clean(art.split(/\s+[—–-]\s+/).slice(1).join(' — '))||'o conteúdo do dispositivo';
+            const A=g.articlesMapping||{},sources=[
+                ...safeArray(A.highIncidence).map(a=>({...a,_priority:'Alta'})),
+                ...safeArray(A.mediumIncidence).map(a=>({...a,_priority:'Média'})),
+                ...safeArray(A.lowIncidence).map(a=>({...a,_priority:'Baixa'}))
+            ];
+            const cards=[],seen=new Set(),sourceSeen=new Set();
+            const weak=/^(?:estudar|conferir|verificar|aprofundar|comparar com|identificar|banca pode|pode ser cobrado|a lei (?:trata|prev[eê]|disciplina)|o diploma (?:trata|disciplina)|o regulamento (?:trata|prev[eê]))\b/i;
+            const add=(art,source,kind,front,back,priority)=>{
+                const f=clean(front),answer=clean(back),basis=clean(source);
+                if(f.length<38||f.length>750||answer.length<26||answer.length>2300||
+                    basis.length<35||basis.length>1500||/…|\[.*?\]|\bundefined\b|\bnull\b/i.test(f+answer))return;
+                if(norm(f)===norm(answer)||!/[?：:]$/.test(f)&&!f.includes('_____'))return;
+                const sig=norm(law+'|'+art+'|'+kind+'|'+f+'|'+answer);
+                if(seen.has(sig))return;
+                seen.add(sig);
+                const id='anki-v2-'+(hash(sig)>>>0).toString(36);
+                cards.push({id,front:f,back:answer,kind,article:art,source:basis,
+                    priority,difficulty:level});
+            };
+            for(const a of sources.slice(0,500)){
+                const art=clean(a.article||a.title||'Tópico');
+                const source=clean(a.sourceText||a.plainExplanation);
+                if(!art||source.length<45||source.length>1500||source.includes('…')||weak.test(source))continue;
+                const dedupe=norm(art+'|'+source);
+                if(sourceSeen.has(dedupe))continue;sourceSeen.add(dedupe);
+                const topic=topicOf(art),priority=a._priority;
+                const ruleBack='Resposta segundo o material:\n'+source+'\n\nFundamento: '+art+' — '+law+'.';
+                add(art,source,'Regra principal',
+                    'Segundo '+art+', qual é a regra central sobre '+topic+'?',ruleBack,priority);
+                // Cartões de preenchimento: ocultam elemento expresso no texto, nunca inventam conclusão.
+                const targets=[];
+                const pats=[
+                    {kind:'Prazo e quantidade',regex:/\b\d+(?:[.,]\d+)?\s*(?:dias?|meses?|anos?|horas?|minutos?|%|sal[áa]rios?\s+m[íi]nimos?)\b/gi},
+                    {kind:'Proibição e requisito',regex:/\b(?:não\s+(?:pode|podem|deve|devem|se\s+admite)|vedad[oa]s?|proibid[oa]s?|obrigat[óo]ri[oa]s?|dever[áa]o?|somente|apenas|exclusivamente|desde\s+que|salvo|exceto|mediante|independe|prescinde)\b/gi}
+                ];
+                for(const spec of pats){
+                    let m,matched=0;const regex=new RegExp(spec.regex.source,spec.regex.flags);
+                    while((m=regex.exec(source))&&matched<2&&targets.length<4){
+                        matched++;
+                        const phrase=m[0],cloze=source.slice(0,m.index)+'_____'+source.slice(m.index+phrase.length);
+                        if(phrase.length<3||cloze===source)continue;
+                        if(targets.some(t=>t.pos===m.index))continue;
+                        targets.push({kind:spec.kind,phrase,cloze,pos:m.index});
+                    }
+                }
+                for(const t of targets.slice(0,level==='iniciante'?1:level==='intermediario'?2:3)){
+                    const front='Complete a expressão suprimida em '+art+':\n'+t.cloze;
+                    const back='Expressão correta: '+t.phrase+'.\n\nTrecho original: '+source+'\n\nFundamento: '+art+'.';
+                    add(art,source,t.kind,front,back,priority);
+                }
+                // Perguntas contextuais somente quando o documento fornece uma resposta expressa.
+                // Exemplos vagos ("diferenciar", "conferir") nunca geram casos com solução inventada.
+                const example=clean(a.practicalExample);
+                if(level==='avancado'&&example.length>=60&&example.length<=420&&
+                    /^(?:se |quando |caso |na hipótese |diante de |em situação)/i.test(example)&&
+                    !/\b(?:estudar|diferenciar|conferir|verificar|identificar)\b/i.test(example)){
+                    add(art,source,'Aplicação contextual',
+                        'Considere o contexto: '+example+'\nQual regra de '+art+' deve ser consultada para analisar a situação?',
+                        'Regra expressa no material:\n'+source+'\n\nO exemplo é apenas ilustrativo; confira os requisitos legais no texto oficial.',priority);
+                }
+                if(cards.length>=2200)break;
+            }
+            // Aprendizado relacional: compare dois dispositivos distintos sem forjar casos.
+            if(level==='avancado'&&sources.length>1){
+                const pool=sources.filter(a=>clean(a.sourceText||a.plainExplanation).length>=45&&
+                    !weak.test(clean(a.sourceText||a.plainExplanation)));
+                for(let i=0;i+1<pool.length&&i<150;i++){
+                    const left=pool[i],right=pool[i+1],art1=clean(left.article),art2=clean(right.article);
+                    const rule1=clean(left.sourceText||left.plainExplanation),rule2=clean(right.sourceText||right.plainExplanation);
+                    if(art1===art2||rule1.length>340||rule2.length>340||norm(rule1)===norm(rule2))continue;
+                    add(art1+' / '+art2,rule1+'\n'+rule2,'Comparação entre artigos',
+                        'Compare '+art1+' e '+art2+': qual proposição específica aparece em cada dispositivo?',
+                        art1+': '+rule1+'\n\n'+art2+': '+rule2+'\n\nAmbas as informações são extraídas do material.',left._priority||'Média');
                 }
             }
-            if(level!=='iniciante'){
-                for(const t of safeArray(g.trapsAndJurisprudence?.examTraps).slice(0,level==='avancado'?12:6)){
-                    const trap=compact(t);if(!trap)continue;
-                    cards.push({id:'trap-'+hash(guideName+trap+'|'+level),front:'DISTINÇÃO DE PROVA · Identifique o detalhe jurídico que torna esta formulação problemática: '+trap,back:'Ponto de atenção extraído do guia: '+trap+'\n\nConfira os dispositivos aplicáveis na fonte oficial antes de consolidar a revisão.'});
-                }
-            }
-            return cards.slice(0,level==='iniciante'?40:level==='intermediario'?65:90);
+            const order={Alta:0,Média:1,Baixa:2};
+            return cards.sort((x,y)=>(order[x.priority]??3)-(order[y.priority]??3));
         }
         function flipStudyCard(el){el.classList.toggle('flipped');}
         function startLeitner(){
@@ -6056,26 +6129,46 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         function drawAnki(){
             const el=$('anki-panel'),s=ANKI_STATE;if(!s)return;
             if(s.index>=s.cards.length){
-                el.innerHTML='<h3 class="text-lg font-bold text-[#E5C158]">Revisão concluída</h3><p class="text-sm text-slate-300 mt-2">'+s.seen+' cartões visualizados. Retome quando desejar.</p><button type="button" class="mt-4 px-4 py-2 rounded-xl bg-[#D4AF37] text-[#050B16] font-bold" onclick="startAnki()">Nova revisão</button>';
+                el.innerHTML='<div class="anki-finish"><h3 class="text-xl font-bold text-[#E5C158]">Revisão concluída</h3>'+
+                    '<p class="mt-2">Você revisou '+s.seen+' cartões. '+(s.correct||0)+' lembrados · '+(s.wrong||0)+' para reforçar.</p>'+
+                    '<button type="button" class="qstudio-primary mt-4" onclick="startAnki()">Nova revisão</button></div>';
                 return;
             }
             const c=s.cards[s.index],state=getCardBox(c.id);
-            el.innerHTML='<div class="study-progress-meter" aria-label="Progresso dos cartões"><span style="width:'+Math.round(s.index/Math.max(1,s.cards.length)*100)+'%"></span></div>'+
-              '<div class="text-xs text-[#E5C158] mb-2">Cartão '+(s.index+1)+' de '+s.cards.length+' · '+LEVELS[LEVEL].label+'</div>'+
-              '<p class="text-xs text-slate-400 mb-3 anki-wrap">'+esc(c.law||'')+'</p>'+
-              '<div class="anki-fulltext rounded-2xl border border-[#D4AF37]/50 bg-[#071020] px-4 sm:px-6 py-6"><p class="text-xs text-[#E5C158] font-bold mb-2">FRENTE</p><p class="text-lg font-semibold text-slate-100 anki-wrap">'+esc(c.front)+'</p></div>'+
-              (s.back?'<div class="anki-fulltext g-card mt-4" role="status"><p class="font-bold text-[#E5C158] mb-2">VERSO · FUNDAMENTO</p><p class="anki-wrap">'+esc(c.back)+'</p></div>':'<p class="text-xs text-slate-400 mt-3">Leia a frente e revele o verso quando desejar.</p>')+
-              '<div class="mt-4 flex flex-wrap gap-3">'+(!s.back?'<button type="button" onclick="revealAnki()" class="rounded-xl bg-[#D4AF37] text-[#050B16] px-5 py-2.5 font-bold">Revelar verso</button>':'<button type="button" onclick="nextAnki()" class="rounded-xl bg-[#D4AF37] text-[#050B16] px-5 py-2.5 font-bold">'+(s.index+1===s.cards.length?'Concluir revisão':'Próximo cartão →')+'</button>')+'</div>';
+            const percent=Math.round(s.index/Math.max(1,s.cards.length)*100);
+            const label=esc(c.kind||'Regra principal'),law=esc(c.law||''),article=esc(c.article||'');
+            const focus=s.back?'VERSO · RESPOSTA FUNDAMENTADA':'FRENTE · RECUPERAÇÃO ATIVA';
+            el.innerHTML='<div class="study-progress-meter" role="progressbar" aria-valuemin="0" aria-valuemax="'+s.cards.length+
+                '" aria-valuenow="'+s.index+'" aria-label="Progresso da revisão"><span style="width:'+percent+'%"></span></div>'+
+                '<div class="anki-meta"><span>Cartão '+(s.index+1)+' de '+s.cards.length+'</span>'+
+                '<span>'+esc(LEVELS[LEVEL].label)+'</span><span>Caixa Leitner '+state.box+'</span></div>'+
+                '<div class="anki-tags"><span>'+label+'</span><span>'+article+'</span></div>'+
+                '<p class="anki-law">'+law+'</p>'+
+                '<div class="anki-study-surface"><p class="anki-kicker">'+focus+'</p>'+
+                '<p class="anki-question">'+esc(s.back?c.back:c.front)+'</p></div>'+
+                (s.back?'<div class="anki-proof"><b>Fundamento rastreável</b><p>'+esc(c.source||c.back)+'</p>'+
+                    '<p class="anki-source-note">Fonte de estudo: '+law+' · '+article+
+                    '. Confira a redação oficial vigente antes de utilizar em prova.</p></div>':
+                    '<p class="anki-hint">Tente responder sem consultar o material. Revele a resposta para conferir.</p>')+
+                '<div class="anki-actions">'+(!s.back?
+                    '<button type="button" class="qstudio-primary" onclick="revealAnki()">Revelar resposta</button>':
+                    '<button type="button" class="qstudio-secondary" onclick="gradeAnki(false)">Não lembrei · revisar</button>'+
+                    '<button type="button" class="qstudio-primary" onclick="gradeAnki(true)">Lembrei · avançar</button>')+
+                '</div>';
         }
         function revealAnki(){if(!ANKI_STATE||ANKI_STATE.back)return;ANKI_STATE.back=true;saveStudySession();drawAnki();}
-        function nextAnki(){
+        function gradeAnki(known){
             const session=ANKI_STATE;if(!session||!session.back||session.index>=session.cards.length)return;
             const card=session.cards[session.index];
-            // Sem botões Certo/Errado: o avanço após visualizar o verso agenda a revisão.
-            // Isso representa exposição ao conteúdo, não comprova domínio do candidato.
-            setCardBox(card.id,true);
-            session.index++;session.seen++;session.back=false;session.graded=null;
+            setCardBox(card.id,!!known);
+            if(known)session.correct=(session.correct||0)+1;else session.wrong=(session.wrong||0)+1;
+            session.index++;session.seen++;session.back=false;session.graded=!!known;
             saveStudySession();drawAnki();
+        }
+        function nextAnki(){
+            // Compatibilidade com sessões antigas: avançar sem nota NÃO equivale a ter aprendido.
+            if(!ANKI_STATE||!ANKI_STATE.back)return;
+            gradeAnki(false);
         }
                 // Catálogo complementar: 11 normas com referências oficiais e guias pedagógicos.
         const EXTRA_LAW_URLS = {"jecrim":"https://www.planalto.gov.br/ccivil_03/leis/l9099.htm","orcrim":"https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2013/lei/l12850.htm","genocidio":"https://www.planalto.gov.br/ccivil_03/leis/l2889.htm","racismo":"https://www.planalto.gov.br/ccivil_03/leis/l7716.htm","eca":"https://www.planalto.gov.br/ccivil_03/leis/l8069.htm","improbidade":"https://www.planalto.gov.br/ccivil_03/leis/l8429.htm","temporaria":"https://www.planalto.gov.br/ccivil_03/leis/l7960.htm","jef":"https://www.planalto.gov.br/ccivil_03/leis/leis_2001/l10259.htm","r200":"https://www.planalto.gov.br/ccivil_03/decreto/d88777compilado.htm","d10443":"https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2020/decreto/d10443.htm","l14751":"https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14751.htm"};
