@@ -2661,7 +2661,7 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
         <section id="tab-questoes" class="hidden space-y-5" aria-label="Banco de questões">
             <div class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
                 <div><h2 class="font-bold text-lg text-white">📝 Questões — prática ampliada</h2>
-                    <p class="text-sm text-slate-400">Questões inéditas montadas localmente a partir dos conteúdos dos guias. Selecione a lei estudada ou pratique em todo o catálogo. Não são reproduções autenticadas de provas reais.</p></div>
+                    <p class="text-sm text-slate-400">Questões inéditas elaboradas localmente a partir de leis, textos e guias, com matriz de cobertura, revisão do gabarito e lotes sem repetição. Sem IA externa obrigatória; não são questões oficiais de bancas.</p></div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <label class="text-xs text-[#E5C158] font-semibold">Material / lei
                         <select id="q-source" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="current">Conteúdo selecionado / enviado</option><option value="all">Todas as leis cadastradas</option><option value="imported">Questões de provas importadas</option></select>
@@ -2678,11 +2678,11 @@ body #q-panel .study-progress-meter>span,body #anki-panel .study-progress-meter>
                     
                     
                 </div>
-                <div class="flex gap-2 flex-wrap"><button type="button" onclick="startQuestions()" class="px-5 py-2.5 rounded-xl bg-[#D4AF37] text-[#050B16] font-extrabold">Gerar e iniciar questões</button>
+                <div class="flex flex-wrap items-end gap-3"><label class="text-xs font-semibold text-[#E5C158]">Tamanho do lote<select id="q-batch" aria-label="Tamanho do lote de questões" class="block mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="15">15 questões</option><option value="30" selected>30 questões</option><option value="50">50 questões</option><option value="0">Todas as disponíveis</option></select></label><button type="button" onclick="startQuestions()" class="px-5 py-2.5 rounded-xl bg-[#D4AF37] text-[#050B16] font-extrabold">Gerar e iniciar questões</button><button type="button" onclick="startQuestions(true)" class="px-3 py-2 rounded-xl border border-[#D4AF37] bg-[#0E1B33] text-[#E5C158] font-semibold text-xs">Próximo lote inédito</button><button type="button" onclick="resetQuestionCycle()" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Reiniciar cobertura</button>
                     <button type="button" onclick="clearQuestionFilters()" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">↺ Limpar filtros</button>
                     <button type="button" onclick="openErrors()" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">📕 Caderno de erros</button></div>
                 <p id="question-progress-summary" class="text-xs text-[#E5C158]" aria-live="polite"></p>
-                <p id="q-status" class="text-sm text-slate-400" role="status" aria-live="polite"></p>
+                <p id="q-status" class="text-sm text-slate-400" role="status" aria-live="polite"></p><p id="q-coverage" class="text-xs text-[#E5C158]" role="status" aria-live="polite"></p>
             </div>
 
             <div class="bg-[#0A1426] border border-[#172642] rounded-xl p-4 space-y-2" id="auto-questions-section">
@@ -5073,7 +5073,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             if (!arts.length) throw new Error('Não há conteúdo textual para analisar. Cole pelo menos uma frase ou um parágrafo.');
             arts.forEach(a => Object.assign(a, scoreArt(a)));
             const n = arts.length, ranked = [...arts].sort((x,y)=>y.s-x.s);
-            const nh = Math.max(1,Math.min(15,Math.ceil(n*.45))), nm = Math.min(15,Math.max(0,Math.ceil(n*.3))), nl = Math.min(10,Math.max(0,n-nh-nm));
+            const nh = Math.max(1,Math.ceil(n*.45)), nm = Math.min(n-nh,Math.ceil(n*.3)), nl = n-nh-nm; // analisar todas as unidades
             const hi=ranked.slice(0,nh), me=ranked.slice(nh,nh+nm), lo=ranked.slice(nh+nm,nh+nm+nl);
             const m=String(raw).slice(0,2500).match(/((?:LEI COMPLEMENTAR|LEI|DECRETO-LEI|DECRETO|CONSTITUIÇÃO)[^\n]{0,40}?N[º°o.]*\s*[\d.]+[^\n]{0,70})/i);
             const hint=String(nameHint||'').trim();
@@ -5084,7 +5084,8 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 if(a.pe.length) notes.push('Sanções citadas: '+uniq(a.pe.map(x=>x.toLowerCase())).join(', ')+'.');
                 if(a.re.length) notes.push('Termos restritivos: '+uniq(a.re.map(x=>x.toLowerCase())).slice(0,6).join(', ')+'.');
                 const ss=sentencesOf(base), mu=ss.length?mutations(ss[0])[0]:null;
-                return makeItem(a.label+(a.head?' ('+a.head.replace(/\s+/g,' ').slice(0,60)+')':''),base+(notes.length?' Atenção: '+notes.join(' '):''),mu?'Treino de prova: “'+mu.text+'”. A alteração proposta deve ser conferida com o texto-fonte.':'Exemplo de aplicação: identifique o sujeito, a conduta, os requisitos e as exceções descritos neste tópico.');
+                const item=makeItem(a.label+(a.head?' ('+a.head.replace(/\s+/g,' ').slice(0,60)+')':''),base+(notes.length?' Atenção: '+notes.join(' '):''),mu?'Treino de prova: “'+mu.text+'”. A alteração proposta deve ser conferida com o texto-fonte.':'Exemplo de aplicação: identifique o sujeito, a conduta, os requisitos e as exceções descritos neste tópico.');
+                item.sourceText=a.text;item.sourceHeading=a.head;return item;
             };
             const groups={}; arts.forEach((a,i)=>{const k=a.head||('Bloco temático '+(Math.floor(i/5)+1));(groups[k]=groups[k]||[]).push(a);});
             const secs=Object.entries(groups).map(([title,list])=>({title,sum:list.reduce((v,a)=>v+Math.max(0,a.s),0),list,reason:list.length+' unidade(s) · '+list.reduce((v,a)=>v+a.pr.length,0)+' prazo(s)/valor(es) · '+list.reduce((v,a)=>v+a.pe.length,0)+' referência(s) a sanção · '+list.reduce((v,a)=>v+a.re.length,0)+' termo(s) restritivo(s).'})).sort((a,b)=>b.sum-a.sum);
@@ -5246,13 +5247,13 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const all=[],used=new Set(),bank=$('q-board')?.value||'Cebraspe';
             const extract=(arr,inc)=>safeArray(arr).forEach(a=>{
                 const head=String(a.article||'').trim();if(!head)return;
-                const raw=String(a.plainExplanation||'').replace(/\s+/g,' ').trim();
+                const raw=String(a.sourceText||a.plainExplanation||'').replace(/\s+/g,' ').trim();
                 // Dispositivos curtos podem conter regras completas com verbos
                 // que o extrator estrito não reconhece. Preserve o texto-fonte.
                 const selected=fullQuestionSentences(raw);
                 if(!selected.length&&raw.length>=48&&raw.length<=1200&&/[.!?]$/.test(raw)&&!raw.includes('…'))selected.push(raw);
                 for(const sentence of selected){
-                    const key=(head+'|'+sentence).toLowerCase();
+                    const key=(law+'|'+head+'|'+sentence).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
                     if(!used.has(key)){used.add(key);all.push({head,sentence,inc,example:a.practicalExample||''});}
                 }
             });
@@ -5271,14 +5272,15 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 'CERTO em relação ao trecho usado neste guia. ')+
                 'Referência: '+item.head+' — '+law+'. Trecho-base: "'+item.sentence+'". Consulte a lei vigente para confirmar o teor.';
             for(const item of targets){
-                const base={topic:item.head,incidence:item.inc,lawBasis:item.head+' — '+law,law,difficulty:level};
+                const sourceKey='src-'+(hash(law+'|'+item.head+'|'+item.sentence)>>>0).toString(36);
+                const base={topic:item.head,subtopic:item.head,incidence:item.inc,lawBasis:item.head+' — '+law,law,difficulty:level,sourceKey,sourceQuote:item.sentence};
                 const correct={...base,type:'CE',options:[],statement:examItemStyle(level,'CE',bank,item.head)+item.sentence,
-                     answer:'C',explanation:explanation(item,null),easyTip:'Confirme os elementos essenciais na fonte oficial.'};
+                     answer:'C',coverageId:sourceKey+'|CE|C',explanation:explanation(item,null),easyTip:'Confirme os elementos essenciais na fonte oficial.'};
                 ce.push(correct);
                 const changes=qualifiedQuestionMutations(item.sentence,level);
                 for(const mut of changes.slice(0,level==='iniciante'?1:level==='intermediario'?2:3)){
                     ce.push({...base,type:'CE',options:[],statement:examItemStyle(level,'CE',bank,item.head)+mut.text,
-                        answer:'E',explanation:explanation(item,mut),easyTip:'Observe a alteração específica explicada no gabarito.'});
+                        answer:'E',coverageId:sourceKey+'|CE|E|'+(hash(mut.text)>>>0).toString(36),explanation:explanation(item,mut),easyTip:'Observe a alteração específica explicada no gabarito.'});
                 }
                 // Alternativas: combina mudança pontual expressa e associação com dispositivo diverso.
                 const choices=[{text:item.head+' — '+item.sentence,correct:true}],seenOpts=new Set([choices[0].text]);
@@ -5330,7 +5332,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 // O enunciado associativo identifica a correspondência dispositivo/conteúdo.
                 if(choices.length>=requestedCount){
                     const options=shuffle(choices.slice(0,requestedCount)),answer='ABCDE'[options.findIndex(x=>x.correct)];
-                    mc.push({...base,type:'MC',statement:examItemStyle(level,'MC',bank,item.head,true),
+                    mc.push({...base,type:'MC',coverageId:sourceKey+'|MC',statement:examItemStyle(level,'MC',bank,item.head,true),
                         options:options.map(x=>x.text),answer,
                         explanation:'Gabarito '+answer+'. A correspondência correta é '+item.head+
                         '. As demais opções alteram um elemento do texto ou associam a proposição a outro dispositivo. '+explanation(item,null),
@@ -5586,7 +5588,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             toast('Filtros do mapeador limpos.','ok');
         }
         function clearQuestionFilters(){
-            $('q-source').value='current';$('q-format').value='CE';$('q-level').value='intermediario';$('q-board').value='Cebraspe';
+            $('q-source').value='current';$('q-format').value='CE';$('q-level').value='intermediario';$('q-board').value='Cebraspe';if($('q-batch'))$('q-batch').value='30';
             $('q-status').textContent='Filtros limpos.';$('q-panel').classList.add('hidden');Q_STATE=null;
         }
         function clearAnkiFilters(){
@@ -5603,7 +5605,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         }
         function uniqueQuestions(qs){
             const used=new Set();return qs.filter(q=>{
-                const sig=q.type+'|'+q.statement.trim()+'|'+(q.type==='MC'?String(q.lawBasis||'')+'|'+(q.options||[]).slice().sort().join('¦'):'');if(used.has(sig))return false;used.add(sig);return true;
+                const sig=q.coverageId||q.type+'|'+q.statement.trim()+'|'+(q.type==='MC'?String(q.lawBasis||'')+'|'+(q.options||[]).slice().sort().join('¦'):'');if(used.has(sig))return false;used.add(sig);return true;
             });
         }
         function toFour(q){
