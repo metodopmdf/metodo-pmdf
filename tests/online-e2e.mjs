@@ -73,6 +73,29 @@ async function generate(page,format){
   await page.locator('#q-feedback button').click();
   return result;
 }
+async function checkFlashcards(page){
+  await page.locator('#tab-btn-anki').click();
+  await page.locator('#anki-mode').selectOption('all');
+  await page.locator('button[onclick="startAnki()"]').click();
+  await page.waitForFunction(()=>document.querySelector('#anki-panel .anki-question')?.textContent?.length>35,
+    null,{timeout:20000});
+  const first=await page.locator('#anki-panel .anki-question').innerText();
+  assert(first.length>35,'Flashcard sem pergunta substantiva');
+  assert(!first.includes('Identifique o instituto, seu requisito principal'),
+    'Flashcard genérico antigo reapareceu');
+  await page.locator('button[onclick="revealAnki()"]').click();
+  assert(await page.locator('#anki-panel .anki-proof').isVisible(),'Fundamento do verso ausente');
+  assert((await page.locator('#anki-panel .anki-proof').innerText()).length>45,'Fundamento incompleto');
+  assert(await page.locator('button[onclick="gradeAnki(false)"]').isVisible(),
+    'Falta botão de avaliação honesta');
+  const before=await page.evaluate(()=>window.eval('ANKI_STATE.cards[ANKI_STATE.index].id'));
+  await page.locator('button[onclick="gradeAnki(false)"]').click();
+  const state=await page.evaluate(id=>({box:window.eval('getCardBox('+JSON.stringify(id)+').box'),
+    wrong:window.eval('ANKI_STATE.wrong')}),before);
+  assert.equal(state.box,0,'Cartão marcado como não lembrado avançou a caixa');
+  assert.equal(state.wrong,1,'Cartão não lembrado não foi contabilizado');
+  await page.locator('#tab-btn-questoes').click();
+}
 async function longSource(page){
   const rules=Array.from({length:90},(_,i)=>
     'Art. '+(i+1)+'º A autoridade pública deverá motivar a decisão administrativa do procedimento '+(i+1)+
@@ -120,6 +143,7 @@ async function main(){
         const ce=await generate(page,'CE');
         const mc=await generate(page,'MC');
         const mix=await generate(page,'MIX');
+        await checkFlashcards(page);
         const large=view.name==='desktop'?await longSource(page):null;
         assert.deepEqual(errors,[],'Erros no navegador: '+errors.join(' | '));
         await page.screenshot({path:output+'/'+view.name+'-ok.png',fullPage:true});
@@ -135,6 +159,6 @@ async function main(){
       sha:process.env.GITHUB_SHA||'local',report},null,2));
     await browser.close();
   }
-  console.log('QA ONLINE PASS: versão publicada, tema, neural CE/MC/MIX, gabarito, lote inédito, desktop e celular.');
+  console.log('QA ONLINE PASS: versão publicada, tema, neural CE/MC/MIX, flashcards avaliados, gabarito, lote inédito, desktop e celular.');
 }
 await main();
