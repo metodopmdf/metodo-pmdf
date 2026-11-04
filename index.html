@@ -6393,38 +6393,58 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             }
             drawAnki();
         }
+        function renderAnkiStatement(c,showAnswer){
+            if(!c?.cloze)return esc(showAnswer?c.back:c.front);
+            const raw=String(c.cloze),pivot=raw.indexOf(' · '),text=pivot>=0?raw.slice(pivot+3):raw;
+            const cloze=/\{\{c1::([^}:]+)(?:::[^}]+)?\}\}/.exec(text);
+            if(!cloze)return esc(showAnswer?c.back:c.front);
+            const term=showAnswer?
+                '<mark class="anki-blank-revealed">'+esc(cloze[1])+'</mark>':
+                '<span class="anki-blank-masked" aria-label="lacuna oculta">[&nbsp;…&nbsp;]</span>';
+            return esc(text.slice(0,cloze.index))+term+esc(text.slice(cloze.index+cloze[0].length));
+        }
         function drawAnki(){
-            const el=$('anki-panel'),s=ANKI_STATE;if(!s)return;
+            const el=$('anki-panel'),s=ANKI_STATE;if(!el||!s)return;
             if(s.index>=s.cards.length){
                 el.innerHTML='<div class="anki-finish"><h3 class="text-xl font-bold text-[#E5C158]">Revisão concluída</h3>'+
                     '<p class="mt-2">Você revisou '+s.seen+' cartões. '+(s.correct||0)+' lembrados · '+(s.wrong||0)+' para reforçar.</p>'+
                     '<button type="button" class="qstudio-primary mt-4" onclick="startAnki()">Nova revisão</button></div>';
                 return;
             }
-            const c=s.cards[s.index],state=getCardBox(c.id);
-            const percent=Math.round(s.index/Math.max(1,s.cards.length)*100);
-            const label=esc(c.kind||'Regra principal'),law=esc(c.law||''),article=esc(c.article||'');
-            const focus=s.back?'VERSO · RESPOSTA FUNDAMENTADA':'FRENTE · RECUPERAÇÃO ATIVA';
+            const c=s.cards[s.index],state=getCardBox(c.id),percent=Math.round(s.index/Math.max(1,s.cards.length)*100);
+            const name=esc(c.kind||'Conceito essencial'),law=esc(c.law||''),article=esc(c.article||'');
+            const focus=s.back?'VERSO · RESPOSTA':'FRENTE · RECUPERAÇÃO ATIVA';
             el.innerHTML='<div class="study-progress-meter" role="progressbar" aria-valuemin="0" aria-valuemax="'+s.cards.length+
                 '" aria-valuenow="'+s.index+'" aria-label="Progresso da revisão"><span style="width:'+percent+'%"></span></div>'+
                 '<div class="anki-meta"><span>Cartão '+(s.index+1)+' de '+s.cards.length+'</span>'+
                 '<span>'+esc(LEVELS[LEVEL].label)+'</span><span>Caixa Leitner '+state.box+'</span></div>'+
-                '<div class="anki-tags"><span>'+label+'</span><span>'+article+'</span>'+
+                '<div class="anki-tags"><span>'+name+'</span><span>'+article+'</span>'+
                     (c.modality?'<span>'+esc(c.modality)+'</span>':'')+
                     (c.difficulty?'<span>'+esc(c.difficulty)+'</span>':'')+'</div>'+
                 '<p class="anki-law">'+law+'</p>'+
                 '<div class="anki-study-surface"><p class="anki-kicker">'+focus+'</p>'+
-                '<p class="anki-question">'+esc(s.back?c.back:c.front)+'</p></div>'+
-                (s.back?'<div class="anki-proof"><b>Fundamento rastreável / Extra</b><p>'+esc(c.extra||c.source||c.back)+'</p>'+
+                (s.back?'<p class="anki-answer-caption">NÚCLEO DA RESPOSTA</p>':'')+
+                '<p class="anki-question '+(c.cloze?'anki-question-cloze':'')+'">'+
+                    (s.back?'<strong class="anki-short-answer">'+esc(c.back)+'</strong>':
+                        renderAnkiStatement(c,false))+'</p>'+
+                (s.back&&c.cloze?'<p class="anki-restored">'+renderAnkiStatement(c,true)+'</p>':'')+
+                (!s.back&&c.hint?'<p class="anki-card-hint">Pista: '+esc(c.hint)+'</p>':'')+
+                '</div>'+
+                (s.back?'<div class="anki-proof"><b>Fundamento rastreável / Extra</b>'+
+                    '<p class="anki-source-note">Fonte: '+law+' · '+article+
+                    '. '+esc(c.scope||'Conteúdo do material selecionado')+'.</p>'+
+                    '<details class="anki-evidence-details"><summary>Consultar texto-base e alerta de banca</summary>'+
+                    '<p class="anki-evidence-text">'+esc(c.extra||c.source||c.back)+'</p>'+
                     (c.warning?'<p class="anki-source-note"><strong>Alerta:</strong> '+esc(c.warning)+'</p>':'')+
                     (c.tags?'<p class="anki-source-note">Tags: '+esc(c.tags)+'</p>':'')+
-                    '<p class="anki-source-note">Fonte de estudo: '+law+' · '+article+
-                    '. Confira a redação oficial vigente antes de utilizar em prova.</p></div>':
-                    '<p class="anki-hint">Tente responder sem consultar o material. Revele a resposta para conferir.</p>')+
-                '<div class="anki-actions">'+(!s.back?
+                    '</details></div>':
+                    '<p class="anki-hint">Recupere somente a lacuna ou o conceito essencial. Revele a resposta para conferir.</p>')+
+                '<div class="anki-actions '+(s.back?'anki-grade-choices':'')+'">'+(!s.back?
                     '<button type="button" class="qstudio-primary" onclick="revealAnki()">Revelar resposta</button>':
-                    '<button type="button" class="qstudio-secondary" onclick="gradeAnki(false)">Não lembrei · revisar</button>'+
-                    '<button type="button" class="qstudio-primary" onclick="gradeAnki(true)">Lembrei · avançar</button>')+
+                    '<button type="button" class="qstudio-secondary" onclick="gradeAnki(false)">Errei <small>Rever</small></button>'+
+                    '<button type="button" class="qstudio-secondary" onclick="gradeAnkiRating(\'hard\')">Difícil <small>12 h</small></button>'+
+                    '<button type="button" class="qstudio-primary" onclick="gradeAnki(true)">Bom <small>Avançar</small></button>'+
+                    '<button type="button" class="qstudio-primary" onclick="gradeAnkiRating(\'easy\')">Fácil <small>Avançar +2</small></button>')+
                 '</div>';
         }
         function revealAnki(){if(!ANKI_STATE||ANKI_STATE.back)return;ANKI_STATE.back=true;saveStudySession();drawAnki();}
