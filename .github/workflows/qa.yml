@@ -38,7 +38,7 @@ jobs:
         with:
           node-version: '22'
       - name: Instalar Playwright
-        run: npm install --no-save --no-package-lock playwright@1.57.0
+        run: npm install --no-save --no-package-lock playwright@1.57.0 @axe-core/playwright@4.10.2
       - name: Instalar Chromium e dependências
         run: npx playwright install --with-deps chromium
       - name: Subir prévia local isolada (somente pull requests)
