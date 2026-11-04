@@ -45,6 +45,7 @@ function contextFor(text,offset,length){
 }
 const numberRx=/\b(?:\d+(?:[.,]\d+)?|(?:um|uma|dois|duas|três|quatro|cinco|seis|sete|oito|nove|dez))\s*(?:dias?|meses?|anos?|horas?|minutos?|%|por cento|pessoas?|membros?|integrantes?|penas?|salários?\s+mínimos?)\b/gi;
 const authorityRx=/\b(?:Ministério Público|autoridade policial|autoridade judiciária|juiz(?: competente)?|Governador(?: do (?:DF|Distrito Federal))?|Polícia Militar(?: do Distrito Federal)?|PMDF|Supremo Tribunal Federal|Tribunal do Júri|Poder Executivo|tribunal competente)\b/gi;
+const instituteRx=/\b(?:Teoria|Princípio|Regime|Sistema)\s+(?:da|do|de|dos|das)\s+[A-ZÁÉÍÓÚÂÊÔÃÕÇ][\p{L}]+/gu;
 const modalRx=/\b(?:não se admite|é vedad[oa]|é proibid[oa]|vedad[oa]s?|proibid[oa]s?|não pode|não deve|deverá|deverão|devem|deve|poderá|poderão|podem|pode|somente|apenas|exclusivamente|independe|prescinde)(?=$|[^\p{L}])/giu;
 const exceptionRx=/\b(?:salvo|exceto|ressalvad[oa]s?|desde que|mediante|condicionad[oa]\s+a|se indispensável)\s+([^,;.!?]{8,86})/gi;
 const definitionRx=/^(.{5,95}?)\s+(?:é|são|consiste em|corresponde a|compreende|abrange|envolve|depende de|exige)\s+([^,;.!?]{8,98})/i;
@@ -63,6 +64,7 @@ function candidates(text){
  for(const [rx,type,hint,rank] of [
   [numberRx,"prazo","Prazo ou quantidade",100],
   [exceptionRx,"excecao","Hipótese ou ressalva",95],
+  [instituteRx,"instituto","Teoria ou princípio",92],
   [authorityRx,"competencia","Órgão ou autoridade",90],
   [modalRx,"modalidade","Dever, faculdade ou proibição",75]]){
   const re=new RegExp(rx.source,rx.flags);let m;
@@ -145,14 +147,18 @@ function create(ctx,row,spec){
   tip:clean(spec.tip)||(
     spec.type==="prazo"?"Associe o número à conduta e à unidade de tempo da regra.":
     spec.type==="excecao"?"Memorize a regra geral e a condição que limita sua aplicação.":
+    spec.type==="instituto"?"Associe a teoria à hipótese concreta descrita no texto.":
     spec.type==="competencia"?"Associe a autoridade à atribuição mencionada no dispositivo.":
+    spec.type==="modalidade"&&/^(apenas|somente|exclusivamente)$/i.test(back)?"Termo de exclusividade: memorize o alcance exato da restrição.":
     spec.type==="modalidade"?"Compare o verbo da norma: dever, faculdade ou vedação.":
     spec.family==="trap"?"Compare o enunciado com a expressão exata da fonte.":
     "Recupere o elemento distintivo sem consultar o texto-base."),
   pitfall:clean(spec.pitfall)||(
     spec.type==="prazo"?"Pegadinha: trocar o número, a unidade ou o marco temporal.":
     spec.type==="excecao"?"Pegadinha: omitir a ressalva e tornar a regra absoluta.":
+    spec.type==="instituto"?"Pegadinha: inverter os institutos associados a hipóteses distintas.":
     spec.type==="competencia"?"Pegadinha: atribuir o ato a sujeito diferente.":
+    spec.type==="modalidade"&&/^(apenas|somente|exclusivamente)$/i.test(back)?"Pegadinha: retirar a exclusividade e ampliar uma regra restrita.":
     spec.type==="modalidade"?"Pegadinha: substituir faculdade por obrigação ou permissão por proibição.":
     spec.family==="trap"?"Pegadinha: uma única palavra pode mudar o julgamento.":""),
   application:row.example&&!weak.test(row.example)&&row.example.length>=25&&row.example.length<=220?
@@ -251,5 +257,5 @@ async function buildAsync(guide,options={}){
  options.onProgress?.(rows.length,rows.length,ctx.cards.length);
  return finish(ctx,rows);
 }
-root.PMDFNeuralFlashcards=Object.freeze({build,buildAsync,sourceRows,version:"20261104-anki-quality-v3"});
+root.PMDFNeuralFlashcards=Object.freeze({build,buildAsync,sourceRows,version:"20261104-anki-quality-v4"});
 })(window);
