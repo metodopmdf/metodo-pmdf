@@ -159,6 +159,14 @@ async function checkFlashcards(page){
     wrong:window.eval('ANKI_STATE.wrong')}),before);
   assert.equal(state.box,0,'Cartão marcado como não lembrado avançou a caixa');
   assert.equal(state.wrong,1,'Cartão não lembrado não foi contabilizado');
+  const csvWait=page.waitForEvent('download',{timeout:15000});
+  await page.locator('#anki-export-csv').click();
+  const csv=await csvWait;
+  assert.match(csv.suggestedFilename(),/\.csv$/,'Exportação CSV incompatível');
+  const tsvWait=page.waitForEvent('download',{timeout:15000});
+  await page.locator('#anki-export-tsv').click();
+  const tsv=await tsvWait;
+  assert.match(tsv.suggestedFilename(),/\.tsv$/,'Exportação TSV incompatível');
   await page.locator('#tab-btn-questoes').click();
 }
 async function longSource(page){
