@@ -22,6 +22,7 @@ const hash=b=>createHash('sha256').update(b).digest('hex');
 const output='test-artifacts';
 mkdirSync(output,{recursive:true});
 const report=[];
+const severeViolations=[];
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function published(){
   const expectedHash=hash(expected);
@@ -105,7 +106,7 @@ async function auditAccessibility(page,view,phase){
   },null,2));
   const critical=violations.filter(v=>v.impact==='critical');
   const significant=violations.filter(v=>v.impact==='critical'||v.impact==='serious');
-  assert.equal(significant.length,0,'WCAG AA: violações graves '+JSON.stringify(significant).slice(0,1000));
+  if(significant.length) severeViolations.push({viewport:view.name,phase,violations:significant});
   return {violations:violations.length,critical:critical.length,issues:violations.map(v=>v.id)};
 }
 async function checkUsability(page,view){
@@ -456,6 +457,8 @@ async function main(){
       sha:process.env.GITHUB_SHA||'local',report},null,2));
     await browser.close();
   }
+  writeFileSync(output+'/axe-summary.json',JSON.stringify({severe:severeViolations},null,2));
+  assert.equal(severeViolations.length,0,'WCAG AA: violações relevantes — veja axe-summary.json: '+JSON.stringify(severeViolations).slice(0,1200));
   console.log('QA ONLINE PASS: navegação, acessibilidade, controles opcionais, CE/MC/MIX, flashcards, desktop e mobile.');
 }
 await main();
