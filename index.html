@@ -2309,6 +2309,32 @@ body .pmdf-more-actions:not([open])>.pmdf-import-body{display:none!important}
 #anki-panel .anki-grade-choices button:focus-visible{outline:3px solid var(--text-accent,#d4af37);outline-offset:3px}
 @media(max-width:600px){#anki-panel .anki-grade-choices{grid-template-columns:repeat(2,minmax(0,1fr))}#anki-panel .anki-grade-choices button{min-height:58px;flex:auto}}
 </style>
+<style id="pmdf-study-controls-eye-20261104">
+.pmdf-study-nav{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.65rem;margin-top:.8rem}
+.pmdf-study-nav-pair,.anki-nav-pair{display:flex;gap:.55rem;align-items:center;margin-left:auto}
+.pmdf-study-nav button,.anki-nav-pair button{min-height:44px;border-radius:11px;padding:10px 14px;font-size:.86rem;font-weight:730;white-space:nowrap}
+.pmdf-study-nav button:disabled,.anki-nav-pair button:disabled{opacity:.45;cursor:not-allowed}
+#q-panel .pmdf-study-nav button:not(.qstudio-primary),#anki-panel .pmdf-study-nav button:not(.qstudio-primary),#anki-panel .anki-nav-pair button{border:1px solid var(--border-subtle,#475569);background:var(--bg-raised,#101e33);color:var(--text-primary,#e2e8f0)}
+#q-panel .pmdf-study-nav .qstudio-primary,#anki-panel .pmdf-study-nav .qstudio-primary{background:var(--text-accent,#d4af37);color:#091321}
+#anki-panel .anki-study-controls{display:flex;align-items:end;flex-wrap:wrap;gap:.85rem;margin-top:1rem}
+#anki-panel .anki-study-controls .anki-actions{flex:1 1 530px;margin-top:0}
+#anki-panel .anki-study-controls .anki-actions button{min-width:120px}
+#anki-panel .anki-nav-pair{flex:0 1 auto;align-self:stretch}
+#anki-panel .anki-nav-pair button{min-width:110px}
+#anki-panel .anki-reviewed-hint{font-size:.84rem;color:var(--text-muted,#94a3b8);padding:14px 10px}
+#anki-panel .anki-learn-aid{margin-top:.8rem;padding:.8rem .95rem;border-radius:11px;border:1px solid var(--border-subtle,#475569);background:var(--bg-raised,#101e33)}
+#anki-panel .anki-learn-aid strong{display:block;font-size:.79rem;color:var(--text-accent,#d4af37)}
+#anki-panel .anki-learn-aid p{margin:.4rem 0 0;font-size:.87rem;line-height:1.6;color:var(--text-primary,#e2e8f0);overflow-wrap:anywhere}
+#anki-panel .anki-exam-trap{border-left:3px solid var(--text-accent,#d4af37)}
+.pmdf-password-field{position:relative;display:block}
+.pmdf-password-field input{padding-right:64px!important}
+.pmdf-password-toggle{position:absolute;right:6px;top:calc(50% + 2px);transform:translateY(-50%);display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border-radius:10px;background:transparent;color:#cbd5e1;border:1px solid transparent;cursor:pointer}
+.pmdf-password-toggle:hover,.pmdf-password-toggle:focus-visible{background:rgba(229,193,88,.14);border-color:#94a3b8;outline-offset:2px}
+.pmdf-password-toggle svg{width:21px;height:21px;display:block}
+.pmdf-password-toggle .pmdf-eye-hidden,.pmdf-password-toggle.is-visible .pmdf-eye-visible{display:none}
+.pmdf-password-toggle.is-visible .pmdf-eye-hidden{display:block}
+@media(max-width:620px){.pmdf-study-nav-pair{width:100%;margin-left:0}.pmdf-study-nav-pair button{flex:1}#anki-panel .anki-study-controls .anki-actions{flex:1 1 100%}#anki-panel .anki-nav-pair{width:100%;margin-left:0}#anki-panel .anki-nav-pair button{flex:1}}
+</style>
 <style id="pmdf-a4-color-print">
 /* Exportação fiel ao caderno escuro no A4. Incluída após os estilos legados
    para que a identidade de tela seja preservada no PDF. */
@@ -2426,8 +2452,14 @@ body .pmdf-more-actions:not([open])>.pmdf-import-body{display:none!important}
      <label class="block text-slate-300 text-xs font-semibold">Nome de usuário
        <input id="account-name" type="text" autocomplete="username" required minlength="3" maxlength="24" pattern="[A-Za-z0-9._-]{3,24}" autocapitalize="none" spellcheck="false" class="mt-1 w-full rounded-xl bg-[#040912] border border-[#334155] text-white p-3" placeholder="Ex.: candidato_pmdf" />
      </label>
-     <label class="block text-slate-300 text-xs font-semibold">Senha
-       <input id="account-password" type="password" autocomplete="current-password" required minlength="6" maxlength="72" class="mt-1 w-full rounded-xl bg-[#040912] border border-[#334155] text-white p-3" placeholder="Mínimo de 6 caracteres" />
+     <label for="account-password" class="block text-slate-300 text-xs font-semibold">Senha
+       <span class="pmdf-password-field">
+         <input id="account-password" type="password" autocomplete="current-password" required minlength="6" maxlength="72" class="mt-1 w-full rounded-xl bg-[#040912] border border-[#334155] text-white p-3" placeholder="Mínimo de 6 caracteres" />
+         <button type="button" id="account-password-toggle" class="pmdf-password-toggle" onclick="toggleAccountPassword()" aria-label="Mostrar senha" title="Mostrar senha" aria-pressed="false" aria-controls="account-password">
+           <svg class="pmdf-eye-visible" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+           <svg class="pmdf-eye-hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18M10.6 5.1A11.8 11.8 0 0 1 12 5c6.4 0 10 7 10 7s-1.2 2.4-3.5 4.2M6.1 6.3C3.4 8.1 2 12 2 12s3.6 7 10 7a10.9 10.9 0 0 0 4.1-.8"/><path d="M10 10a3 3 0 0 0 4 4"/></svg>
+         </button>
+       </span>
      </label>
      <p class="text-xs text-slate-400 leading-relaxed">Seus estudos serão associados ao usuário escolhido. Leia a <a class="underline text-[#E5C158]" href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>. Sem e-mail de recuperação, perder a senha pode tornar a conta inacessível.</p>
      <div class="flex flex-wrap gap-2 items-center"><button id="account-submit" type="submit" class="welcome-primary" style="padding:12px 20px">Entrar</button><button type="button" onclick="switchAccountMode()" id="account-switch" class="welcome-secondary" style="padding:12px 20px">Criar conta gratuita</button></div>
@@ -6693,7 +6725,18 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         }
         // Cadastro e sessão autenticada. Servidor controla identidade e acesso aos dados.
         let ACCOUNT_MODE='login',AUTH_INITIALIZED=false;
+        function toggleAccountPassword(forceHide=false){
+            const input=$('account-password'),button=$('account-password-toggle');
+            if(!input||!button)return;
+            const visible=!forceHide&&input.type==='password';
+            input.type=visible?'text':'password';
+            button.classList.toggle('is-visible',visible);
+            button.setAttribute('aria-pressed',String(visible));
+            button.setAttribute('aria-label',visible?'Ocultar senha':'Mostrar senha');
+            button.title=visible?'Ocultar senha':'Mostrar senha';
+        }
         function switchAccountMode(){
+            toggleAccountPassword(true);
             ACCOUNT_MODE=ACCOUNT_MODE==='login'?'register':'login';
             $('account-title').textContent=ACCOUNT_MODE==='register'?'Criar conta gratuita':'Acessar meus estudos';
             $('account-switch').textContent=ACCOUNT_MODE==='register'?'Já tenho uma conta':'Criar conta gratuita';
@@ -6848,6 +6891,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 }
                 if(!result.user?.id||!result.access_token)throw Error('Não foi possível obter uma sessão autenticada.');
                 saveSbSession(result);AUTH_USER=sbUser(result.user);$('account-password').value='';
+                toggleAccountPassword(true);
                 await finishAccountSignIn();
             }catch(e){
                 let msg=e.message||'Falha no cadastro.';
