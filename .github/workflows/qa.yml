@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: '22'
       - name: 'Smoke tests: três níveis, gerador neural, questões e sincronização simulada'
-        run: node tests/smoke.mjs && node tests/neural-questions.test.cjs && node tests/neural-flashcards.test.cjs
+        run: node tests/markup-audit.mjs && node tests/smoke.mjs && node tests/neural-questions.test.cjs && node tests/neural-flashcards.test.cjs
 
   online:
     name: Operação online em Chromium (desktop e celular)
