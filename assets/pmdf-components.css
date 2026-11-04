@@ -970,3 +970,8 @@ body :is(button,a,input,select,textarea,summary,[role="tab"]):focus-visible{outl
 #pmdf-main-content pre{white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:480px){#prompt-modal,#gen-modal{padding:.5rem}#prompt-modal [role="document"],#gen-modal [role="document"]{max-height:95dvh}#toast-container{right:1rem;bottom:1rem}}
 @media(prefers-reduced-motion:reduce){.pmdf-skip-link{transition:none}html:focus-within{scroll-behavior:auto}body :is(*,*::before,*::after){scroll-behavior:auto!important}}
+
+/* Contraste WCAG AA e reconhecimento de links: correções axe-core 2026-11-04. */
+a[href="privacidade.html"]{text-decoration:underline!important;text-decoration-thickness:2px!important;text-underline-offset:3px!important}
+body[data-theme="light"] .pmdf-header-badge{color:#3c2800!important}
+body[data-theme="light"] .qstudio .qstudio-eyebrow{color:#805600!important}
