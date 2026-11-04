@@ -16,7 +16,7 @@ assert(api?.buildAsync&&api?.build,"API do motor de flashcards indisponível");
 const guide={lawName:"Regulamento fictício para auditoria",articlesMapping:{
  highIncidence:[
  {article:"Art. 1º — Definição",sourceText:"O serviço público é atividade administrativa submetida às normas de funcionamento da instituição."},
- {article:"Art. 2º — Competência",sourceText:"A autoridade administrativa deverá motivar a decisão em 15 dias, salvo impedimento devidamente justificado."},
+ {article:"Art. 2º — Competência",sourceText:"A autoridade administrativa deverá motivar a decisão em 15 dias, salvo impedimento devidamente justificado.",practicalExample:"Diferenciar prazo para motivação e hipótese de justificativa prevista no material."},
  {article:"Art. 3º — Limites",sourceText:"É vedado exigir taxa adicional durante o procedimento quando o regulamento estabelecer gratuidade expressa."}
  ],mediumIncidence:[
  {article:"Art. 4º — Procedimento",sourceText:"O setor competente poderá solicitar documentação complementar em 5 dias, desde que a solicitação seja fundamentada."}
@@ -28,6 +28,10 @@ assert.equal(new Set(result.cards.map(c=>c.id)).size,result.cards.length,"IDs du
 assert(result.cards.some(c=>c.modality==="Básico (P&R)"),"Sem modalidade básica");
 assert(result.cards.some(c=>c.modality==="Cloze (Lacuna)"),"Sem modalidade lacunas");
 assert(result.cards.some(c=>c.modality==="Gatilho de Banca"),"Sem modalidade Cebraspe");
+assert(result.cards.every(c=>c.tip&&c.tip.length>12),"Cartão sem dica didática");
+assert(result.cards.some(c=>c.pitfall.includes("Pegadinha")||c.pitfall.includes("Fonte:")),"Faltam pegadinhas");
+assert(result.cards.some(c=>c.application.includes("Diferenciar prazo")),"Exemplo prático explícito foi perdido");
+assert(result.cards.every(c=>c.kind!=="Síntese expressa"),"Cartão só com título reapareceu");
 assert(result.cards.some(c=>c.front.includes("[lacuna]")),"Lacunas não estão contextualizadas");
 assert(result.cards.every(c=>!c.front.includes("Complete a expressão suprimida")),"Modelo antigo de pergunta genérica");
 assert(result.cards.every(c=>c.front.length<=360&&c.back.length<=270),"Cartão extenso demais");
@@ -59,6 +63,15 @@ const informative=api.build({lawName:"Lei de exemplo",articlesMapping:{highIncid
 }],mediumIncidence:[],lowIncidence:[]}});
 assert(informative.cards.some(c=>c.cloze&&c.back.includes("comprovado custo")),
  "Não identificou condição de exceção com artigo determinante");
+
+
+// Regressão visual: é proibido apresentar "Título I — Tempo e Lugar do Crime"
+// como frente inteira sem um fato jurídico específico.
+const topicOnly=api.build({lawName:"Código Penal Militar QA",articlesMapping:{highIncidence:[{
+ article:"Arts. 5º e 6º (Parte Geral - Título I) — Tempo e Lugar do Crime",
+ sourceText:"O diploma descreve temas para estudo, conforme a redação normativa."
+}],mediumIncidence:[],lowIncidence:[]}});
+assert.equal(topicOnly.cards.length,0,"Motor criou cartão com rótulo em vez de fato verificável");
 
 const entries=Array.from({length:520},(_,i)=>({
  article:"Art. "+(i+1)+"º — Processo "+i,

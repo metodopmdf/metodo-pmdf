@@ -45,6 +45,21 @@ async function setup(page){
     typeof window.PMDFNeuralQuestions?.start==='function'&&
     typeof window.PMDFNeuralFlashcards?.buildAsync==='function',{},{timeout:30000});
   assert.equal(await page.locator('#q-engine-neural').count(),1,'Seletor neural ausente');
+  const secret=page.locator('#account-password');
+  assert.equal(await secret.getAttribute('type'),'password','Senha deve iniciar oculta');
+  await secret.fill('Senha-de-auditoria-nao-real-123');
+  const toggle=page.locator('#account-password-toggle');
+  assert.equal(await toggle.getAttribute('type'),'button','Olho não pode enviar o formulário');
+  await toggle.click();
+  assert.equal(await secret.getAttribute('type'),'text','Olho não revelou a senha');
+  assert.equal(await toggle.getAttribute('aria-pressed'),'true','ARIA do olho não foi atualizado');
+  await toggle.click();
+  assert.equal(await secret.getAttribute('type'),'password','Olho não ocultou a senha novamente');
+  await toggle.click();
+  await page.locator('#account-switch').click();
+  assert.equal(await secret.getAttribute('type'),'password','Mudar para cadastro não ocultou a senha');
+  await page.locator('#account-switch').click();
+  assert.equal(await page.locator('#account-submit').getAttribute('type'),'submit','Login não restaurado');
   const oldTheme=await page.evaluate(()=>document.body.dataset.theme);
   await page.locator('.welcome-actions button[onclick="toggleTheme()"]').click();
   assert.notEqual(await page.evaluate(()=>document.body.dataset.theme),oldTheme,'Troca de tema falhou');
@@ -122,7 +137,18 @@ async function generate(page,format){
   await page.locator('#q-alternatives .q-choice').first().click();
   assert.match(await page.locator('#q-feedback').innerText(),/Gabarito:/,'Correção não exibida');
   assert.match(await page.locator('#q-feedback').innerText(),/Comentário:/,'Fundamentação não exibida');
-  await page.locator('#q-feedback button').click();
+  assert(await page.locator('#q-nav-next').isEnabled(),'Próximo bloqueado após resposta');
+  assert(await page.locator('#q-nav-prev').isDisabled(),'Anterior habilitado na primeira questão');
+  const totals=await page.evaluate(()=>{const q=window.eval('Q_STATE');return [q.hits,q.wrong,q.blank,q.pending]});
+  await page.locator('#q-nav-next').click();
+  assert.equal(await page.evaluate(()=>window.eval('Q_STATE.index')),1,'Avanço da questão falhou');
+  await page.locator('#q-nav-prev').click();
+  assert.equal(await page.evaluate(()=>window.eval('Q_STATE.index')),0,'Retorno à questão falhou');
+  assert.match(await page.locator('#q-feedback').innerText(),/Gabarito:/,'Correção perdida ao voltar');
+  assert(await page.locator('#q-alternatives .q-choice').first().isDisabled(),'Questão já respondida ficou editável');
+  assert.deepEqual(await page.evaluate(()=>{const q=window.eval('Q_STATE');return [q.hits,q.wrong,q.blank,q.pending]}),
+    totals,'Voltar duplicou a contagem da questão');
+  await page.locator('#q-nav-next').click();
   return result;
 }
 async function checkFlashcards(page){
@@ -136,12 +162,16 @@ async function checkFlashcards(page){
     null,{timeout:20000});
   assert((await page.evaluate(()=>window.eval('ANKI_STATE.cards.length')))<=50,
     'Quantidade de flashcards por sessão ultrapassou o limite');
-  const cards=await page.evaluate(()=>window.eval('ANKI_BANK.map(c=>({law:c.law,kind:c.modality,source:c.source}))'));
+  const cards=await page.evaluate(()=>window.eval('ANKI_BANK.map(c=>({law:c.law,kind:c.modality,source:c.source,front:c.front,reference:c.reference,tip:c.tip,pitfall:c.pitfall,application:c.application,cardKind:c.kind}))'));
   assert(cards.length>=50,'Novo banco de flashcards insuficiente');
   assert(cards.some(c=>c.kind==='Básico (P&R)'),'Sem perguntas diretas');
   assert(cards.some(c=>c.kind==='Cloze (Lacuna)'),'Sem lacunas');
   assert(cards.some(c=>c.kind==='Gatilho de Banca'),'Sem julgamento de banca');
   assert(cards.every(c=>c.source?.length>20),'Cartão sem fonte');
+  assert(cards.every(c=>c.cardKind!=='Síntese expressa'),'Modelo de cartão sem pergunta voltou');
+  assert(cards.every(c=>c.front?.trim()!==c.reference?.trim()),'Card só com título legal');
+  assert(cards.every(c=>c.tip?.length>=12),'Flashcard sem dica de estudo');
+  assert(cards.some(c=>c.pitfall?.length>15),'Faltam pegadinhas de concurso');
   assert.equal(new Set(cards.slice(0,26).map(c=>c.law)).size,26,'Distribuição das 26 leis insuficiente');
   assert.match(await page.locator('#anki-coverage').innerText(),/Modalidades:/,'Relatório de cobertura ausente');
   const first=await page.locator('#anki-panel .anki-question').innerText();
@@ -150,6 +180,9 @@ async function checkFlashcards(page){
     'Flashcard genérico antigo reapareceu');
   await page.locator('button[onclick="revealAnki()"]').click();
   assert(await page.locator('#anki-panel .anki-proof').isVisible(),'Fundamento do verso ausente');
+  assert(await page.locator('#anki-panel .anki-learn-aid').count()>=1,'Verso sem orientação prática');
+  assert(await page.locator('#anki-nav-next').isVisible(),'Botão próximo ausente no flashcard');
+  assert(await page.locator('#anki-nav-prev').isDisabled(),'Retornar antes do primeiro cartão não foi bloqueado');
   assert((await page.locator('#anki-panel .anki-proof').innerText()).length>45,'Fundamento incompleto');
   assert(await page.locator('button[onclick="gradeAnki(false)"]').isVisible(),
     'Falta botão de avaliação honesta');
@@ -161,6 +194,14 @@ async function checkFlashcards(page){
     wrong:window.eval('ANKI_STATE.wrong')}),before);
   assert.equal(state.box,0,'Cartão marcado como não lembrado avançou a caixa');
   assert.equal(state.wrong,1,'Cartão não lembrado não foi contabilizado');
+  await page.locator('#anki-nav-prev').click();
+  assert.equal(await page.evaluate(()=>window.eval('ANKI_STATE.index')),0,'Retorno a flashcard anterior falhou');
+  assert.equal(await page.evaluate(()=>window.eval('ANKI_STATE.ratings[0]')),'again','Nota anterior não preservada');
+  assert.equal(await page.locator('#anki-panel .anki-grade-choices button').count(),0,
+    'Retorno permitiu avaliar cartão já pontuado novamente');
+  assert.equal(await page.evaluate(()=>window.eval('ANKI_STATE.wrong')),1,'Retorno duplicou erros');
+  await page.locator('#anki-nav-next').click();
+  assert.equal(await page.evaluate(()=>window.eval('ANKI_STATE.index')),1,'Próximo não retornou ao ponto anterior');
   await page.locator('button[onclick="revealAnki()"]').click();
   const hardId=await page.evaluate(()=>window.eval('ANKI_STATE.cards[ANKI_STATE.index].id'));
   await page.locator('button[onclick="gradeAnkiRating(\'hard\')"]').click();
@@ -174,6 +215,13 @@ async function checkFlashcards(page){
   const easyState=await page.evaluate(id=>window.eval('getCardBox('+JSON.stringify(id)+')'),easyId);
   assert.equal(easyState.box,Math.min(4,oldBox+2),'Fácil não avançou duas caixas');
   assert(easyState.due>Date.now(),'Fácil não programou revisão futura');
+  const rated=await page.evaluate(()=>window.eval('ANKI_STATE.seen'));
+  const beforeSkip=await page.evaluate(()=>window.eval('ANKI_STATE.index'));
+  await page.locator('#anki-nav-next').click();
+  assert.equal(await page.evaluate(()=>window.eval('ANKI_STATE.index')),beforeSkip+1,'Próximo flashcard não avançou');
+  assert.equal(await page.evaluate(()=>window.eval('ANKI_STATE.seen')),rated,'Pular cartão alterou contagem');
+  await page.locator('#anki-nav-prev').click();
+  assert.equal(await page.evaluate(()=>window.eval('ANKI_STATE.index')),beforeSkip,'Anterior após pulo falhou');
   const csvWait=page.waitForEvent('download',{timeout:15000});
   await page.locator('#anki-export-csv').click();
   const csv=await csvWait;

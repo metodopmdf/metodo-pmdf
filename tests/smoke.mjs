@@ -49,7 +49,7 @@ function createClient(fetchImpl=async()=>({ok:true,status:200,json:async()=>[]})
     'document','window','localStorage','location','navigator','setInterval','setTimeout','clearTimeout','fetch',
     code+'\nreturn {BUILTIN_PMDF_GUIDES,questionPool,buildStudyCards,fullQuestionSentences,getCardBox,'+
     'store,accountData,accountFetch,mergeProgressData,applyProgressSnapshot,getSyncMeta,'+
-    'startQuestions,resetQuestionCycle,scanPrompt,setQuestionEngine,questionUseSource,answerQuestion,nextQuestion,startAnki,revealAnki,gradeAnki,nextAnki,correctEssay,renderResultsChart,'+
+    'startQuestions,resetQuestionCycle,scanPrompt,setQuestionEngine,questionUseSource,answerQuestion,nextQuestion,previousQuestion,startAnki,revealAnki,gradeAnki,gradeAnkiRating,nextAnki,previousAnki,toggleAccountPassword,correctEssay,renderResultsChart,'+
     'setSummaryFormat,renderGuide,guideHtml,exportEssayPdfA4,addOfficialQuestions,importOfficialAnswerFile,refreshImportedExamSources,analyzeLawText,beginStudies,saveStudySession,readStudySession,'+
     'choose(k){CUR={key:k,guide:BUILTIN_PMDF_GUIDES[k],_poolCache:{}}},'+
     'level(l){LEVEL=l},auth(id){AUTH_USER={username:id,displayName:id};saveSbSession({access_token:"jwt",refresh_token:"refresh",expires_in:3600})},'+
@@ -156,6 +156,41 @@ gradeApp.gradeAnki(false);
 assert.equal(gradeApp.getCardBox(gradeCard.id).box,0,
   'Não lembrar não pode promover a revisão');
 assert.equal(gradeApp.ankiState().wrong,1,'Falha de recordação não contabilizada');
+gradeApp.previousAnki();
+assert.equal(gradeApp.ankiState().index,0,'Anterior do flashcard não funcionou');
+gradeApp.gradeAnki(true);
+assert.equal(gradeApp.ankiState().wrong,1,'Cartão revisitado alterou estatísticas');
+assert.equal(gradeApp.ankiState().seen,1,'Cartão revisitado contou duas vezes');
+gradeApp.nextAnki();
+assert.equal(gradeApp.ankiState().index,1,'Próximo do flashcard não funcionou');
+const seenBeforeSkip=gradeApp.ankiState().seen;
+gradeApp.nextAnki();
+assert.equal(gradeApp.ankiState().seen,seenBeforeSkip,'Pular cartão não deveria contar revisão');
+gradeClient.$('account-password').type='password';
+gradeApp.toggleAccountPassword();
+assert.equal(gradeClient.$('account-password').type,'text','Olho não revelou a senha');
+gradeApp.toggleAccountPassword();
+assert.equal(gradeClient.$('account-password').type,'password','Olho não ocultou a senha');
+
+
+// Retornar a questão corrigida deve preservar o gabarito e não pontuar de novo.
+const qNavClient=createClient(),qNav=qNavClient.application;
+qNav.auth('qa-navegacao');qNav.choose('lai');
+qNavClient.$('q-format').value='CE';
+await qNav.startQuestions();
+assert(qNav.questionState().items.length>=2,'Lote de teste sem duas questões');
+const initial=qNav.questionState().items[0];
+qNav.answerQuestion(initial.answer);
+const marked=qNav.questionState().hits;
+qNav.nextQuestion();
+qNav.previousQuestion();
+assert.equal(qNav.questionState().index,0,'Anterior da questão falhou');
+assert.equal(qNav.questionState().answered,true,'Revisitar não restaurou correção');
+assert.match(qNavClient.$('q-feedback').innerHTML,/Gabarito:/,'Gabarito não restaurado');
+qNav.answerQuestion(initial.answer);
+assert.equal(qNav.questionState().hits,marked,'Voltar duplicou pontuação');
+qNav.nextQuestion();
+assert.equal(qNav.questionState().index,1,'Próxima questão não funcionou');
 
 // Validação estrutural dos controles que o usuário realmente utiliza.
 const staticMarkup=html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'');
