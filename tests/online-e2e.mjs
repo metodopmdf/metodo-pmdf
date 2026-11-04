@@ -374,6 +374,20 @@ async function main(){
       const context=await browser.newContext({viewport:view.viewport,
         ...(view.isMobile?{isMobile:true,hasTouch:true}:{}),deviceScaleFactor:1});
       const page=await context.newPage();
+      await page.addInitScript(()=>{
+        // PerformanceObserver captura Web Vitals sem bibliotecas nem rastreamento pessoal.
+        window.__pmdfVitals={lcp:null,cls:0,inp:0};
+        try{new PerformanceObserver(list=>{
+          for(const item of list.getEntries())window.__pmdfVitals.lcp=Math.round(item.startTime);
+        }).observe({type:'largest-contentful-paint',buffered:true});}catch(_){}
+        try{new PerformanceObserver(list=>{
+          for(const item of list.getEntries())if(!item.hadRecentInput)window.__pmdfVitals.cls+=item.value;
+        }).observe({type:'layout-shift',buffered:true});}catch(_){}
+        try{new PerformanceObserver(list=>{
+          for(const item of list.getEntries())if(item.interactionId)
+            window.__pmdfVitals.inp=Math.max(window.__pmdfVitals.inp,item.duration||0);
+        }).observe({type:'event',durationThreshold:40,buffered:true});}catch(_){}
+      });
       // A execução funcional necessita manipular um estado autenticado fictício por window.eval.
       // CSP é verificada separadamente acima; o bypass existe SOMENTE no navegador de QA.
       const devtools=await context.newCDPSession(page);
@@ -385,6 +399,10 @@ async function main(){
         await setup(page);
         await checkUsability(page,view);
         const a11y=await auditAccessibility(page,view,'app');
+        const currentTheme=await page.evaluate(()=>document.body.dataset.theme||'dark');
+        await page.evaluate(()=>window.applyTheme('dark'));
+        const darkA11y=await auditAccessibility(page,view,'dark');
+        await page.evaluate(theme=>window.applyTheme(theme),currentTheme);
         const ce=await generate(page,'CE');
         const mc=await generate(page,'MC');
         const mix=await generate(page,'MIX');
@@ -396,11 +414,14 @@ async function main(){
           fcp:performance.getEntriesByName('first-contentful-paint')[0]?.startTime??null,
           navigation:performance.getEntriesByType('navigation')[0]?.duration??null,
           resources:performance.getEntriesByType('resource').length,
-          transfer:performance.getEntriesByType('resource').reduce((n,r)=>n+(r.transferSize||0),0)
+          transfer:performance.getEntriesByType('resource').reduce((n,r)=>n+(r.transferSize||0),0),
+          lcp:window.__pmdfVitals?.lcp??null,
+          cls:window.__pmdfVitals?.cls??null,
+          inp:window.__pmdfVitals?.inp??null
         }));
         writeFileSync(output+'/performance-'+view.name+'.json',JSON.stringify(perf,null,2));
         await page.screenshot({path:output+'/'+view.name+'-ok.png',fullPage:true});
-        report.push({viewport:view.name,status:'PASS',ce:ce.num,mc:mc.num,mix:mix.num,large,a11y});
+        report.push({viewport:view.name,status:'PASS',ce:ce.num,mc:mc.num,mix:mix.num,large,a11y,darkA11y});
       }catch(e){
         report.push({viewport:view.name,status:'FAIL',error:String(e.stack||e),errors});
         try{await page.screenshot({path:output+'/'+view.name+'-failure.png',fullPage:true});}catch(_){}
