@@ -3061,7 +3061,7 @@ body .pmdf-more-actions:not([open])>.pmdf-import-body{display:none!important}
 
 
     <script defer src="assets/pmdf-neural-questions.js?v=20261103-mix-flash-v5"></script>
-    <script defer src="assets/pmdf-neural-flashcards.js?v=20261103-atomic-v1"></script>
+    <script defer src="assets/pmdf-neural-flashcards.js?v=20261104-anki-quality-v4"></script>
         <script>
         // ============================================================================
         // BASE DE CONHECIMENTO TÁTICA INTEGRADA (AS 5 LEIS PRINCIPAIS DA PMDF)
@@ -6248,7 +6248,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const el=$('q-panel'),s=Q_STATE;if(!el||!s)return;
             if(s.index>=s.items.length){
                 const pct=Math.round(s.hits/Math.max(1,s.items.length-(s.pending||0))*100);saveStudySession();
-                el.innerHTML='<h3 class="text-lg font-bold text-[#E5C158]">Simulado concluído</h3><p class="mt-2 text-slate-100">'+s.hits+' acertos de '+s.items.length+' questões ('+pct+'%). '+s.wrong+' erros · '+s.blank+' em branco · '+(s.pending||0)+' aguardando gabarito.</p><p class="mt-2 text-xs text-[#E5C158]">'+(s.coverage?s.coverage.shown+' de '+s.coverage.total+' itens gerados · '+s.coverage.remaining+' pendentes':'')+'</p><button class="mt-4 px-4 py-2 rounded-xl bg-[#D4AF37] text-[#050B16] font-bold" onclick="startQuestions(true)">'+(s.engine==='neural'?'Gerar mais com motor neural':s.engine==='adaptive'?'Próximo lote (modo seguro)':'Próximo lote inédito')+'</button> <button class="mt-4 px-4 py-2 rounded-xl border border-[#334155] text-slate-100" onclick="resetQuestionCycle();startQuestions()">Reiniciar ciclo</button>';
+                el.innerHTML='<h3 class="text-lg font-bold text-[#E5C158]">Simulado concluído</h3><p class="mt-2 text-slate-100">'+s.hits+' acertos de '+s.items.length+' questões ('+pct+'%). '+s.wrong+' erros · '+s.blank+' em branco · '+(s.pending||0)+' aguardando gabarito.</p><p class="mt-2 text-xs text-[#E5C158]">'+(s.coverage?s.coverage.shown+' de '+s.coverage.total+' itens gerados · '+s.coverage.remaining+' pendentes':'')+'</p><button type="button" id="q-result-prev" class="mt-4 px-4 py-2 rounded-xl border border-[#334155] text-slate-100" onclick="previousQuestion()">← Rever última questão</button> <button class="mt-4 px-4 py-2 rounded-xl bg-[#D4AF37] text-[#050B16] font-bold" onclick="startQuestions(true)">'+(s.engine==='neural'?'Gerar mais com motor neural':s.engine==='adaptive'?'Próximo lote (modo seguro)':'Próximo lote inédito')+'</button> <button class="mt-4 px-4 py-2 rounded-xl border border-[#334155] text-slate-100" onclick="resetQuestionCycle();startQuestions()">Reiniciar ciclo</button>';
                 return;
             }
             const q=s.items[s.index],mc=q.type==='MC',choices=mc?q.options:['Certo','Errado'];
