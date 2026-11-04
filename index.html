@@ -5,6 +5,17 @@
 <!-- Método PMDF: GitHub Pages + Supabase Auth/PostgREST; versão 2026-11-02-r2 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Método PMDF — Mapeador de Leis · 26 normas</title>
+    <!-- SEO e compartilhamento: metadados estáticos adequados ao GitHub Pages. -->
+    <meta name="description" content="Método PMDF: plataforma gratuita de preparação para concursos policiais com leis, questões comentadas, flashcards, revisão e correção de redações.">
+    <meta name="robots" content="index,follow">
+    <meta name="theme-color" id="pmdf-theme-color" content="#071020">
+    <link rel="canonical" href="https://metodopmdf.github.io/metodo-pmdf/">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="pt_BR">
+    <meta property="og:title" content="Método PMDF — Plataforma gratuita de estudos policiais">
+    <meta property="og:description" content="Estude leis, resolva questões, revise com flashcards e acompanhe seu desempenho gratuitamente.">
+    <meta property="og:url" content="https://metodopmdf.github.io/metodo-pmdf/">
+    <meta name="twitter:card" content="summary">
     <!-- CSS de produção gerado localmente; não depende do Tailwind CDN. -->
     <style id="tailwind-local">
 /*! tailwindcss v4.1.10 | MIT License | https://tailwindcss.com */
@@ -1483,9 +1494,11 @@
 </style>
 
     <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@1.66.0"></script>
+    <script defer src="https://unpkg.com/lucide@1.66.0"></script>
 <style>
         body {
             background-color: #050B16;
@@ -2430,8 +2443,23 @@ body .pmdf-more-actions:not([open])>.pmdf-import-body{display:none!important}
       body[data-theme="light"] .qstudio .qstudio-primary{color:#091321!important}
       @media (max-width:380px){.qstudio .qstudio-engine{padding:11px}.qstudio .qstudio-block{padding:12px}}
     </style>
+<style id="pmdf-accessibility-core">
+/* Acesso por teclado, legibilidade em telas pequenas e preferência por movimento reduzido. */
+.pmdf-skip-link{position:fixed;z-index:9999;top:10px;left:10px;padding:12px 16px;background:#f3d479;color:#0a1426;border:2px solid #071020;border-radius:10px;font-weight:700;transform:translateY(-180%);transition:transform .15s ease}
+.pmdf-skip-link:focus-visible{transform:translateY(0)}
+body :is(button,a,input,select,textarea,summary,[role="tab"]):focus-visible{outline:3px solid var(--accent,#d4af37);outline-offset:3px}
+#pmdf-main-content:focus{outline:none}
+#gen-modal:focus,#prompt-modal:focus{outline:none}
+#gen-modal [role="document"],#prompt-modal [role="document"]{overscroll-behavior:contain}
+#toast-container{width:min(calc(100vw - 2rem),28rem);max-height:45vh;overflow-y:auto;overflow-wrap:anywhere}
+#pmdf-main-content :is(pre,code){max-width:100%}
+#pmdf-main-content pre{white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:480px){#prompt-modal,#gen-modal{padding:.5rem}#prompt-modal [role="document"],#gen-modal [role="document"]{max-height:95dvh}#toast-container{right:1rem;bottom:1rem}}
+@media(prefers-reduced-motion:reduce){.pmdf-skip-link{transition:none}html:focus-within{scroll-behavior:auto}body :is(*,*::before,*::after){scroll-behavior:auto!important}}
+</style>
 </head>
 <body class="landing-active min-h-screen flex flex-col font-sans antialiased selection:bg-[#D4AF37] selection:text-[#050B16]">
+<a href="#pmdf-main-content" class="pmdf-skip-link">Ir para o conteúdo principal</a>
 
 <section id="welcome-screen" class="no-print welcome-screen" aria-label="Início dos estudos">
   <div class="welcome-content">
@@ -2480,17 +2508,17 @@ body .pmdf-more-actions:not([open])>.pmdf-import-body{display:none!important}
 </section>
 
     <!-- Notificação Toast (Substituto de alert) -->
-    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none no-print max-w-md"></div>
+    <div id="toast-container" role="region" aria-label="Notificações do sistema" aria-live="polite" aria-relevant="additions" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none no-print max-w-md"></div>
 
     <!-- Modal de Visualização do Prompt -->
-    <div id="prompt-modal" class="fixed inset-0 z-50 bg-[#040912]/80 backdrop-blur-sm hidden items-center justify-center p-4 no-print">
+    <div id="prompt-modal" role="dialog" aria-modal="true" aria-labelledby="prompt-modal-heading" tabindex="-1" class="fixed inset-0 z-50 bg-[#040912]/80 backdrop-blur-sm hidden items-center justify-center p-4 no-print">
         <div class="bg-[#0A1426] border border-[#1E2E4F] rounded-2xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
             <div class="flex items-center justify-between px-6 py-4 border-b border-[#172642] bg-[#040912]/50">
                 <div class="flex items-center gap-2.5">
                     <i data-lucide="terminal" class="w-5 h-5 text-[#E5C158]"></i>
-                    <h3 class="font-bold text-slate-100 text-lg">Prompt Mestre Configurado</h3>
+                    <h3 id="prompt-modal-heading" class="font-bold text-slate-100 text-lg">Prompt Mestre Configurado</h3>
                 </div>
-                <button onclick="closePromptModal()" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-[#0E1B33] transition">
+                <button type="button" onclick="closePromptModal()" aria-label="Fechar janela de prompt" title="Fechar" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-[#0E1B33] transition">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -2514,9 +2542,9 @@ body .pmdf-more-actions:not([open])>.pmdf-import-body{display:none!important}
     </div>
 
 
-    <div id="gen-modal" class="fixed inset-0 z-50 bg-[#040912]/80 backdrop-blur-sm hidden items-center justify-center p-3 no-print">
+    <div id="gen-modal" role="dialog" aria-modal="true" aria-labelledby="gen-title" tabindex="-1" class="fixed inset-0 z-50 bg-[#040912]/80 backdrop-blur-sm hidden items-center justify-center p-3 no-print">
         <div class="bg-[#0A1426] border border-[#1E2E4F] rounded-2xl max-w-2xl w-full max-h-[92vh] overflow-y-auto p-4 sm:p-6 space-y-3 shadow-2xl">
-            <div class="flex justify-between items-center"><h3 id="gen-title" class="font-bold text-white"></h3><button onclick="closeModal()" class="text-slate-400 hover:text-white px-2">✕</button></div>
+            <div class="flex justify-between items-center"><h3 id="gen-title" class="font-bold text-white"></h3><button type="button" onclick="closeModal()" aria-label="Fechar janela" title="Fechar" class="text-slate-400 hover:text-white px-2">✕</button></div>
             <div id="gen-body" class="text-sm text-slate-200"></div>
         </div>
     </div>
@@ -2563,7 +2591,7 @@ body .pmdf-more-actions:not([open])>.pmdf-import-body{display:none!important}
     </header>
 
     <!-- Conteúdo Principal -->
-    <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 space-y-6">
+    <main id="pmdf-main-content" tabindex="-1" class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 space-y-6">
 
 
         <nav class="pmdf-app-tabs no-print flex gap-1 sm:gap-2 border-b border-[#172642] overflow-x-auto whitespace-nowrap" role="tablist" aria-label="Ferramentas de estudo" onkeydown="pmdfTabKeydown(event)">
@@ -4104,7 +4132,7 @@ body .pmdf-more-actions:not([open])>.pmdf-import-body{display:none!important}
         // NÚCLEO (reconstruído): utilitários, nível, IA, render
         // =====================================================
         const $ = id => document.getElementById(id);
-        const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+        const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         const BACKUP_KEY_RE = /^(lvl|summaryFormat|lastKey|sim:stats|sim:errs|pmdf:session:v4|exam:imports|pmdf:results:events|pmdf:results:aggregates|q:coverage:v2:|essay:totals|(st|fc|leitner|leitnerDue|note|custom|essay):)/; // bancos de IA extensos ficam no dispositivo
         const SCRIPT_CACHE=Object.create(null);
         let AUTH_USER=null,CLOUD_SAVE_TIMER=null,CLOUD_SAVE_BUSY=false,CLOUD_DIRTY=false,CLOUD_LAST_ERROR='',CLOUD_MUTATION_SERIAL=0;
@@ -4165,10 +4193,16 @@ body .pmdf-more-actions:not([open])>.pmdf-import-body{display:none!important}
         let CUR = { key: null, guide: null, _poolCache: Object.create(null) }, LEVEL = LEVELS_SAFE_LEVEL(store.get('lvl')), TAB = 'leis';
 
         function toast(m, t = 'info') {
+            const box = $('toast-container');
+            if (!box) return;
+            // Evita empilhamento ilimitado de avisos durante operações e cliques repetidos.
+            if (box.children?.length >= 4) box.firstElementChild?.remove?.();
             const d = document.createElement('div');
             d.setAttribute('role', t === 'error' ? 'alert' : 'status');
             d.className = 'pointer-events-none px-4 py-3 rounded-xl text-sm shadow-xl border ' + (t === 'error' ? 'bg-red-950 border-red-500/50 text-red-100' : t === 'ok' ? 'bg-emerald-950 border-emerald-500/50 text-emerald-100' : 'bg-[#0E1B33] border-slate-600 text-slate-100');
-            d.textContent = m; $('toast-container').appendChild(d); setTimeout(() => d.remove(), 5000);
+            d.textContent = String(m ?? '').slice(0, 600);
+            box.appendChild(d);
+            setTimeout(() => d.remove(), 5000);
         }
 
         // ---------- Nível do candidato ----------
@@ -4457,12 +4491,55 @@ body .pmdf-more-actions:not([open])>.pmdf-import-body{display:none!important}
                 generateStrategicGuide();
             }
         }
-        // ---------- Modal genérico ----------
-        function openModal(t, h) { $('gen-title').textContent = t; $('gen-body').innerHTML = h; $('gen-modal').classList.replace('hidden', 'flex'); if(window.lucide)lucide.createIcons(); }
-        function closeModal() { $('gen-modal').classList.replace('flex', 'hidden'); }
-        const jget = (k, d) => { try { return JSON.parse(store.get(k)) || d; } catch (e) { return d; } };
+        // ---------- Modais acessíveis: foco inicial, ciclo de Tab e retorno ao acionador. ----------
+        let PMDF_DIALOG_PREVIOUS_FOCUS = null;
+        function pmdfOpenDialog(id) {
+            const modal = $(id);
+            if (!modal) return;
+            if (modal.classList.contains('hidden')) PMDF_DIALOG_PREVIOUS_FOCUS = document.activeElement || null;
+            modal.classList.replace('hidden', 'flex');
+            const first = modal.querySelector?.('button:not([disabled]),[href],input:not([disabled]),textarea:not([disabled]),select:not([disabled])');
+            (first || modal).focus?.();
+        }
+        function pmdfCloseDialog(id) {
+            const modal = $(id);
+            if (!modal || modal.classList.contains('hidden')) return;
+            modal.classList.replace('flex', 'hidden');
+            const previous = PMDF_DIALOG_PREVIOUS_FOCUS;
+            PMDF_DIALOG_PREVIOUS_FOCUS = null;
+            previous?.focus?.();
+        }
+        function pmdfTrapDialog(event) {
+            if (event.key !== 'Tab') return;
+            const active = ['prompt-modal','gen-modal'].map(id => $(id)).find(el => el && !el.classList.contains('hidden'));
+            if (!active) return;
+            const selectors = 'button:not([disabled]),[href],input:not([disabled]),textarea:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
+            const eligible = Array.from(active.querySelectorAll?.(selectors) || []).filter(el => !el.closest?.('[hidden],.hidden,[inert]'));
+            if (!eligible.length) { event.preventDefault(); active.focus?.(); return; }
+            const first = eligible[0], last = eligible[eligible.length - 1];
+            if (event.shiftKey && (document.activeElement === first || document.activeElement === active)) {
+                event.preventDefault(); last.focus();
+            } else if (!event.shiftKey && (document.activeElement === last || !active.contains?.(document.activeElement))) {
+                event.preventDefault(); first.focus();
+            }
+        }
+        function openModal(t, h) {
+            $('gen-title').textContent = t;
+            $('gen-body').innerHTML = h;
+            pmdfOpenDialog('gen-modal');
+            if (window.lucide) lucide.createIcons();
+        }
+        function closeModal() { pmdfCloseDialog('gen-modal'); }
+        const jget = (k, d) => { try { return JSON.parse(store.get(k)) ?? d; } catch (e) { return d; } };
         const hash = s => { let x = 0; for (const c of s) x = (x * 31 + c.charCodeAt(0)) | 0; return x; };
-        const shuffle = a => a.map(v => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(v => v[1]);
+        const shuffle = a => { // Fisher-Yates: uniforme, O(n), não altera o array original.
+            const result = [...a];
+            for (let i = result.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [result[i], result[j]] = [result[j], result[i]];
+            }
+            return result;
+        };
         function copyText(t) { navigator.clipboard.writeText(t).then(() => toast('Copiado!', 'ok'), () => toast('Selecione e copie manualmente.', 'error')); }
 
         // ---------- 1. Flashcards com repetição espaçada (caixas de Leitner) ----------
@@ -4963,12 +5040,12 @@ const CLOZE_RE = /(\d+\s*(?:dias|dia|anos|ano|meses|mês|horas|hora)|\d+\/\d+|(?
         }
         function copyFormattedGuide() { if (!CUR.guide) return toast('Carregue um guia primeiro.', 'error'); const h = guideHtml(CUR.guide, false); const d = document.createElement('div'); d.innerHTML = h; copyHtml(h, d.innerText || d.textContent); }
         function currentPrompt() { return TAB === 'redacao' ? essayPrompt() : lawPrompt(false); }
-        function openPromptModal() { $('prompt-modal-text').textContent = currentPrompt(); ensurePromptSwitch(); $('prompt-modal').classList.replace('hidden', 'flex'); }
+        function openPromptModal() { $('prompt-modal-text').textContent = currentPrompt(); ensurePromptSwitch(); pmdfOpenDialog('prompt-modal'); }
         function ensurePromptSwitch() {
             if ($('ps-btns')) return; const p = $('prompt-modal-text'), d = document.createElement('div'); d.id = 'ps-btns'; d.className = 'flex flex-wrap gap-2 mb-2';
             d.innerHTML = `<button onclick="$('prompt-modal-text').textContent=currentPrompt()" class="${BTN}">📄 Prompt do guia / redação</button><button onclick="$('prompt-modal-text').textContent=scanPrompt()" class="${BTN}">🔎 Prompt de Varredura de Questões</button><button onclick="$('prompt-modal-text').textContent=pmdfMindPrompt(CUR.guide)" class="${BTN}">🧠 Prompt Mapa Mental (Padrão Outro Turno)</button>`; p.parentNode.insertBefore(d, p);
         }
-        function closePromptModal() { $('prompt-modal').classList.replace('flex', 'hidden'); }
+        function closePromptModal() { pmdfCloseDialog('prompt-modal'); }
         function copyPromptFromModal() { navigator.clipboard.writeText($('prompt-modal-text').textContent).then(() => toast('Prompt copiado!', 'ok'), () => toast('Selecione e copie manualmente.', 'error')); }
         function showJsonPrompt(){$('prompt-modal-text').textContent=lawPrompt(true);if($('external-json-input'))$('external-json-input').classList.add('hidden');if($('external-json-help'))$('external-json-help').classList.add('hidden');}
         function toggleExternalJsonInput(){const area=$('external-json-input'),help=$('external-json-help');if(!area)return;area.classList.toggle('hidden');if(help)help.classList.toggle('hidden');if(!area.classList.contains('hidden'))area.focus();}
@@ -5941,6 +6018,8 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const light = theme === 'light';
             document.body.dataset.theme = light ? 'light' : 'dark';
             document.documentElement.style.colorScheme = light ? 'light' : 'dark';
+            const browserTheme = $('pmdf-theme-color');
+            if (browserTheme) browserTheme.setAttribute('content', light ? '#f6f8fc' : '#071020');
             const button = $('theme-toggle');
             if (button) button.setAttribute('aria-pressed', String(light));
             if ($('theme-symbol')) $('theme-symbol').textContent = light ? '☾' : '☀';
@@ -6988,7 +7067,13 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             try{const imported=jget('exam:imports',[]);if(Array.isArray(imported))IMPORTED_QUESTIONS.push(...imported.slice(0,500).filter(q=>q&&['CE','MC'].includes(q.type)&&typeof q.statement==='string'));}catch(e){}
             refreshImportedExamSources();refreshWelcome();showQuestionTotals();updateNeuralFormatUI();void bootstrapAccount();
             document.addEventListener('visibilitychange',()=>{if(document.hidden&&CLOUD_DIRTY)void flushCloudSave();});
-            document.addEventListener('keydown',event=>{if(event.key==='Escape'){closePromptModal();closeModal();}});
+            document.addEventListener('keydown',event=>{
+                if(event.key==='Tab') return pmdfTrapDialog(event);
+                if(event.key==='Escape'){
+                    if(!$('prompt-modal')?.classList.contains('hidden')) closePromptModal();
+                    else if(!$('gen-modal')?.classList.contains('hidden')) closeModal();
+                }
+            });
             ['prompt-modal','gen-modal'].forEach(id=>{const modal=$(id);if(modal)modal.addEventListener('click',event=>{if(event.target===modal){if(id==='prompt-modal')closePromptModal();else closeModal();}});});
         });
 
