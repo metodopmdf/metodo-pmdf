@@ -13,6 +13,9 @@ const BASE=(process.env.PMDF_ONLINE_URL||'https://metodopmdf.github.io/metodo-pm
 const expected=readFileSync(new URL('../index.html',import.meta.url));
 const expectedNeural=readFileSync(new URL('../assets/pmdf-neural-questions.js',import.meta.url));
 const expectedFlashcards=readFileSync(new URL('../assets/pmdf-neural-flashcards.js',import.meta.url));
+const expectedApp=readFileSync(new URL('../assets/pmdf-app.js',import.meta.url));
+const expectedBase=readFileSync(new URL('../assets/pmdf-tailwind.css',import.meta.url));
+const expectedStyles=readFileSync(new URL('../assets/pmdf-components.css',import.meta.url));
 const hash=b=>createHash('sha256').update(b).digest('hex');
 const output='test-artifacts';
 mkdirSync(output,{recursive:true});
@@ -30,7 +33,19 @@ async function published(){
         if(asset.ok&&hash(Buffer.from(await asset.arrayBuffer()))===hash(expectedNeural)){
           const flash=await fetch(BASE+'assets/pmdf-neural-flashcards.js?qa_build='+Date.now(),{
             headers:{'Cache-Control':'no-cache'},signal:AbortSignal.timeout(15000)});
-          if(flash.ok&&hash(Buffer.from(await flash.arrayBuffer()))===hash(expectedFlashcards))return true;
+          if(flash.ok&&hash(Buffer.from(await flash.arrayBuffer()))===hash(expectedFlashcards)){
+            const assets=[
+              ['assets/pmdf-app.js',expectedApp],['assets/pmdf-tailwind.css',expectedBase],
+              ['assets/pmdf-components.css',expectedStyles]
+            ];
+            let confirmed=true;
+            for(const [path,content] of assets){
+              const res=await fetch(BASE+path+'?qa_build='+Date.now(),{
+                headers:{'Cache-Control':'no-cache'},signal:AbortSignal.timeout(15000)});
+              if(!res.ok||hash(Buffer.from(await res.arrayBuffer()))!==hash(content)){confirmed=false;break;}
+            }
+            if(confirmed)return true;
+          }
         }
       }
     }catch(e){console.log('[QA ONLINE] Verificação indisponível: '+String(e.message||e));}
@@ -61,7 +76,7 @@ async function setup(page){
   await page.locator('#account-switch').click();
   assert.equal(await page.locator('#account-submit').getAttribute('type'),'submit','Login não restaurado');
   const oldTheme=await page.evaluate(()=>document.body.dataset.theme);
-  await page.locator('.welcome-actions button[onclick="toggleTheme()"]').click();
+  await page.locator('.welcome-actions button[data-pmdf-onclick="toggleTheme()"]').click();
   assert.notEqual(await page.evaluate(()=>document.body.dataset.theme),oldTheme,'Troca de tema falhou');
   const themeColor=await page.locator('#pmdf-theme-color').getAttribute('content');
   assert.equal(themeColor,(await page.evaluate(()=>document.body.dataset.theme))==='light'?'#f6f8fc':'#071020',
@@ -118,7 +133,7 @@ async function checkUsability(page,view){
   assert.equal(await page.evaluate(()=>document.activeElement?.id),'generate-btn','Primary action navigation');
   await page.locator('#tab-btn-questoes').click();
   assert(await page.locator('#q-generate-button').isVisible(),'Question generation button hidden');
-  const reset=page.locator('#q-extra-actions button[onclick="resetQuestionCycle()"]');
+  const reset=page.locator('#q-extra-actions button[data-pmdf-onclick="resetQuestionCycle()"]');
   assert(!(await reset.isVisible()),'Secondary actions should be collapsed');
   await page.locator('#q-extra-actions > summary').click();
   assert(await reset.isVisible(),'Secondary actions not reachable');
@@ -182,7 +197,7 @@ async function checkFlashcards(page){
   await page.locator('#anki-generation-mode').selectOption('advanced');
   await page.locator('#anki-mode').selectOption('all');
   await page.locator('#anki-batch-size').selectOption('50');
-  await page.locator('button[onclick="startAnki()"]').click();
+  await page.locator('button[data-pmdf-onclick="startAnki()"]').click();
   await page.waitForFunction(()=>document.querySelector('#anki-panel .anki-question')?.textContent?.length>35,
     null,{timeout:20000});
   assert((await page.evaluate(()=>window.eval('ANKI_STATE.cards.length')))<=50,
@@ -203,18 +218,18 @@ async function checkFlashcards(page){
   assert(first.length>35,'Flashcard sem pergunta substantiva');
   assert(!first.includes('Identifique o instituto, seu requisito principal'),
     'Flashcard genérico antigo reapareceu');
-  await page.locator('button[onclick="revealAnki()"]').click();
+  await page.locator('button[data-pmdf-onclick="revealAnki()"]').click();
   assert(await page.locator('#anki-panel .anki-proof').isVisible(),'Fundamento do verso ausente');
   assert(await page.locator('#anki-panel .anki-learn-aid').count()>=1,'Verso sem orientação prática');
   assert(await page.locator('#anki-nav-next').isVisible(),'Botão próximo ausente no flashcard');
   assert(await page.locator('#anki-nav-prev').isDisabled(),'Retornar antes do primeiro cartão não foi bloqueado');
   assert((await page.locator('#anki-panel .anki-proof').innerText()).length>45,'Fundamento incompleto');
-  assert(await page.locator('button[onclick="gradeAnki(false)"]').isVisible(),
+  assert(await page.locator('button[data-pmdf-onclick="gradeAnki(false)"]').isVisible(),
     'Falta botão de avaliação honesta');
   assert.equal(await page.locator('#anki-panel .anki-grade-choices button').count(),4,
     'Revisão estilo Anki deve mostrar 4 avaliações');
   const before=await page.evaluate(()=>window.eval('ANKI_STATE.cards[ANKI_STATE.index].id'));
-  await page.locator('button[onclick="gradeAnki(false)"]').click();
+  await page.locator('button[data-pmdf-onclick="gradeAnki(false)"]').click();
   const state=await page.evaluate(id=>({box:window.eval('getCardBox('+JSON.stringify(id)+').box'),
     wrong:window.eval('ANKI_STATE.wrong')}),before);
   assert.equal(state.box,0,'Cartão marcado como não lembrado avançou a caixa');
@@ -227,16 +242,16 @@ async function checkFlashcards(page){
   assert.equal(await page.evaluate(()=>window.eval('ANKI_STATE.wrong')),1,'Retorno duplicou erros');
   await page.locator('#anki-nav-next').click();
   assert.equal(await page.evaluate(()=>window.eval('ANKI_STATE.index')),1,'Próximo não retornou ao ponto anterior');
-  await page.locator('button[onclick="revealAnki()"]').click();
+  await page.locator('button[data-pmdf-onclick="revealAnki()"]').click();
   const hardId=await page.evaluate(()=>window.eval('ANKI_STATE.cards[ANKI_STATE.index].id'));
-  await page.locator('button[onclick="gradeAnkiRating(\'hard\')"]').click();
+  await page.locator('button[data-pmdf-onclick="gradeAnkiRating(\'hard\')"]').click();
   const hardState=await page.evaluate(id=>window.eval('getCardBox('+JSON.stringify(id)+')'),hardId);
   assert(hardState.due>Date.now()+11*3600000&&hardState.due<Date.now()+13*3600000,
     'Difícil não agendou a revisão em aproximadamente 12 horas');
-  await page.locator('button[onclick="revealAnki()"]').click();
+  await page.locator('button[data-pmdf-onclick="revealAnki()"]').click();
   const easyId=await page.evaluate(()=>window.eval('ANKI_STATE.cards[ANKI_STATE.index].id'));
   const oldBox=await page.evaluate(id=>window.eval('getCardBox('+JSON.stringify(id)+').box'),easyId);
-  await page.locator('button[onclick="gradeAnkiRating(\'easy\')"]').click();
+  await page.locator('button[data-pmdf-onclick="gradeAnkiRating(\'easy\')"]').click();
   const easyState=await page.evaluate(id=>window.eval('getCardBox('+JSON.stringify(id)+')'),easyId);
   assert.equal(easyState.box,Math.min(4,oldBox+2),'Fácil não avançou duas caixas');
   assert(easyState.due>Date.now(),'Fácil não programou revisão futura');
@@ -275,7 +290,7 @@ async function longSource(page){
   await page.locator('details.qstudio-paste summary').click();
   await page.locator('#q-inline-title').fill('Regulamento fictício de 90 dispositivos QA');
   await page.locator('#q-inline-text').fill(rules);
-  await page.locator('button[onclick="questionUseText()"]').click();
+  await page.locator('button[data-pmdf-onclick="questionUseText()"]').click();
   await page.waitForFunction(()=>document.getElementById('q-document-indicator')?.textContent?.includes('Regulamento fictício de 90'),
     null,{timeout:15000});
   await page.locator('#q-format').selectOption('CE');
@@ -306,10 +321,30 @@ async function longSource(page){
   assert.match(await page.locator('#anki-generation-status').innerText(),/Cobertura:/);
   return {first:first.length,second:second.length,flashcards:flash};
 }
+async function verifyCsp(browser){
+  const context=await browser.newContext();
+  try{
+    const page=await context.newPage();
+    const res=await page.goto(BASE+'?qa_csp='+Date.now(),{waitUntil:'domcontentloaded',timeout:60000});
+    assert.equal(res?.status(),200,'CSP: publicação indisponível');
+    const result=await page.evaluate(()=>{
+      window.__pmdfUnsafeInlineMarker=0;
+      const button=document.createElement('button');
+      button.setAttribute('onclick','window.__pmdfUnsafeInlineMarker=1');
+      document.body.appendChild(button);button.click();button.remove();
+      const script=document.createElement('script');
+      script.textContent='window.__pmdfUnsafeInlineMarker=2';
+      document.body.appendChild(script);script.remove();
+      return window.__pmdfUnsafeInlineMarker;
+    });
+    assert.equal(result,0,'CSP não bloqueou scripts e eventos inline');
+  } finally {await context.close();}
+}
 async function main(){
   await published();
   const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
   try{
+    await verifyCsp(browser);
     for(const view of [
       {name:'desktop',viewport:{width:1366,height:900}},
       {name:'mobile',viewport:{width:390,height:844},isMobile:true,hasTouch:true}
@@ -317,6 +352,10 @@ async function main(){
       const context=await browser.newContext({viewport:view.viewport,
         ...(view.isMobile?{isMobile:true,hasTouch:true}:{}),deviceScaleFactor:1});
       const page=await context.newPage();
+      // A execução funcional necessita manipular um estado autenticado fictício por window.eval.
+      // CSP é verificada separadamente acima; o bypass existe SOMENTE no navegador de QA.
+      const devtools=await context.newCDPSession(page);
+      await devtools.send('Page.setBypassCSP',{enabled:true});
       const errors=[];
       page.on('pageerror',err=>errors.push(String(err.message||err)));
       page.on('crash',()=>errors.push('Chromium renderer crashed'));
