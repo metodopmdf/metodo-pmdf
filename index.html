@@ -6221,8 +6221,22 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             }
             const q=s.items[s.index],mc=q.type==='MC',choices=mc?q.options:['Certo','Errado'];
             el.innerHTML='<div class="study-progress-meter" aria-label="Progresso das questões"><span style="width:'+Math.round(s.index/s.items.length*100)+'%"></span></div><p class="text-xs text-slate-400">✅ '+s.hits+' acertos · ❌ '+s.wrong+' erros · ◻ '+s.blank+' brancas · '+(s.pending||0)+' sem gabarito</p><p class="text-sm text-[#E5C158] font-semibold mb-2">Questão '+(s.index+1)+' de '+s.items.length+'</p><p class="text-xs text-slate-400 mb-3">'+esc(q.law||'Material de estudo')+' · '+esc(q.topic||'Geral')+'</p>'+(q.origin==='neural-local'?'<p class="text-xs mb-3 text-[#E5C158]">Motor neural local · confira a fonte e a vigência</p>':q.origin==='webllm-local'?'<p class="text-xs mb-3 text-[#E5C158]">Questão de IA local de sessão anterior</p>':'')+'<p class="text-base text-slate-100 leading-relaxed font-semibold mb-4">'+esc(q.statement)+'</p>'+
-                '<div id="q-alternatives" class="grid gap-2">'+choices.map((choice,j)=>'<button type="button" data-choice="'+(mc?'ABCDE'[j]:'CE'[j])+'" onclick="answerQuestion(this.dataset.choice)" class="q-choice text-left px-4 py-3 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-100 hover:border-[#D4AF37]">'+(mc?'ABCDE'[j]+') ':'')+esc(choice)+'</button>').join('')+'</div><div class="flex flex-wrap gap-2 mt-3"><button type="button" id="q-blank" onclick="answerQuestion(null)" class="px-3 py-2 rounded-lg border border-[#334155] text-slate-200 bg-[#0E1B33]">Deixar em branco</button></div><div id="q-feedback" role="status" aria-live="polite"></div>';
-            if(!s.questionStart)s.questionStart=Date.now();s.answered=false;
+                '<div id="q-alternatives" class="grid gap-2">'+choices.map((choice,j)=>'<button type="button" data-choice="'+(mc?'ABCDE'[j]:'CE'[j])+'" onclick="answerQuestion(this.dataset.choice)" class="q-choice text-left px-4 py-3 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-100 hover:border-[#D4AF37]">'+(mc?'ABCDE'[j]+') ':'')+esc(choice)+'</button>').join('')+'</div><div class="pmdf-study-nav"><button type="button" id="q-blank" onclick="answerQuestion(null)" class="qstudio-secondary">Deixar em branco</button>'+
+                 '<div class="pmdf-study-nav-pair"><button type="button" id="q-nav-prev" onclick="previousQuestion()" '+(s.index===0?'disabled':'')+' class="qstudio-secondary">← Anterior</button>'+
+                 '<button type="button" id="q-nav-next" onclick="nextQuestion()" disabled class="qstudio-primary">'+(s.index+1===s.items.length?'Ver resultado':'Próxima →')+'</button></div></div>'+
+                 '<div id="q-feedback" role="status" aria-live="polite"></div>';
+            const previous=s.responses?.[s.index];
+            if(previous){
+                s.answered=true;
+                document.querySelectorAll('#q-alternatives button').forEach(btn=>{
+                    btn.disabled=true;
+                    if(btn.dataset.choice===q.answer)btn.classList.add('border-emerald-500');
+                    if(previous.choice===btn.dataset.choice&&previous.choice!==q.answer)btn.classList.add('border-red-500');
+                });
+                $('q-blank').disabled=true;
+                $('q-feedback').innerHTML=previous.feedback||'';
+                $('q-nav-next').disabled=false;
+            }else{s.answered=false;if(!s.questionStart)s.questionStart=Date.now();}
         }
         function answerQuestion(answer){
             const s=Q_STATE;if(!s||s.answered)return;
@@ -6243,9 +6257,21 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const gab=!hasKey?'Não disponível: importe o gabarito oficial':q.type==='MC'?q.answer+') '+(q.options['ABCDE'.indexOf(q.answer)]||''):q.answer==='C'?'Certo':'Errado';
             const aiEvidence=['webllm-local','neural-local'].includes(q.origin)?'<p class="mt-2"><strong>Trecho literal:</strong> '+esc(q.sourceQuote||'Não disponível')+'</p>':'';
             const aiDistractors=['webllm-local','neural-local'].includes(q.origin)&&Array.isArray(q.optionAnalysis)&&q.optionAnalysis.length?'<div class="mt-2"><strong>Justificativa das alternativas:</strong><ul class="list-disc ml-5">'+q.optionAnalysis.map((v,i)=>'<li>'+esc('ABCDE'[i]+') '+v)+'</li>').join('')+'</ul></div>':'';
-            $('q-feedback').innerHTML='<div class="g-card mt-4"><p class="font-bold '+(correct?'text-emerald-300':'text-[#E5C158]')+'">'+(blank?'Em branco':!hasKey?'Resposta registrada — aguardando gabarito':correct?'✅ Acertou':'❌ Errou')+' · Gabarito: '+esc(gab)+'</p><p><strong>Comentário:</strong> '+esc(q.explanation||'Confira o trecho-fonte.')+'</p><p><strong>Fundamento:</strong> '+esc(q.lawBasis||'Conteúdo estudado')+'</p>'+aiEvidence+aiDistractors+(q.easyTip?'<p><strong>Dica:</strong> '+esc(q.easyTip)+'</p>':'')+'</div><button type="button" class="mt-3 px-5 py-2.5 rounded-xl bg-[#D4AF37] text-[#050B16] font-bold" onclick="nextQuestion()">'+(s.index+1===s.items.length?'Ver resultado':'Próxima questão →')+'</button>';
+            $('q-feedback').innerHTML='<div class="g-card mt-4"><p class="font-bold '+(correct?'text-emerald-300':'text-[#E5C158]')+'">'+(blank?'Em branco':!hasKey?'Resposta registrada — aguardando gabarito':correct?'✅ Acertou':'❌ Errou')+' · Gabarito: '+esc(gab)+'</p><p><strong>Comentário:</strong> '+esc(q.explanation||'Confira o trecho-fonte.')+'</p><p><strong>Fundamento:</strong> '+esc(q.lawBasis||'Conteúdo estudado')+'</p>'+aiEvidence+aiDistractors+(q.easyTip?'<p><strong>Dica:</strong> '+esc(q.easyTip)+'</p>':'')+'</div>';
+            s.responses=s.responses||{};
+            s.responses[s.index]={choice:answer,feedback:$('q-feedback').innerHTML};
+            $('q-nav-next').disabled=false;
+            saveStudySession();
         }
-        function nextQuestion(){if(!Q_STATE||!Q_STATE.answered)return;Q_STATE.index++;Q_STATE.answered=false;Q_STATE.questionStart=Date.now();saveStudySession();drawQuestions();}
+        function previousQuestion(){
+            if(!Q_STATE||Q_STATE.index<=0)return;
+            Q_STATE.index--;Q_STATE.questionStart=Date.now();saveStudySession();drawQuestions();
+        }
+        function nextQuestion(){
+            if(!Q_STATE||!Q_STATE.answered)return;
+            Q_STATE.index++;Q_STATE.answered=false;Q_STATE.questionStart=Date.now();
+            saveStudySession();drawQuestions();
+        }
         function showQuestionTotals(){ const st=jget('sim:stats',{}),a=Object.values(st).reduce((n,x)=>n+(x.a||0),0),c=Object.values(st).reduce((n,x)=>n+(x.c||0),0);
             const el=$('question-progress-summary');if(el)el.textContent='Histórico no dispositivo: '+a+' respondidas · '+c+' certas · '+(a-c)+' erradas'; }
         let ANKI_STATE=null,ANKI_BANK=[],ANKI_GENERATION=0;
