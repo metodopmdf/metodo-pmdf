@@ -28,7 +28,12 @@ assert.equal(new Set(result.cards.map(c=>c.id)).size,result.cards.length,"IDs du
 assert(result.cards.some(c=>c.modality==="Básico (P&R)"),"Sem modalidade básica");
 assert(result.cards.some(c=>c.modality==="Cloze (Lacuna)"),"Sem modalidade lacunas");
 assert(result.cards.some(c=>c.modality==="Gatilho de Banca"),"Sem modalidade Cebraspe");
-assert(result.cards.some(c=>c.cloze?.includes("{{c1::15 dias}}")),"Sem padrão Cloze Anki");
+assert(result.cards.some(c=>c.front.includes("[lacuna]")),"Lacunas não estão contextualizadas");
+assert(result.cards.every(c=>!c.front.includes("Complete a expressão suprimida")),"Modelo antigo de pergunta genérica");
+assert(result.cards.every(c=>c.front.length<=360&&c.back.length<=270),"Cartão extenso demais");
+assert(result.cards.some(c=>c.back==="15 dias"),"Verso não é atômico");
+assert(result.cards.every(c=>c.id.startsWith("anki-v4-")),"ID incorreto");
+assert(result.cards.some(c=>/\{\{c1::15 dias(?:::|\}\})/.test(c.cloze||"")),"Sem padrão Cloze Anki");
 assert(result.cards.some(c=>c.back.startsWith("ERRADO")&&c.back.includes("15 dias")),"Sem armadilha corrigida");
 assert(result.cards.some(c=>c.back.startsWith("CERTO")),"Sem literalidade correta");
 for(const c of result.cards){

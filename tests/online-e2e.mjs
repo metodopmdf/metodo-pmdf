@@ -153,6 +153,8 @@ async function checkFlashcards(page){
   assert((await page.locator('#anki-panel .anki-proof').innerText()).length>45,'Fundamento incompleto');
   assert(await page.locator('button[onclick="gradeAnki(false)"]').isVisible(),
     'Falta botão de avaliação honesta');
+  assert.equal(await page.locator('#anki-panel .anki-grade-choices button').count(),4,
+    'Revisão estilo Anki deve mostrar 4 avaliações');
   const before=await page.evaluate(()=>window.eval('ANKI_STATE.cards[ANKI_STATE.index].id'));
   await page.locator('button[onclick="gradeAnki(false)"]').click();
   const state=await page.evaluate(id=>({box:window.eval('getCardBox('+JSON.stringify(id)+').box'),
@@ -167,6 +169,16 @@ async function checkFlashcards(page){
   await page.locator('#anki-export-tsv').click();
   const tsv=await tsvWait;
   assert.match(tsv.suggestedFilename(),/\.tsv$/,'Exportação TSV incompatível');
+  const clozeWait=page.waitForEvent('download',{timeout:15000});
+  await page.locator('#anki-export-cloze').click();
+  const clozeFile=await clozeWait,clozeText=readFileSync(await clozeFile.path(),'utf8');
+  assert.match(clozeText,/#notetype:Cloze/);
+  assert.match(clozeText,/\{\{c1::/);
+  const basicWait=page.waitForEvent('download',{timeout:15000});
+  await page.locator('#anki-export-basic').click();
+  const basicFile=await basicWait,basicText=readFileSync(await basicFile.path(),'utf8');
+  assert.match(basicText,/#notetype:Basic/);
+  assert(!basicText.includes('{{c1::'),'Notas Cloze foram exportadas como Basic');
   await page.locator('#tab-btn-questoes').click();
 }
 async function longSource(page){

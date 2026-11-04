@@ -150,7 +150,7 @@ gradeApp.revealAnki();
 assert(gradeClient.$('anki-panel').innerHTML.includes('VERSO'),'Verso não apareceu');
 assert(gradeClient.$('anki-panel').innerHTML.includes('Fundamento rastreável'),
   'Novo cartão não mostra origem');
-assert(gradeClient.$('anki-panel').innerHTML.includes('Não lembrei'),
+assert(gradeClient.$('anki-panel').innerHTML.includes('Errei')&&gradeClient.$('anki-panel').innerHTML.includes('Difícil')&&gradeClient.$('anki-panel').innerHTML.includes('Fácil'),
   'Botão de revisar cartão não está presente');
 gradeApp.gradeAnki(false);
 assert.equal(gradeApp.getCardBox(gradeCard.id).box,0,
