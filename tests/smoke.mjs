@@ -191,6 +191,16 @@ qNav.answerQuestion(initial.answer);
 assert.equal(qNav.questionState().hits,marked,'Voltar duplicou pontuação');
 qNav.nextQuestion();
 assert.equal(qNav.questionState().index,1,'Próxima questão não funcionou');
+qNav.questionState().items=qNav.questionState().items.slice(0,2);
+qNav.answerQuestion(qNav.questionState().items[1].answer);
+const finalHits=qNav.questionState().hits;
+qNav.nextQuestion();
+assert.equal(qNav.questionState().index,2,'Navegação não abriu o resultado final');
+assert(qNavClient.$('q-panel').innerHTML.includes('q-result-prev'),
+  'Resultado final não permite voltar à última questão');
+qNav.previousQuestion();
+assert.equal(qNav.questionState().index,1,'Voltar do resultado não recuperou a última questão');
+assert.equal(qNav.questionState().hits,finalHits,'Retornar do resultado duplicou pontuação');
 
 // Validação estrutural dos controles que o usuário realmente utiliza.
 const staticMarkup=html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'');
