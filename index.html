@@ -5770,8 +5770,8 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         function buildStudyCards(g){
             const engine=window.PMDFNeuralFlashcards;
             if(engine?.build){
-                try{const generated=engine.build(g,{level:LEVEL});if(generated.cards.length)return generated.cards;}
-                catch(e){console.warn('Flashcards: usando compatibilidade clássica.',e);}
+                try{return engine.build(g,{level:LEVEL}).cards;}
+                catch(e){console.warn('Flashcards: usando compatibilidade clássica após erro do motor.',e);}
             }
             return buildStudyCardsLegacy(g);
         }
