@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const app=readFileSync(new URL('../assets/pmdf-app.js',import.meta.url),'utf8');
+const guides=readFileSync(new URL('../assets/pmdf-guides.js',import.meta.url),'utf8');
 const base=readFileSync(new URL('../assets/pmdf-tailwind.css',import.meta.url),'utf8');
 const css=readFileSync(new URL('../assets/pmdf-components.css',import.meta.url),'utf8');
 assert.match(html,/^<!doctype html>/i);
@@ -11,8 +12,8 @@ assert.match(html,/<meta name="viewport"/);
 assert.match(html,/<meta name="description" content="[^"]{40,}"/);
 assert.match(html,/<link rel="canonical" href="https:\/\/metodopmdf\.github\.io\/metodo-pmdf\/"/);
 for(const item of ['og:type','og:title','og:description','og:url'])assert(html.includes('property="'+item+'"'),'Metadado ausente '+item);
-for(const file of ['pmdf-tailwind.css','pmdf-components.css','pmdf-app.js','pmdf-neural-questions.js','pmdf-neural-flashcards.js'])assert(html.includes(file),'Arquivo não carregado '+file);
-assert(base.length>25000&&css.length>50000&&app.length>400000,'Arquivo extraído truncado');
+for(const file of ['pmdf-tailwind.css','pmdf-components.css','pmdf-app.js','pmdf-guides.js','pmdf-neural-questions.js','pmdf-neural-flashcards.js'])assert(html.includes(file),'Arquivo não carregado '+file);
+assert(base.length>25000&&css.length>50000&&app.length>300000&&guides.length>150000,'Arquivo extraído truncado');
 assert(!/<style\b/i.test(html),'CSS inline encontrado');
 assert(!/<script\b(?![^>]*\bsrc\s*=)[^>]*>/i.test(html),'JavaScript inline encontrado');
 assert(!/\s(onclick|onchange|oninput|onsubmit|onkeydown|onkeyup)\s*=/i.test(html+app),'Eventos inline remanescentes');
@@ -29,7 +30,7 @@ for(const [id,title] of [['prompt-modal','prompt-modal-heading'],['gen-modal','g
 }
 for(const id of ['account-form','account-password-toggle','tab-btn-leis','tab-btn-questoes','tab-btn-anki','tab-btn-resultados','tab-btn-redacao','q-source','q-format','anki-start','essay-theme','toast-container'])assert(ids.includes(id),'Controle principal ausente: '+id);
 for(const tag of html.matchAll(/<a\b[^>]*target="_blank"[^>]*>/gi))assert.match(tag[0],/rel="[^"]*noopener[^"]*"/i,'Link externo inseguro');
-new Function(app);
+new Function(guides+'\n'+app);
 for(const name of ['pmdfOpenDialog','pmdfCloseDialog','pmdfTrapDialog','pmdfDispatchSpecial','startQuestions','startAnki','toggleTheme','toggleAccountPassword','correctEssay'])
   assert(app.includes('function '+name+'(')||app.includes('async function '+name+'('),'Função indisponível: '+name);
 assert(html.length<100000,'HTML de entrada excessivo (regressão de modularização)');
