@@ -63,6 +63,9 @@ async function setup(page){
   const oldTheme=await page.evaluate(()=>document.body.dataset.theme);
   await page.locator('.welcome-actions button[onclick="toggleTheme()"]').click();
   assert.notEqual(await page.evaluate(()=>document.body.dataset.theme),oldTheme,'Troca de tema falhou');
+  const themeColor=await page.locator('#pmdf-theme-color').getAttribute('content');
+  assert.equal(themeColor,(await page.evaluate(()=>document.body.dataset.theme))==='light'?'#f6f8fc':'#071020',
+    'Navegador não acompanha a cor do tema');
   await page.evaluate(()=>{
     window.eval("AUTH_USER={username:'qa_chromium_local',displayName:'Teste de interface'}; CUR={key:'lai',guide:BUILTIN_PMDF_GUIDES.lai,_poolCache:Object.create(null)}");
     window.beginStudies(false);
@@ -80,6 +83,28 @@ async function checkUsability(page,view){
     assert.equal(await page.locator('#tab-'+t).getAttribute('role'),'tabpanel','Tab panel semantics '+t);
     assert(await page.locator('#pmdf-context-'+t).isVisible(),'Tool guidance '+t);
   }
+  // Teclado e diálogos: foco inicial, Tab circular, Escape e devolução do foco.
+  await page.locator('#tab-btn-leis').focus();
+  await page.evaluate(()=>window.openModal('Auditoria de acessibilidade',
+    '<button id="qa-dialog-action" type="button">Ação de teste</button>'));
+  assert(await page.locator('#gen-modal').isVisible(),'Modal genérico não abriu');
+  assert.equal(await page.locator('#gen-modal').getAttribute('aria-modal'),'true','Modal sem semântica ARIA');
+  assert(await page.evaluate(()=>!!document.activeElement?.closest('#gen-modal')),'Foco escapou do diálogo');
+  await page.locator('#qa-dialog-action').focus();
+  await page.keyboard.press('Tab');
+  assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-label')),
+    'Fechar janela','Tab não retornou ao primeiro elemento do modal');
+  await page.keyboard.press('Escape');
+  assert(!(await page.locator('#gen-modal').isVisible()),'Escape não fechou o diálogo genérico');
+  assert.equal(await page.evaluate(()=>document.activeElement?.id),'tab-btn-leis',
+    'Fechamento não devolveu o foco ao acionador');
+  await page.locator('#tab-btn-leis').focus();
+  await page.evaluate(()=>window.openPromptModal());
+  assert(await page.locator('#prompt-modal').isVisible(),'Modal de prompt não abriu');
+  assert(await page.evaluate(()=>!!document.activeElement?.closest('#prompt-modal')),'Foco não entrou no modal de prompt');
+  await page.keyboard.press('Escape');
+  assert(!(await page.locator('#prompt-modal').isVisible()),'Escape não fechou o prompt');
+  assert.equal(await page.evaluate(()=>document.activeElement?.id),'tab-btn-leis','Foco do prompt não voltou');
   await page.locator('#tab-btn-leis').focus();
   await page.keyboard.press('ArrowRight');
   assert.equal(await page.locator('#tab-btn-questoes').getAttribute('aria-selected'),'true','Keyboard ArrowRight');
