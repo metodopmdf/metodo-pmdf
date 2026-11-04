@@ -984,3 +984,10 @@ body[data-theme="dark"] #q-engine-neural .text-slate-400{color:#dce6f5!important
 body[data-theme="light"] #btn-law-cpm,body[data-theme="light"] .more-laws-drawer>summary{color:#874000!important}
 body[data-theme="light"] .g-card .g-tag,body[data-theme="light"] .g-tag{color:#654400!important}
 body[data-theme="light"] .g-card .g-ex{background:#f0faf5!important;color:#075339!important;border-radius:6px;padding:.35rem .5rem}
+
+/* Acessibilidade: contraste efetivo das etiquetas e botões de notas no tema claro. */
+body[data-theme="light"] .g-card .g-tag,
+body[data-theme="light"] .g-tag,
+body[data-theme="light"] .pmdf-report .g-tag,
+body[data-theme="light"] button[data-pmdf-value]{color:#644000!important}
+body[data-theme="light"] .g-card .g-tag{background:#fff7e2!important}
