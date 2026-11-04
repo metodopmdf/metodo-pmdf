@@ -2289,6 +2289,26 @@ body .pmdf-more-actions:not([open])>.pmdf-extra-actions,
 body .pmdf-more-actions:not([open])>.pmdf-import-body{display:none!important}
 @media print{body .pmdf-flow{display:none!important}}
 </style>
+<style id="pmdf-anki-precision-20261103">
+/* Tipografia Anki, lacuna contextualizada e fundamento por demanda. */
+#anki-panel .anki-study-surface{max-width:920px;margin-inline:auto;border-radius:20px}
+#anki-panel .anki-question-cloze{font-size:clamp(1.08rem,1.7vw,1.45rem);font-weight:560;line-height:1.8}
+#anki-panel .anki-blank-masked{display:inline-block;padding:.03em .55em;margin-inline:.1em;border:1px dashed var(--text-accent,#d4af37);border-radius:.4em;background:color-mix(in srgb,var(--text-accent,#d4af37) 14%,transparent);font-weight:800;color:var(--text-accent,#d4af37);white-space:nowrap}
+#anki-panel .anki-short-answer{color:var(--text-accent,#d4af37);font-size:clamp(1.21rem,2vw,1.6rem);font-weight:800;line-height:1.5;white-space:pre-line}
+#anki-panel .anki-answer-caption{font-size:.71rem;letter-spacing:.08em;font-weight:780;color:var(--text-muted,#94a3b8);margin:0 0 .6rem}
+#anki-panel .anki-restored{border-top:1px solid var(--border-subtle,#334155);padding-top:.85rem;margin-top:1rem;font-size:.88rem;line-height:1.65;color:var(--text-muted,#94a3b8);overflow-wrap:anywhere}
+#anki-panel .anki-blank-revealed{background:color-mix(in srgb,var(--text-accent,#d4af37) 18%,transparent);color:var(--text-primary,#e2e8f0);font-weight:750;border-radius:.3em;padding:.05em .2em}
+#anki-panel .anki-card-hint{font-size:.76rem;margin-top:1rem;color:var(--text-muted,#94a3b8)}
+#anki-panel .anki-proof{max-width:920px;margin-inline:auto;margin-top:1rem}
+#anki-panel .anki-proof .anki-evidence-details{margin-top:.6rem}
+#anki-panel .anki-proof .anki-evidence-details summary{cursor:pointer;font-size:.82rem;font-weight:670;color:var(--text-accent,#d4af37);padding:.35rem 0}
+#anki-panel .anki-proof .anki-evidence-details[open] .anki-evidence-text{padding:.8rem 0;line-height:1.65;white-space:pre-line;font-size:.85rem;color:var(--text-primary,#e2e8f0);overflow-wrap:anywhere}
+#anki-panel .anki-grade-choices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));max-width:920px;margin-inline:auto}
+#anki-panel .anki-grade-choices button{min-width:0;min-height:60px;display:flex;align-items:center;flex-direction:column;justify-content:center;gap:4px}
+#anki-panel .anki-grade-choices button small{display:block;font-size:.68rem;font-weight:520;opacity:.85}
+#anki-panel .anki-grade-choices button:focus-visible{outline:3px solid var(--text-accent,#d4af37);outline-offset:3px}
+@media(max-width:600px){#anki-panel .anki-grade-choices{grid-template-columns:repeat(2,minmax(0,1fr))}#anki-panel .anki-grade-choices button{min-height:58px;flex:auto}}
+</style>
 <style id="pmdf-a4-color-print">
 /* Exportação fiel ao caderno escuro no A4. Incluída após os estilos legados
    para que a identidade de tela seja preservada no PDF. */
@@ -6448,12 +6468,24 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 '</div>';
         }
         function revealAnki(){if(!ANKI_STATE||ANKI_STATE.back)return;ANKI_STATE.back=true;saveStudySession();drawAnki();}
-        function gradeAnki(known){
-            const session=ANKI_STATE;if(!session||!session.back||session.index>=session.cards.length)return;
+        function gradeAnki(known){return gradeAnkiRating(known?'good':'again');}
+        function gradeAnkiRating(rating){
+            const session=ANKI_STATE;
+            if(!session||!session.back||session.index>=session.cards.length||
+                !['again','hard','good','easy'].includes(rating))return;
             const card=session.cards[session.index];
-            setCardBox(card.id,!!known);
-            if(known)session.correct=(session.correct||0)+1;else session.wrong=(session.wrong||0)+1;
-            session.index++;session.seen++;session.back=false;session.graded=!!known;
+            if(rating==='again'||rating==='good')setCardBox(card.id,rating==='good');
+            else{
+                const current=getCardBox(card.id).box,
+                    next=rating==='easy'?Math.min(4,current+2):current,
+                    due=Date.now()+(rating==='hard'?12*60*60*1000:[0,1,3,7,14][next]*86400000);
+                store.set('fc:'+card.id,String(next));
+                store.set('leitner:'+card.id,String(next));
+                store.set('leitnerDue:'+card.id,String(due));
+            }
+            if(rating==='again')session.wrong=(session.wrong||0)+1;
+            else session.correct=(session.correct||0)+1;
+            session.index++;session.seen++;session.back=false;session.graded=rating!=='again';
             saveStudySession();drawAnki();
         }
         function nextAnki(){
