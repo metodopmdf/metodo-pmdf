@@ -46,7 +46,7 @@ function contextFor(text,offset,length){
 const numberRx=/\b(?:\d+(?:[.,]\d+)?|(?:um|uma|dois|duas|três|quatro|cinco|seis|sete|oito|nove|dez))\s*(?:dias?|meses?|anos?|horas?|minutos?|%|por cento|pessoas?|membros?|integrantes?|penas?|salários?\s+mínimos?)\b/gi;
 const authorityRx=/\b(?:Ministério Público|autoridade policial|autoridade judiciária|juiz(?: competente)?|Governador(?: do (?:DF|Distrito Federal))?|Polícia Militar(?: do Distrito Federal)?|PMDF|Supremo Tribunal Federal|Tribunal do Júri|Poder Executivo|tribunal competente)\b/gi;
 const modalRx=/\b(?:não se admite|é vedad[oa]|é proibid[oa]|vedad[oa]s?|proibid[oa]s?|não pode|não deve|deverá|deverão|devem|deve|poderá|poderão|podem|pode|somente|apenas|exclusivamente|independe|prescinde)(?=$|[^\p{L}])/giu;
-const exceptionRx=/\b(?:salvo|exceto|ressalvad[oa]s?|desde que|mediante|condicionad[oa]\s+a|se indispensável|quando)\s+([^,;.!?]{8,86})/gi;
+const exceptionRx=/\b(?:salvo|exceto|ressalvad[oa]s?|desde que|mediante|condicionad[oa]\s+a|se indispensável)\s+([^,;.!?]{8,86})/gi;
 const definitionRx=/^(.{5,95}?)\s+(?:é|são|consiste em|corresponde a|compreende|abrange|envolve|depende de|exige)\s+([^,;.!?]{8,98})/i;
 const leadingRx=/^(?:estabelece|institui|define|regula|prevê|disciplina|elenca|explicita|determina|exige|afasta|concede|permite)\s+([^,;.!?]{12,102})/i;
 const modifiers=/#Prazo|#Competencia|#Excecao|#Modalidade|#Conceito/;
@@ -55,6 +55,8 @@ function candidates(text){
  const add=(index,value,type,hint,rank)=>{
   const x=clean(value);
   if(index<0||x.length<2||x.length>98||x.split(" ").length>13||!text.startsWith(value,index))return;
+  // Não trunca leis numeradas (13.491/2017), abreviações ou artigos no meio da lacuna.
+  if(text[index+x.length]==="."&&/\d/.test(text[index+x.length+1]||""))return;
   if(/^(?:a|o|as|os|para|por|a lei|as normas|a norma)$/i.test(x))return;
   found.push({index,value,type,hint,rank});
  };
@@ -173,9 +175,9 @@ function generate(ctx,row,text){
  }
  // Trecho curto sem lacuna identificável: cartão de reconhecimento direto,
  // usando o título do dispositivo como gatilho; não inventa um enunciado novo.
- if(created===0&&text.length<=175&&text.length>=36&&/^(?:[A-ZÀ-Ý])/u.test(text)){
+ if(created===0&&!def&&text.length<=175&&text.length>=36&&/^(?:[A-ZÀ-Ý])/u.test(text)){
   const suffix=topic.length<=76?topic:ref;
-  create(ctx,row,{front:suffix+" · "+ref,back:text,modality:"Básico (P&R)",
+  create(ctx,row,{front:suffix,back:text,modality:"Básico (P&R)",
    family:"basic",kind:"Síntese expressa",unit:text,anchor:text,difficulty:"Médio"});
  }
  // O contraste só aparece quando há uma mudança inequívoca na palavra/limite.
