@@ -979,3 +979,8 @@ body[data-theme="light"] .qstudio .qstudio-eyebrow{color:#805600!important}
 /* Contraste WCAG AA no tema escuro: abas inativas e subtítulo do motor neural. */
 body[data-theme="dark"] .pmdf-app-tabs [role="tab"][aria-selected="false"]{color:#dce6f5!important}
 body[data-theme="dark"] #q-engine-neural .text-slate-400{color:#dce6f5!important}
+
+/* WCAG AA — guia jurídico no tema claro: etiquetas, exemplos e filtros. */
+body[data-theme="light"] #btn-law-cpm,body[data-theme="light"] .more-laws-drawer>summary{color:#874000!important}
+body[data-theme="light"] .g-card .g-tag,body[data-theme="light"] .g-tag{color:#654400!important}
+body[data-theme="light"] .g-card .g-ex{background:#f0faf5!important;color:#075339!important;border-radius:6px;padding:.35rem .5rem}
