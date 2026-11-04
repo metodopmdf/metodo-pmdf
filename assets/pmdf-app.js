@@ -1875,11 +1875,25 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             toast(known?'Cartão avançou na caixa Leitner '+state.box+'.':'Cartão retornou à revisão inicial.','ok');
         }
         function guideHtml(g, interactive) { return formatGuideHtml(g,interactive); }
+        // Regiões com rolagem própria precisam permitir acesso por teclado (WCAG 2.1.1).
+        function pmdfFocusScrollableRegions(root=document) {
+            if(typeof getComputedStyle!=='function'||!root?.querySelectorAll)return;
+            for(const el of root.querySelectorAll('div,pre,section,article')) {
+                if(el.tabIndex>=0||el.hasAttribute('tabindex'))continue;
+                const style=getComputedStyle(el);
+                const vertical=/auto|scroll/.test(style.overflowY)&&el.scrollHeight>el.clientHeight+1;
+                const horizontal=/auto|scroll/.test(style.overflowX)&&el.scrollWidth>el.clientWidth+1;
+                if(!vertical&&!horizontal)continue;
+                const focusable=el.querySelector('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])');
+                if(!focusable)el.setAttribute('tabindex','0');
+            }
+        }
         function renderGuide(g,resetPractice=false){
             if(!g)return;
             if(resetPractice){Q_STATE=null;ANKI_STATE=null;['q-panel','anki-panel'].forEach(id=>$(id)?.classList.add('hidden'));}CUR.guide=g;CUR._poolCache=CUR._poolCache||Object.create(null);NOTE_IDS=[];
             if(CUR.key)store.set('lastKey',CUR.key);markShortcut(CUR.key);
             $('printable-area').innerHTML=pmdfSafeHtml(guideHtml(g,true),true);
+            pmdfFocusScrollableRegions($('printable-area'));
             if (g.officialSource && typeof g.officialSource === 'string') {
                 try {
                     const ref = new URL(g.officialSource);
