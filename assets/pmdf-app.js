@@ -1041,6 +1041,33 @@
         // =====================================================
         const $ = id => document.getElementById(id);
         const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        // Defesa em profundidade: conteúdo importado não pode introduzir scripts,
+        // eventos HTML, URLs executáveis nem atributos de ações privilegiadas.
+        // "trustedActions" é reservado exclusivamente a templates montados pelo app.
+        function pmdfSafeHtml(raw, trustedActions=false) {
+            const html=String(raw??'');
+            const root=document.createElement('template');
+            if (!root?.content?.querySelectorAll) return html; // mocks de teste sem DOM HTML
+            root.innerHTML=html;
+            root.content.querySelectorAll('script,iframe,frame,object,embed,base,meta,link,foreignObject').forEach(el=>el.remove());
+            root.content.querySelectorAll('*').forEach(el=>{
+                for(const attr of Array.from(el.attributes)){
+                    const name=attr.name.toLowerCase(),value=attr.value.trim();
+                    const isUrl=['href','src','action','formaction','xlink:href','poster'].includes(name);
+                    const dangerousUrl=isUrl&&(/^(?:javascript|vbscript|file):/i.test(value)||
+                        /^data:(?!image\/(?:png|jpeg|gif|webp);base64,)/i.test(value));
+                    const dangerousStyle=name==='style'&&/(?:expression\s*\(|url\s*\(\s*['"]?\s*(?:javascript|vbscript):|@import)/i.test(value);
+                    const forbiddenAction=!trustedActions&&(name.startsWith('data-pmdf-on')||name==='data-pmdf-special');
+                    if(name.startsWith('on')||name==='srcdoc'||name==='formaction'||dangerousUrl||dangerousStyle||forbiddenAction)
+                        el.removeAttribute(attr.name);
+                }
+                if(el.tagName==='A'&&el.target==='_blank'){
+                    el.rel='noopener noreferrer';
+                }
+            });
+            return root.innerHTML;
+        }
+
         const BACKUP_KEY_RE = /^(lvl|summaryFormat|lastKey|sim:stats|sim:errs|pmdf:session:v4|exam:imports|pmdf:results:events|pmdf:results:aggregates|q:coverage:v2:|essay:totals|(st|fc|leitner|leitnerDue|note|custom|essay):)/; // bancos de IA extensos ficam no dispositivo
         const SCRIPT_CACHE=Object.create(null);
         let AUTH_USER=null,CLOUD_SAVE_TIMER=null,CLOUD_SAVE_BUSY=false,CLOUD_DIRTY=false,CLOUD_LAST_ERROR='',CLOUD_MUTATION_SERIAL=0;
@@ -1316,7 +1343,7 @@
                     ...tpl, `**Parágrafo 4 — Conclusão com proposta:** “Portanto, cabe ao [AGENTE: ex.: Governo do Distrito Federal / Comando-Geral da PMDF], por meio de [MEIO: ex.: ${firstNorm}], [AÇÃO: verbo + objeto], a fim de [FINALIDADE: resultado esperado].”`, '',
                     '**Seu texto com as correções automáticas aplicadas:**', ...fixed.split(/\n+/).filter(Boolean), ''
                 ].join('\n');
-                $('essay-out').innerHTML = md(ESSAY_MD); saveEssayCorrectionHistory(); $('essay-result').classList.remove('hidden'); $('essay-result').scrollIntoView({ behavior: 'smooth' }); toast('Correção concluída.', 'ok');
+                $('essay-out').innerHTML = pmdfSafeHtml(md(ESSAY_MD)); saveEssayCorrectionHistory(); $('essay-result').classList.remove('hidden'); $('essay-result').scrollIntoView({ behavior: 'smooth' }); toast('Correção concluída.', 'ok');
             } catch (e) { toast('Falha na correção: ' + e.message, 'error'); } finally { setLoading(false); }
         }
 
@@ -1433,7 +1460,7 @@
         }
         function openModal(t, h) {
             $('gen-title').textContent = t;
-            $('gen-body').innerHTML = h;
+            $('gen-body').innerHTML = pmdfSafeHtml(h,true);
             pmdfOpenDialog('gen-modal');
             if (window.lucide) lucide.createIcons();
         }
@@ -1759,6 +1786,7 @@ const CLOZE_RE = /(\d+\s*(?:dias|dia|anos|ano|meses|mês|horas|hora)|\d+\/\d+|(?
             if(!AUTH_USER){toast('Entre na conta antes de importar um backup.','error');inp.value='';return;}
             const file=inp.files&&inp.files[0];if(!file)return;
             try{
+                if(file.size>20*1024*1024)throw new Error('O backup excede 20 MB. Divida-o em arquivos menores.');
                 const j=JSON.parse(await file.text()),data=j&&j.data&&typeof j.data==='object'?j.data:j;if(!data||typeof data!=='object')throw new Error('arquivo inválido');let count=0;
                 Object.keys(data).forEach(key=>{if(BACKUP_KEY_RE.test(key)&&typeof data[key]==='string'){if(store.set(key,data[key]))count++;}});
                 if(data.lvl&&LEVELS[data.lvl]){LEVEL=data.lvl;store.set('lvl',LEVEL);paintLevel();}
@@ -1942,11 +1970,11 @@ const CLOZE_RE = /(\d+\s*(?:dias|dia|anos|ano|meses|mês|horas|hora)|\d+\/\d+|(?
         function exportToWordDoc() { if (!CUR.guide) return toast('Carregue um guia primeiro.', 'error'); downloadDoc('Guia_' + CUR.guide.lawName, guideHtml(CUR.guide, false)); }
         async function copyHtml(html, plain) {
             try { await navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([html], { type: 'text/html' }), 'text/plain': new Blob([plain], { type: 'text/plain' }) })]); toast('Copiado! Cole no Google Docs.', 'ok'); }
-            catch (e) { const d = document.createElement('div'); d.innerHTML = html; d.style.cssText = 'position:fixed;left:-9999px'; document.body.appendChild(d);
+            catch (e) { const d = document.createElement('div'); d.innerHTML = pmdfSafeHtml(html); d.style.cssText = 'position:fixed;left:-9999px'; document.body.appendChild(d);
                 const r = document.createRange(); r.selectNodeContents(d); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
                 try { document.execCommand('copy'); toast('Copiado!', 'ok'); } catch (_) { toast('Não foi possível copiar.', 'error'); } s.removeAllRanges(); d.remove(); }
         }
-        function copyFormattedGuide() { if (!CUR.guide) return toast('Carregue um guia primeiro.', 'error'); const h = guideHtml(CUR.guide, false); const d = document.createElement('div'); d.innerHTML = h; copyHtml(h, d.innerText || d.textContent); }
+        function copyFormattedGuide() { if (!CUR.guide) return toast('Carregue um guia primeiro.', 'error'); const h = guideHtml(CUR.guide, false); const d = document.createElement('div'); d.innerHTML = pmdfSafeHtml(h); copyHtml(d.innerHTML, d.innerText || d.textContent); }
         function currentPrompt() { return TAB === 'redacao' ? essayPrompt() : lawPrompt(false); }
         function openPromptModal() { $('prompt-modal-text').textContent = currentPrompt(); ensurePromptSwitch(); pmdfOpenDialog('prompt-modal'); }
         function ensurePromptSwitch() {
@@ -1960,6 +1988,7 @@ const CLOZE_RE = /(\d+\s*(?:dias|dia|anos|ano|meses|mês|horas|hora)|\d+\/\d+|(?
         function importExternalGuide(){
             const area=$('external-json-input'),raw=(area?.value||'').trim();if(!raw)return toast('Cole o JSON retornado pela IA antes de importar.','error');
             try{
+                if(raw.length>10_000_000)throw new Error('O guia JSON excede 10 milhões de caracteres.');
                 const cleaned=raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim();let parsed=JSON.parse(cleaned);if(Array.isArray(parsed))parsed=parsed[0];
                 const g=parsed&&parsed.guide?parsed.guide:parsed;
                 if(!g||typeof g!=='object'||!g.lawName)throw new Error('O JSON precisa conter lawName.');
@@ -2284,6 +2313,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         }
         async function onLawFile(inp) {
             const f = inp && inp.files && inp.files[0]; if (!f) return;
+            if(f.size>50*1024*1024){toast('Arquivo superior a 50 MB. Envie uma versão compactada para evitar travamentos.','error');return;}
             const ext = (f.name.split('.').pop() || '').toLowerCase();
             if (!['pdf','docx','txt','png','jpg','jpeg','webp'].includes(ext)) { toast('Formato inválido. Selecione PDF, DOCX, TXT ou imagem.', 'error'); return; }
             LAW_FILE_NAME = f.name;
@@ -2867,7 +2897,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             if(!g)return;
             if(resetPractice){Q_STATE=null;ANKI_STATE=null;['q-panel','anki-panel'].forEach(id=>$(id)?.classList.add('hidden'));}CUR.guide=g;CUR._poolCache=CUR._poolCache||Object.create(null);NOTE_IDS=[];
             if(CUR.key)store.set('lastKey',CUR.key);markShortcut(CUR.key);
-            $('printable-area').innerHTML=guideHtml(g,true);
+            $('printable-area').innerHTML=pmdfSafeHtml(guideHtml(g,true),true);
             if (g.officialSource && typeof g.officialSource === 'string') {
                 try {
                     const ref = new URL(g.officialSource);
@@ -2978,8 +3008,8 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         function showEssayHistory(){const hist=jget('essay:history',[]);
             openModal('📚 Redações corrigidas',hist.length?hist.map((h,i)=>'<div class="g-card"><p><b>'+esc(h.draft?.theme||'Redação')+'</b> · '+esc((h.date||'').slice(0,10))+'</p><button type="button" class="rounded-xl bg-[#D4AF37] text-[#050B16] px-3 py-2 font-bold" data-pmdf-special="essay-history" data-pmdf-value="'+i+'">Abrir correção</button></div>').join(''):'<p>Ainda não há correções salvas.</p>');}
         function openEssayHistory(i){const h=jget('essay:history',[])[i];if(!h)return;for(const [id,key] of [['essay-theme','theme'],['essay-lines','lines'],['essay-motiv','motiv'],['essay-text','text']])$(id).value=h.draft?.[key]||'';
-            ESSAY_MD=h.result||'';$('essay-out').innerHTML=md(ESSAY_MD);$('essay-result').classList.remove('hidden');closeModal();showTab('redacao');saveStudySession();}
-        function restoreEssayLastResult(){const h=jget('essay:history',[])[0];if(h?.result){ESSAY_MD=h.result;$('essay-out').innerHTML=md(ESSAY_MD);$('essay-result').classList.remove('hidden');}}
+            ESSAY_MD=h.result||'';$('essay-out').innerHTML=pmdfSafeHtml(md(ESSAY_MD));$('essay-result').classList.remove('hidden');closeModal();showTab('redacao');saveStudySession();}
+        function restoreEssayLastResult(){const h=jget('essay:history',[])[0];if(h?.result){ESSAY_MD=h.result;$('essay-out').innerHTML=pmdfSafeHtml(md(ESSAY_MD));$('essay-result').classList.remove('hidden');}}
         // ==================== Abas de prática integradas ao conteúdo selecionado ====================
         const pickStudyGuides = kind => {
             const selected=$(kind+'-source')?.value || 'current';
@@ -3086,6 +3116,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         }
         async function questionUploadFile(input){
             const f=input?.files?.[0];if(!f)return;
+            if(f.size>50*1024*1024){toast('Documento maior que 50 MB. Divida o conteúdo para preservar a memória do aparelho.','error');input.value='';return;}
             if(!/\.(pdf|docx|txt)$/i.test(f.name)){toast('Formato permitido: PDF, DOCX ou TXT.','error');input.value='';return;}
             $('q-status').textContent='Extraindo texto de '+f.name+'...';
             try{
@@ -3253,7 +3284,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     if(previous.choice===btn.dataset.choice&&previous.choice!==q.answer)btn.classList.add('border-red-500');
                 });
                 $('q-blank').disabled=true;
-                $('q-feedback').innerHTML=previous.feedback||'';
+                $('q-feedback').innerHTML=pmdfSafeHtml(previous.feedback||'');
                 $('q-nav-next').disabled=false;
             }else{s.answered=false;if(!s.questionStart)s.questionStart=Date.now();}
         }
