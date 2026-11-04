@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 // Arquitetura modular: aplicação carregada por script externo, sem JavaScript inline.
-const code=readFileSync(new URL('../assets/pmdf-app.js',import.meta.url),'utf8');
+const guidesCode=readFileSync(new URL('../assets/pmdf-guides.js',import.meta.url),'utf8');
+const code=guidesCode+'\n'+readFileSync(new URL('../assets/pmdf-app.js',import.meta.url),'utf8');
 assert(html.includes('src="assets/pmdf-app.js'),'Aplicação externa não vinculada');
+assert(html.includes('src="assets/pmdf-guides.js'),'Catálogo inicial não vinculado');
 assert(!/<script\b(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/i.test(html),'Script inline viola CSP');
 new Function(code);
 assert(!html.includes("fetch('/api/"),'O site estático ainda chama uma rota /api/');
