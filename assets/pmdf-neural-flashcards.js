@@ -154,7 +154,7 @@ function generate(ctx,row,text){
   if(!context)continue;
   const off=context.offset;
   const token=context.text.slice(0,off)+"{{c1::"+c.value+"::"+c.hint+"}}"+context.text.slice(off+c.value.length);
-  const front=context.text.slice(0,off)+"[…]"+context.text.slice(off+c.value.length);
+  const front=context.text.slice(0,off)+"[lacuna]"+context.text.slice(off+c.value.length);
   if(front.length>330||front.length<25)continue;
   const lvl=c.type==="prazo"?"Fácil":c.type==="excecao"?"Difícil":c.type==="competencia"?"Médio":"Médio";
   create(ctx,row,{front,back:c.value,modality:"Cloze (Lacuna)",kind:c.hint,
