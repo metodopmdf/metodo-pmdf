@@ -998,3 +998,12 @@ body[data-theme="light"] #printable-area .pmdf-report .mm-article,
 body[data-theme="light"] #printable-area .pmdf-report button[data-pmdf-value]{
     color:#644000!important;
 }
+
+/* Relatório claro: texto do rodapé deve respeitar contraste AA e regras mais específicas do relatório. */
+body[data-theme="light"] #printable-area .pmdf-report-footer,
+body[data-theme="light"] #printable-area .pmdf-report-footer span:not(:first-child){
+    color:#334155!important;
+}
+body[data-theme="light"] #printable-area .pmdf-report-footer span:first-child{
+    color:#634200!important;
+}
