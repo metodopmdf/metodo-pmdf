@@ -16,7 +16,7 @@ function sourceRows(g){
   for(const row of Array.isArray(map[key])?map[key]:[]){
    const raw=clean(row.sourceText),text=raw||clean(row.plainExplanation);
    if(text)out.push({law,reference:clean(row.article||row.title)||"Trecho",text,priority,
-    literal:!!raw,scope:clean(g?.contentScope)});
+    literal:!!raw,scope:clean(g?.contentScope),example:clean(row.practicalExample)});
   }
  return out;
 }
@@ -127,6 +127,8 @@ function neural(ctx,text){
 }
 function create(ctx,row,spec){
  const front=clean(spec.front),back=clean(spec.back);
+ if(norm(front)===norm(label(row.reference))||norm(front)===norm(row.reference)||
+    spec.kind==="Síntese expressa")return false;
  if(front.length<16||front.length>360||back.length<2||back.length>270||
     /…|\b(?:undefined|null)\b/i.test(front+" "+back)||norm(front)===norm(back))return;
  if(spec.anchor&&!norm(row.text).includes(norm(spec.anchor)))return;
@@ -140,6 +142,21 @@ function create(ctx,row,spec){
   law:row.law,article:row.reference,reference:row.reference,source:row.text,extra:row.text,
   scope:row.literal?"Trecho fornecido":"Síntese didática fornecida",warning:spec.warning||
   "Fundamento extraído apenas do material selecionado; conferir a norma vigente.",
+  tip:clean(spec.tip)||(
+    spec.type==="prazo"?"Associe o número à conduta e à unidade de tempo da regra.":
+    spec.type==="excecao"?"Memorize a regra geral e a condição que limita sua aplicação.":
+    spec.type==="competencia"?"Associe a autoridade à atribuição mencionada no dispositivo.":
+    spec.type==="modalidade"?"Compare o verbo da norma: dever, faculdade ou vedação.":
+    spec.family==="trap"?"Compare o enunciado com a expressão exata da fonte.":
+    "Recupere o elemento distintivo sem consultar o texto-base."),
+  pitfall:clean(spec.pitfall)||(
+    spec.type==="prazo"?"Pegadinha: trocar o número, a unidade ou o marco temporal.":
+    spec.type==="excecao"?"Pegadinha: omitir a ressalva e tornar a regra absoluta.":
+    spec.type==="competencia"?"Pegadinha: atribuir o ato a sujeito diferente.":
+    spec.type==="modalidade"?"Pegadinha: substituir faculdade por obrigação ou permissão por proibição.":
+    spec.family==="trap"?"Pegadinha: uma única palavra pode mudar o julgamento.":""),
+  application:row.example&&!weak.test(row.example)&&row.example.length>=25&&row.example.length<=220?
+    row.example:"",
   literal:row.literal,priority:row.priority,neuralScore:score,difficulty,difficultyLevel:ctx.level,
   family:spec.family,hint:spec.hint||"",cloze:spec.cloze||null,
   tags:[row.literal?"#FonteOriginal":"#ResumoDidatico",tagName,area,
@@ -174,13 +191,7 @@ function generate(ctx,row,text){
     family:"basic",kind:"Conceito em uma frase",unit:text,anchor:pred,difficulty:"Médio"});
   }
  }
- // Trecho curto sem lacuna identificável: cartão de reconhecimento direto,
- // usando o título do dispositivo como gatilho; não inventa um enunciado novo.
- if(created===0&&!def&&text.length<=175&&text.length>=36&&/^(?:[A-ZÀ-Ý])/u.test(text)){
-  const suffix=topic.length<=76?topic:ref;
-  create(ctx,row,{front:suffix,back:text,modality:"Básico (P&R)",
-   family:"basic",kind:"Síntese expressa",unit:text,anchor:text,difficulty:"Médio"});
- }
+ // Se não há fato específico testável, não gerar flashcard só com título.
  // O contraste só aparece quando há uma mudança inequívoca na palavra/limite.
  // Não se produzem "pegadinhas" por extrapolação de conteúdo não fornecido.
  if(text.length>=55&&text.length<=260&&/\b(?:deverá|poderá|somente|apenas|vedado|proibido|prazo)(?=$|[^\p{L}])/iu.test(text)){
@@ -189,7 +200,9 @@ function generate(ctx,row,text){
    create(ctx,row,{front:m.statement,back:"ERRADO · "+m.from+" (não "+m.to+").",
     modality:"Gatilho de Banca",family:"trap",kind:"Contraste Cebraspe",
     unit:text,anchor:m.from,difficulty:"Difícil",
-    warning:m.type+": contraste pontual com a fonte; não é validação jurisprudencial."});
+    warning:m.type+": contraste pontual com a fonte; não é validação jurisprudencial.",
+    tip:"Localize a palavra ou o número que mudou no enunciado.",
+    pitfall:"Fonte: “"+m.from+"”. Alteração: “"+m.to+"”. Observe como isso muda o sentido."});
   }
   // Uma assertiva literal correta serve como controle da polaridade.
   if(/(?:salvo|desde que|vedado|proibido|somente|apenas)\b/i.test(text)){
@@ -238,5 +251,5 @@ async function buildAsync(guide,options={}){
  options.onProgress?.(rows.length,rows.length,ctx.cards.length);
  return finish(ctx,rows);
 }
-root.PMDFNeuralFlashcards=Object.freeze({build,buildAsync,sourceRows,version:"20261103-anki-v2"});
+root.PMDFNeuralFlashcards=Object.freeze({build,buildAsync,sourceRows,version:"20261104-anki-quality-v3"});
 })(window);
