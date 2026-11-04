@@ -56,7 +56,7 @@ function candidates(text){
   const x=clean(value);
   if(index<0||x.length<2||x.length>98||x.split(" ").length>13||!text.startsWith(value,index))return;
   // Não trunca leis numeradas (13.491/2017), abreviações ou artigos no meio da lacuna.
-  if(text[index+x.length]==="."&&/\d/.test(text[index+x.length+1]||""))return;
+  if(text[index+x.length]==="."&&/^\.\s*\d/.test(text.slice(index+x.length)))return;
   if(/^(?:a|o|as|os|para|por|a lei|as normas|a norma)$/i.test(x))return;
   found.push({index,value,type,hint,rank});
  };
@@ -78,12 +78,12 @@ function candidates(text){
   }
  }
  const define=definitionRx.exec(text);
- if(define){
+ if(define&&!/^(?:define|estabelece|prevê|dispõe|regula|disciplina)\b/i.test(define[1])){
   const target=define[2];
   if(target.length>=12&&target.length<=76)add(define[0].lastIndexOf(target),target,"conceito","Definição ou critério",84);
  }
  const beginning=leadingRx.exec(text);
- if(beginning&&beginning[1].length<=74)add(beginning[0].lastIndexOf(beginning[1]),beginning[1],"conceito","Objeto ou comando legal",81);
+ if(beginning&&beginning[1].length<=74&&!/\b(?:quando|será|pode|deve|são|é)\b/i.test(beginning[1]))add(beginning[0].lastIndexOf(beginning[1]),beginning[1],"conceito","Objeto ou comando legal",81);
  // Remove coincidências de alcance sobreposto; mantém o elemento mais informativo.
  const selected=[];
  for(const item of found.sort((a,b)=>b.rank-a.rank||b.value.length-a.value.length||a.index-b.index)){
@@ -146,6 +146,7 @@ function create(ctx,row,spec){
    "#"+row.reference.replace(/[^\p{L}\d]+/gu,"").slice(0,28)].filter(Boolean).join(" ")};
  ctx.cards.push(card);ctx.modalities[card.modality]=(ctx.modalities[card.modality]||0)+1;
  ctx.difficulties[difficulty]=(ctx.difficulties[difficulty]||0)+1;ctx.covered.add(row.reference);
+ return true;
 }
 function generate(ctx,row,text){
  if(weak.test(text)||/[.…]$/.test(text.slice(0,-1))){ctx.skipped++;return;}
@@ -159,16 +160,16 @@ function generate(ctx,row,text){
   const front=context.text.slice(0,off)+"[lacuna]"+context.text.slice(off+c.value.length);
   if(front.length>330||front.length<25)continue;
   const lvl=c.type==="prazo"?"Fácil":c.type==="excecao"?"Difícil":c.type==="competencia"?"Médio":"Médio";
-  create(ctx,row,{front,back:c.value,modality:"Cloze (Lacuna)",kind:c.hint,
+  if(create(ctx,row,{front,back:c.value,modality:"Cloze (Lacuna)",kind:c.hint,
    family:"cloze",type:c.type,cloze:ref+" · "+token,anchor:c.value,hint:c.hint,
-   difficulty:lvl,unit:text});
-  created++;
+   difficulty:lvl,unit:text}))created++;
  }
  const def=definitionRx.exec(text);
- if(def){
-  const subject=clean(def[1]).replace(/^(?:Art\.?\s*\d+[º°]?\s*[-—:]?\s*)/i,"");
+ if(def&&!/^(?:define|estabelece|prevê|dispõe|regula|disciplina)\b/i.test(def[1])){
+  let subject=clean(def[1]).replace(/^(?:Art\.?\s*\d+[º°]?\s*[-—:]?\s*)/i,"");
+  if(/^(?:a lei|o decreto|o regulamento)$/i.test(subject))subject=topic;
   const pred=clean(text.slice(def[1].length,def[0].length));
-  if(subject.length>=5&&subject.length<=90&&pred.length>=18&&pred.length<=135){
+  if(subject.length>=5&&subject.length<=90&&pred.length>=18&&pred.length<=135&&!/\barts?\.?\s*$/i.test(pred)){
    create(ctx,row,{front:subject+" · "+topic,back:pred,modality:"Básico (P&R)",
     family:"basic",kind:"Conceito em uma frase",unit:text,anchor:pred,difficulty:"Médio"});
   }
