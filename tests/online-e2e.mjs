@@ -117,8 +117,23 @@ async function checkUsability(page,view){
   }
   // Teclado e diálogos: foco inicial, Tab circular, Escape e devolução do foco.
   await page.locator('#tab-btn-leis').focus();
-  await page.evaluate(()=>window.openModal('Auditoria de acessibilidade',
-    '<button id="qa-dialog-action" type="button">Ação de teste</button>'));
+  await page.evaluate(()=>{
+    window.__pmdfInjected=false;
+    window.openModal('Auditoria de acessibilidade',
+      '<button id="qa-dialog-action" type="button">Ação de teste</button>'+
+      '<img src="x" onerror="window.__pmdfInjected=true" alt="">'+
+      '<a id="qa-unsafe-url" href="javascript:window.__pmdfInjected=true">Link bloqueado</a>'+
+      '<script>window.__pmdfInjected=true<\\/script>');
+  });
+  assert.equal(await page.locator('#gen-modal img').first().getAttribute('onerror'),null,
+    'Sanitizador preservou manipulador de evento malicioso');
+  assert.equal(await page.locator('#qa-unsafe-url').getAttribute('href'),null,
+    'Sanitizador preservou esquema javascript:');
+  assert.equal(await page.evaluate(()=>window.__pmdfInjected),false,
+    'HTML injetado executou script');
+  assert.equal(await page.evaluate(()=>
+    window.pmdfSafeHtml('<button data-pmdf-onclick="logoutAccount()">Injetado</button>').includes('data-pmdf-onclick')),false,
+    'HTML não confiável preservou ação privilegiada');
   assert(await page.locator('#gen-modal').isVisible(),'Modal genérico não abriu');
   assert.equal(await page.locator('#gen-modal').getAttribute('aria-modal'),'true','Modal sem semântica ARIA');
   assert(await page.evaluate(()=>!!document.activeElement?.closest('#gen-modal')),'Foco escapou do diálogo');
