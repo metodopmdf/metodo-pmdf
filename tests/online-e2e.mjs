@@ -104,7 +104,8 @@ async function auditAccessibility(page,view,phase){
     at:new Date().toISOString(),violations,passed:results.passes.length
   },null,2));
   const critical=violations.filter(v=>v.impact==='critical');
-  assert.equal(critical.length,0,'WCAG: violações críticas '+JSON.stringify(critical).slice(0,500));
+  const significant=violations.filter(v=>v.impact==='critical'||v.impact==='serious');
+  assert.equal(significant.length,0,'WCAG AA: violações graves '+JSON.stringify(significant).slice(0,1000));
   return {violations:violations.length,critical:critical.length,issues:violations.map(v=>v.id)};
 }
 async function checkUsability(page,view){
