@@ -45,7 +45,7 @@ function contextFor(text,offset,length){
 }
 const numberRx=/\b(?:\d+(?:[.,]\d+)?|(?:um|uma|dois|duas|três|quatro|cinco|seis|sete|oito|nove|dez))\s*(?:dias?|meses?|anos?|horas?|minutos?|%|por cento|pessoas?|membros?|integrantes?|penas?|salários?\s+mínimos?)\b/gi;
 const authorityRx=/\b(?:Ministério Público|autoridade policial|autoridade judiciária|juiz(?: competente)?|Governador(?: do (?:DF|Distrito Federal))?|Polícia Militar(?: do Distrito Federal)?|PMDF|Supremo Tribunal Federal|Tribunal do Júri|Poder Executivo|tribunal competente)\b/gi;
-const modalRx=/\b(?:não se admite|é vedad[oa]|é proibid[oa]|vedad[oa]s?|proibid[oa]s?|não pode|não deve|deverá|deverão|devem|deve|poderá|poderão|podem|pode|somente|apenas|exclusivamente|independe|prescinde)\b/gi;
+const modalRx=/\b(?:não se admite|é vedad[oa]|é proibid[oa]|vedad[oa]s?|proibid[oa]s?|não pode|não deve|deverá|deverão|devem|deve|poderá|poderão|podem|pode|somente|apenas|exclusivamente|independe|prescinde)(?=$|[^\p{L}])/giu;
 const exceptionRx=/\b(?:salvo|exceto|ressalvad[oa]s?|desde que|mediante|condicionad[oa]\s+a|se indispensável|quando)\s+([^,;.!?]{8,86})/gi;
 const definitionRx=/^(.{5,95}?)\s+(?:é|são|consiste em|corresponde a|compreende|abrange|envolve|depende de|exige)\s+([^,;.!?]{8,98})/i;
 const leadingRx=/^(?:estabelece|institui|define|regula|prevê|disciplina|elenca|explicita|determina|exige|afasta|concede|permite)\s+([^,;.!?]{12,102})/i;
@@ -61,7 +61,7 @@ function candidates(text){
  for(const [rx,type,hint,rank] of [
   [numberRx,"prazo","Prazo ou quantidade",100],
   [exceptionRx,"excecao","Hipótese ou ressalva",95],
-  [authorityRx,"competencia","Sujeito competente",90],
+  [authorityRx,"competencia","Órgão ou autoridade",90],
   [modalRx,"modalidade","Dever, faculdade ou proibição",75]]){
   const re=new RegExp(rx.source,rx.flags);let m;
   while((m=re.exec(text))){
@@ -69,7 +69,7 @@ function candidates(text){
    let start=m.index+(type==="excecao"?m[0].lastIndexOf(target):0);
    if(type==="excecao"){
     // O marcador 'salvo / desde que' permanece visível, e a ressalva é ocultada.
-    if(target.length>70||/^(?:o|a|os|as|que)\s/.test(target))continue;
+    if(target.length>70||target.length<12)continue;
    }
    if(type==="modalidade"&&/^(?:deve|pode)$/i.test(target)&&text.length>240)continue;
    add(start,target,type,hint,rank);
@@ -91,7 +91,7 @@ function candidates(text){
  return selected.sort((a,b)=>a.index-b.index);
 }
 function mutate(text){
- const num=/(?:prazo\s+(?:máximo|mínimo|de)|em\s+até|no\s+máximo|não\s+superior\s+a|igual\s+ou\s+inferior\s+a)\s*(\d+)\s*(dias?|meses?|anos?|horas?)/i.exec(text);
+ const num=/(?:prazo\s+(?:máximo|mínimo|de)|em\s+até|em|no\s+máximo|não\s+superior\s+a|igual\s+ou\s+inferior\s+a)\s*(\d+)\s*(dias?|meses?|anos?|horas?)/i.exec(text);
  if(num){
   const value=Number(num[1]);
   if(value>0&&Number.isSafeInteger(value)){
@@ -102,8 +102,8 @@ function mutate(text){
   }
  }
  const swaps=[
-  {re:/\bdeverá\b/i,to:"poderá",type:"Obrigação × faculdade"},
-  {re:/\bpoderá\b/i,to:"deverá",type:"Faculdade × obrigação"},
+  {re:/\bdeverá(?=$|[^\p{L}])/iu,to:"poderá",type:"Obrigação × faculdade"},
+  {re:/\bpoderá(?=$|[^\p{L}])/iu,to:"deverá",type:"Faculdade × obrigação"},
   {re:/\b(?:vedado|vedada|proibido|proibida)\b/i,to:"permitido",type:"Proibição × permissão"},
   {re:/\bsomente\b/i,to:"indistintamente",type:"Exclusividade"},
   {re:/\bapenas\b/i,to:"indistintamente",type:"Exclusividade"}
@@ -147,7 +147,7 @@ function create(ctx,row,spec){
 }
 function generate(ctx,row,text){
  if(weak.test(text)||/[.…]$/.test(text.slice(0,-1))){ctx.skipped++;return;}
- const relevant=candidates(text),ref=row.reference,origin=label(ref),topic=origin===ref?row.law:origin;
+ const relevant=candidates(text).filter(c=>!(c.type==="conceito"&&definitionRx.test(text))),ref=row.reference,origin=label(ref),topic=origin===ref?row.law:origin;
  let created=0;
  for(const c of relevant){
   const context=contextFor(text,c.index,c.value.length);
@@ -180,7 +180,7 @@ function generate(ctx,row,text){
  }
  // O contraste só aparece quando há uma mudança inequívoca na palavra/limite.
  // Não se produzem "pegadinhas" por extrapolação de conteúdo não fornecido.
- if(text.length>=55&&text.length<=260&&/(\b(?:deverá|poderá|somente|apenas|vedado|proibido|prazo)\b)/i.test(text)){
+ if(text.length>=55&&text.length<=260&&/\b(?:deverá|poderá|somente|apenas|vedado|proibido|prazo)(?=$|[^\p{L}])/iu.test(text)){
   const m=mutate(text);
   if(m&&m.statement!==text){
    create(ctx,row,{front:m.statement,back:"ERRADO · "+m.from+" (não "+m.to+").",
