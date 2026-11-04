@@ -1884,8 +1884,8 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 const vertical=/auto|scroll/.test(style.overflowY)&&el.scrollHeight>el.clientHeight+1;
                 const horizontal=/auto|scroll/.test(style.overflowX)&&el.scrollWidth>el.clientWidth+1;
                 if(!vertical&&!horizontal)continue;
-                const focusable=el.querySelector('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])');
-                if(!focusable)el.setAttribute('tabindex','0');
+                // Mesmo regiões que têm botões precisam ser focáveis para permitir rolagem por setas.
+                el.setAttribute('tabindex','0');
             }
         }
         function renderGuide(g,resetPractice=false){
@@ -1985,6 +1985,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 $('pmdf-context-'+k)?.classList.toggle('hidden',k!==t);
                 $('tab-btn-' + k).className = 'px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2 transition ' + (k === t ? 'bg-[#0A1426] text-[#E5C158] border-[#D4AF37]/40' : 'bg-[#040912] text-slate-400 border-[#172642] hover:text-slate-200'); });
             const menu=document.querySelector('.pmdf-account-menu');if(menu)menu.open=false;
+            pmdfFocusScrollableRegions(document);
         }
 
 
