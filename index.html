@@ -45,7 +45,7 @@
 
     <!-- Arquitetura modular: folhas de estilo externas com a mesma ordem de cascata. -->
     <link rel="stylesheet" href="assets/pmdf-tailwind.css?v=20261104-arch-v1">
-    <link rel="stylesheet" href="assets/pmdf-components.css?v=20261104-arch-v4">
+    <link rel="stylesheet" href="assets/pmdf-components.css?v=20261104-arch-v5">
 </head>
 <body class="landing-active min-h-screen flex flex-col font-sans antialiased selection:bg-[#D4AF37] selection:text-[#050B16]">
 <a href="#pmdf-main-content" class="pmdf-skip-link">Ir para o conteúdo principal</a>
@@ -286,13 +286,13 @@
                 <div class="md:col-span-12">
                     <label class="block text-xs font-semibold uppercase tracking-wider text-[#E5C158] mb-2">Fonte de dados da análise</label>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2" role="tablist" aria-label="Fonte de dados">
-                        <button type="button" id="source-tab-url" data-pmdf-onclick="setSourceMode('url')" class="source-tab px-3 py-2.5 rounded-xl border text-xs sm:text-sm font-bold transition">🔗 Colar Link (URL)</button>
-                        <button type="button" id="source-tab-text" data-pmdf-onclick="setSourceMode('text')" class="source-tab px-3 py-2.5 rounded-xl border text-xs sm:text-sm font-bold transition">📋 Colar Texto Extraído</button>
-                        <button type="button" id="source-tab-file" data-pmdf-onclick="setSourceMode('file')" class="source-tab px-3 py-2.5 rounded-xl border text-xs sm:text-sm font-bold transition">📎 Enviar Arquivo (PDF / DOCX / TXT)</button>
+                        <button type="button" id="source-tab-url" role="tab" aria-controls="source-url-panel" aria-selected="true" tabindex="0" data-pmdf-onclick="setSourceMode('url')" class="source-tab px-3 py-2.5 rounded-xl border text-xs sm:text-sm font-bold transition">🔗 Colar Link (URL)</button>
+                        <button type="button" id="source-tab-text" role="tab" aria-controls="source-text-panel" aria-selected="false" tabindex="-1" data-pmdf-onclick="setSourceMode('text')" class="source-tab px-3 py-2.5 rounded-xl border text-xs sm:text-sm font-bold transition">📋 Colar Texto Extraído</button>
+                        <button type="button" id="source-tab-file" role="tab" aria-controls="source-file-panel" aria-selected="false" tabindex="-1" data-pmdf-onclick="setSourceMode('file')" class="source-tab px-3 py-2.5 rounded-xl border text-xs sm:text-sm font-bold transition">📎 Enviar Arquivo (PDF / DOCX / TXT)</button>
                     </div>
                 </div>
                 <!-- Fonte URL -->
-                <div id="source-url-panel" class="md:col-span-12">
+                <div id="source-url-panel" role="tabpanel" aria-labelledby="source-tab-url" class="md:col-span-12">
                 <div class="max-w-3xl">
                     <label for="law-input" class="block text-xs font-semibold uppercase tracking-wider text-[#E5C158] mb-1.5">Link Oficial da Lei (Planalto / SINJ-DF) ou Nome da Norma *</label>
                     <div class="relative">
@@ -303,7 +303,7 @@
                 </div>
                 </div>
                 <!-- Fonte texto colado -->
-                <div id="source-text-panel" class="md:col-span-12 hidden">
+                <div id="source-text-panel" role="tabpanel" aria-labelledby="source-tab-text" class="md:col-span-12 hidden">
                     <label for="law-text-title" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Título do conteúdo / disciplina (opcional)</label>
                     <input id="law-text-title" type="text" placeholder="Ex.: Direito Administrativo — atos administrativos, doutrina, jurisprudência..." class="w-full px-4 py-2 bg-[#040912]/70 border border-[#172642] rounded-xl text-sm text-slate-200 placeholder-slate-500 mb-3">
                     <label for="law-text" class="block text-xs font-semibold uppercase tracking-wider text-[#E5C158] mb-1.5">Texto extraído / conteúdo para análise</label>
@@ -314,7 +314,7 @@
                     </div>
                 </div>
                 <!-- Fonte arquivo -->
-                <div id="source-file-panel" class="md:col-span-12 hidden">
+                <div id="source-file-panel" role="tabpanel" aria-labelledby="source-tab-file" class="md:col-span-12 hidden">
                     <label for="law-file-title" class="block text-xs font-semibold uppercase tracking-wider text-[#E5C158] mb-1.5">Título do conteúdo / disciplina</label>
                     <input id="law-file-title" type="text" maxlength="160" placeholder="Ex.: Direito Administrativo — poder de polícia, atos e princípios" class="w-full px-4 py-2 bg-[#040912] border border-[#1E2E4F] rounded-xl text-sm text-white mb-3" />
                     <label class="block text-xs font-semibold uppercase tracking-wider text-[#E5C158] mb-1.5">Arquivo para extração</label>
