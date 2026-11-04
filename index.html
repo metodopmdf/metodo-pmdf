@@ -2891,11 +2891,11 @@ body .pmdf-more-actions:not([open])>.pmdf-import-body{display:none!important}
         <section id="tab-anki" role="tabpanel" aria-labelledby="tab-btn-anki" class="hidden space-y-5" aria-label="Flashcards com repetição espaçada">
             <div class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
                 <div><h2 class="font-bold text-lg text-white">🃏 Flashcards — revisão estilo Anki</h2>
-                    <p class="text-sm text-slate-400">Flashcards com perguntas específicas por artigo, lacunas de prazos e requisitos, fundamento rastreável e comparação de dispositivos no nível avançado. Revele a resposta e informe se lembrou para programar corretamente a próxima revisão.</p></div>
+                    <p class="text-sm text-slate-400">Revisão ativa para concursos de alto nível: textos curtos com lacunas estratégicas, conceitos essenciais e contrastes Cebraspe. Revele o núcleo da resposta; consulte o fundamento somente quando necessário.</p></div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <label class="text-xs text-[#E5C158] font-semibold">Elaboração dos cartões
                         <select id="anki-generation-mode" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]">
-                          <option value="advanced" selected>Motor neural local · alta cobertura</option>
+                          <option value="advanced" selected>Anki avançado · lacunas e conceitos</option>
                           <option value="classic">Gerador clássico (compatibilidade)</option>
                         </select>
                     </label>
@@ -2913,8 +2913,10 @@ body .pmdf-more-actions:not([open])>.pmdf-import-body{display:none!important}
                     <button type="button" onclick="clearAnkiFilters()" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">↺ Limpar filtros</button>
                     <button type="button" id="anki-export-csv" onclick="exportAnkiCards('csv')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Exportar CSV (Anki)</button>
                     <button type="button" id="anki-export-tsv" onclick="exportAnkiCards('tsv')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Exportar TSV</button>
+                    <button type="button" id="anki-export-cloze" onclick="exportAnkiDeck('cloze')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Anki · Lacunas (.txt)</button>
+                    <button type="button" id="anki-export-basic" onclick="exportAnkiDeck('basic')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Anki · Conceitos/Contrastes (.txt)</button>
                 </div>
-                <p class="text-xs text-slate-400">O banco é elaborado até esgotar os fatos extraíveis da fonte. A quantidade por sessão regula somente a revisão na tela, não limita o banco gerado. Três modalidades: pergunta/resposta, lacunas e julgamento Cebraspe. Motor local sem IA generativa externa; confira a vigência e a interpretação da norma.</p>
+                <p class="text-xs text-slate-400">Padrão Anki: cada cartão testa um detalhe verificável; o texto-base fica separado da frente. Exportações específicas preservam notas Cloze e Basic. O tamanho da sessão não limita o banco. Revisão Leitner adaptada (não FSRS); motor local sem IA generativa externa ou validação automática da vigência normativa.</p>
                 <p id="anki-generation-status" class="text-xs text-[#E5C158]" role="status" aria-live="polite"></p>
                 <details id="anki-coverage-details" class="rounded-xl border border-[#334155] p-3">
                    <summary class="text-xs font-bold text-[#E5C158] cursor-pointer">Relatório de cobertura e modalidades</summary>
@@ -6251,6 +6253,27 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const link=document.createElement('a');link.href=url;link.download='pmdf-flashcards-'+cards.length+'-'+Date.now()+'.'+ext;
             link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
             toast(cards.length+' flashcards exportados. Para lacunas, escolha o tipo Cloze no Anki.','ok');
+        }
+        function exportAnkiDeck(type='cloze'){
+            const all=ANKI_BANK.length?ANKI_BANK:(ANKI_STATE?.cards||[]);
+            const cloze=type==='cloze',cards=all.filter(c=>cloze?!!c.cloze:!c.cloze);
+            if(!cards.length)return toast('Não existem cartões deste tipo no banco atual.','error');
+            const header=['#separator:Tab','#html:false','#notetype:'+(cloze?'Cloze':'Basic'),
+                '#deck:Método PMDF::Flashcards','#tags column:3',
+                '#columns:'+(cloze?'Text\tExtra\tTags':'Front\tBack\tTags')];
+            const field=v=>'"'+String(v??'').replace(/\r?\n/g,' ').replace(/"/g,'""')+'"';
+            const rows=cards.map(c=>{
+                const extra=(c.extra||c.source||'')+' | Fonte: '+(c.reference||c.article||'')+
+                    ' | '+(c.warning||'Confira a redação vigente.');
+                return (cloze?[c.cloze,extra,c.tags||'#Cloze']:
+                    [c.front,c.back+' | '+extra,c.tags||'#MetodoPMDF']).map(field).join('\t');
+            });
+            const txt='\uFEFF'+header.join('\n')+'\n'+rows.join('\n')+'\n';
+            const url=URL.createObjectURL(new Blob([txt],{type:'text/plain;charset=utf-8'}));
+            const link=document.createElement('a');link.href=url;
+            link.download='pmdf-anki-'+(cloze?'cloze':'basic')+'-'+cards.length+'.txt';
+            link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+            toast(cards.length+' notas '+(cloze?'Cloze':'Basic')+' prontas para importar no Anki.','ok');
         }
         function startAnki(){
             const guides=pickStudyGuides('anki');
