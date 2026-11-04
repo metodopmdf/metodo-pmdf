@@ -975,3 +975,7 @@ body :is(button,a,input,select,textarea,summary,[role="tab"]):focus-visible{outl
 a[href="privacidade.html"]{text-decoration:underline!important;text-decoration-thickness:2px!important;text-underline-offset:3px!important}
 body[data-theme="light"] .pmdf-header-badge{color:#3c2800!important}
 body[data-theme="light"] .qstudio .qstudio-eyebrow{color:#805600!important}
+
+/* Contraste WCAG AA no tema escuro: abas inativas e subtítulo do motor neural. */
+body[data-theme="dark"] .pmdf-app-tabs [role="tab"][aria-selected="false"]{color:#dce6f5!important}
+body[data-theme="dark"] #q-engine-neural .text-slate-400{color:#dce6f5!important}
