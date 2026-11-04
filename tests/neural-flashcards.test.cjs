@@ -42,6 +42,24 @@ for(const c of result.cards){
  assert(["Fácil","Médio","Difícil"].includes(c.difficulty),"Nível ausente");
  assert(!c.front.includes("…")&&!c.back.includes("…"),"Cartão truncado");
 }
+
+const tricky={lawName:"Código Militar QA",articlesMapping:{highIncidence:[{
+ article:"Art. 9º — Crime militar",
+ sourceText:"Define quando um fato é crime militar: (I) quando só existe no CPM; (II) quando previsto na legislação penal comum após a Lei 13.491/2017, e praticado em serviço."
+}],mediumIncidence:[],lowIncidence:[]}};
+const edge=api.build(tricky);
+assert(edge.cards.every(c=>!/\bLei 13$/.test(c.back)&&
+ !/quando previsto no CPM ou na legislação penal comum \(após a Lei 13$/.test(c.back)),
+ "Gerador truncou uma referência como Lei 13.491/2017");
+assert(edge.cards.every(c=>!/Define quando um fato/.test(c.front)),
+ "Não deve transformar frase metalinguística incompleta em cartão");
+const informative=api.build({lawName:"Lei de exemplo",articlesMapping:{highIncidence:[{
+ article:"Art. 1º — Gratuidade",
+ sourceText:"É vedado exigir pagamento pelo serviço, salvo comprovado custo de material específico."
+}],mediumIncidence:[],lowIncidence:[]}});
+assert(informative.cards.some(c=>c.cloze&&c.back.includes("comprovado custo")),
+ "Não identificou condição de exceção com artigo determinante");
+
 const entries=Array.from({length:520},(_,i)=>({
  article:"Art. "+(i+1)+"º — Processo "+i,
  sourceText:"A autoridade responsável pelo procedimento "+i+

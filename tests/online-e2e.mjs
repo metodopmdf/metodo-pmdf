@@ -161,6 +161,19 @@ async function checkFlashcards(page){
     wrong:window.eval('ANKI_STATE.wrong')}),before);
   assert.equal(state.box,0,'Cartão marcado como não lembrado avançou a caixa');
   assert.equal(state.wrong,1,'Cartão não lembrado não foi contabilizado');
+  await page.locator('button[onclick="revealAnki()"]').click();
+  const hardId=await page.evaluate(()=>window.eval('ANKI_STATE.cards[ANKI_STATE.index].id'));
+  await page.locator('button[onclick="gradeAnkiRating(\'hard\')"]').click();
+  const hardState=await page.evaluate(id=>window.eval('getCardBox('+JSON.stringify(id)+')'),hardId);
+  assert(hardState.due>Date.now()+11*3600000&&hardState.due<Date.now()+13*3600000,
+    'Difícil não agendou a revisão em aproximadamente 12 horas');
+  await page.locator('button[onclick="revealAnki()"]').click();
+  const easyId=await page.evaluate(()=>window.eval('ANKI_STATE.cards[ANKI_STATE.index].id'));
+  const oldBox=await page.evaluate(id=>window.eval('getCardBox('+JSON.stringify(id)+').box'),easyId);
+  await page.locator('button[onclick="gradeAnkiRating(\'easy\')"]').click();
+  const easyState=await page.evaluate(id=>window.eval('getCardBox('+JSON.stringify(id)+')'),easyId);
+  assert.equal(easyState.box,Math.min(4,oldBox+2),'Fácil não avançou duas caixas');
+  assert(easyState.due>Date.now(),'Fácil não programou revisão futura');
   const csvWait=page.waitForEvent('download',{timeout:15000});
   await page.locator('#anki-export-csv').click();
   const csv=await csvWait;
