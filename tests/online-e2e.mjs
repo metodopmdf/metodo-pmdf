@@ -8,15 +8,21 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {readFileSync,mkdirSync,writeFileSync} from 'node:fs';
 import {chromium} from 'playwright';
+import AxeBuilder from '@axe-core/playwright';
 
 const BASE=(process.env.PMDF_ONLINE_URL||'https://metodopmdf.github.io/metodo-pmdf/').replace(/\/?$/,'/');
 const expected=readFileSync(new URL('../index.html',import.meta.url));
 const expectedNeural=readFileSync(new URL('../assets/pmdf-neural-questions.js',import.meta.url));
 const expectedFlashcards=readFileSync(new URL('../assets/pmdf-neural-flashcards.js',import.meta.url));
+const expectedApp=readFileSync(new URL('../assets/pmdf-app.js',import.meta.url));
+const expectedGuides=readFileSync(new URL('../assets/pmdf-guides.js',import.meta.url));
+const expectedBase=readFileSync(new URL('../assets/pmdf-tailwind.css',import.meta.url));
+const expectedStyles=readFileSync(new URL('../assets/pmdf-components.css',import.meta.url));
 const hash=b=>createHash('sha256').update(b).digest('hex');
 const output='test-artifacts';
 mkdirSync(output,{recursive:true});
 const report=[];
+const severeViolations=[];
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function published(){
   const expectedHash=hash(expected);
@@ -30,7 +36,19 @@ async function published(){
         if(asset.ok&&hash(Buffer.from(await asset.arrayBuffer()))===hash(expectedNeural)){
           const flash=await fetch(BASE+'assets/pmdf-neural-flashcards.js?qa_build='+Date.now(),{
             headers:{'Cache-Control':'no-cache'},signal:AbortSignal.timeout(15000)});
-          if(flash.ok&&hash(Buffer.from(await flash.arrayBuffer()))===hash(expectedFlashcards))return true;
+          if(flash.ok&&hash(Buffer.from(await flash.arrayBuffer()))===hash(expectedFlashcards)){
+            const assets=[
+              ['assets/pmdf-app.js',expectedApp],['assets/pmdf-guides.js',expectedGuides],['assets/pmdf-tailwind.css',expectedBase],
+              ['assets/pmdf-components.css',expectedStyles]
+            ];
+            let confirmed=true;
+            for(const [path,content] of assets){
+              const res=await fetch(BASE+path+'?qa_build='+Date.now(),{
+                headers:{'Cache-Control':'no-cache'},signal:AbortSignal.timeout(15000)});
+              if(!res.ok||hash(Buffer.from(await res.arrayBuffer()))!==hash(content)){confirmed=false;break;}
+            }
+            if(confirmed)return true;
+          }
         }
       }
     }catch(e){console.log('[QA ONLINE] Verificação indisponível: '+String(e.message||e));}
@@ -61,7 +79,7 @@ async function setup(page){
   await page.locator('#account-switch').click();
   assert.equal(await page.locator('#account-submit').getAttribute('type'),'submit','Login não restaurado');
   const oldTheme=await page.evaluate(()=>document.body.dataset.theme);
-  await page.locator('.welcome-actions button[onclick="toggleTheme()"]').click();
+  await page.locator('.welcome-actions button[data-pmdf-onclick="toggleTheme()"]').click();
   assert.notEqual(await page.evaluate(()=>document.body.dataset.theme),oldTheme,'Troca de tema falhou');
   const themeColor=await page.locator('#pmdf-theme-color').getAttribute('content');
   assert.equal(themeColor,(await page.evaluate(()=>document.body.dataset.theme))==='light'?'#f6f8fc':'#071020',
@@ -75,6 +93,22 @@ async function setup(page){
   await page.locator('#q-source').selectOption('current');
   await page.locator('#q-neural-target').selectOption('30');
 }
+// Auditoria WCAG automatizada; resultados completos ficam anexados ao CI.
+async function auditAccessibility(page,view,phase){
+  const results=await new AxeBuilder({page})
+    .withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa']).analyze();
+  const violations=results.violations.map(v=>({
+    id:v.id,impact:v.impact,description:v.help,
+    nodes:v.nodes.slice(0,8).map(n=>({target:n.target,summary:n.failureSummary}))
+  }));
+  writeFileSync(output+'/axe-'+view.name+'-'+phase+'.json',JSON.stringify({
+    at:new Date().toISOString(),violations,passed:results.passes.length
+  },null,2));
+  const critical=violations.filter(v=>v.impact==='critical');
+  const significant=violations.filter(v=>v.impact==='critical'||v.impact==='serious');
+  if(significant.length) severeViolations.push({viewport:view.name,phase,violations:significant});
+  return {violations:violations.length,critical:critical.length,issues:violations.map(v=>v.id)};
+}
 async function checkUsability(page,view){
   for(const t of ['leis','questoes','anki','resultados','redacao']){
     await page.locator('#tab-btn-'+t).click();
@@ -82,11 +116,27 @@ async function checkUsability(page,view){
     assert.equal(await page.locator('#tab-btn-'+t).getAttribute('tabindex'),'0','Focus order '+t);
     assert.equal(await page.locator('#tab-'+t).getAttribute('role'),'tabpanel','Tab panel semantics '+t);
     assert(await page.locator('#pmdf-context-'+t).isVisible(),'Tool guidance '+t);
+    await auditAccessibility(page,view,'light-tab-'+t);
   }
   // Teclado e diálogos: foco inicial, Tab circular, Escape e devolução do foco.
   await page.locator('#tab-btn-leis').focus();
-  await page.evaluate(()=>window.openModal('Auditoria de acessibilidade',
-    '<button id="qa-dialog-action" type="button">Ação de teste</button>'));
+  await page.evaluate(()=>{
+    window.__pmdfInjected=false;
+    window.openModal('Auditoria de acessibilidade',
+      '<button id="qa-dialog-action" type="button">Ação de teste</button>'+
+      '<img src="x" onerror="window.__pmdfInjected=true" alt="">'+
+      '<a id="qa-unsafe-url" href="javascript:window.__pmdfInjected=true">Link bloqueado</a>'+
+      '<script>window.__pmdfInjected=true<\\/script>');
+  });
+  assert.equal(await page.locator('#gen-modal img').first().getAttribute('onerror'),null,
+    'Sanitizador preservou manipulador de evento malicioso');
+  assert.equal(await page.locator('#qa-unsafe-url').getAttribute('href'),null,
+    'Sanitizador preservou esquema javascript:');
+  assert.equal(await page.evaluate(()=>window.__pmdfInjected),false,
+    'HTML injetado executou script');
+  assert.equal(await page.evaluate(()=>
+    window.pmdfSafeHtml('<button data-pmdf-onclick="logoutAccount()">Injetado</button>').includes('data-pmdf-onclick')),false,
+    'HTML não confiável preservou ação privilegiada');
   assert(await page.locator('#gen-modal').isVisible(),'Modal genérico não abriu');
   assert.equal(await page.locator('#gen-modal').getAttribute('aria-modal'),'true','Modal sem semântica ARIA');
   assert(await page.evaluate(()=>!!document.activeElement?.closest('#gen-modal')),'Foco escapou do diálogo');
@@ -118,7 +168,7 @@ async function checkUsability(page,view){
   assert.equal(await page.evaluate(()=>document.activeElement?.id),'generate-btn','Primary action navigation');
   await page.locator('#tab-btn-questoes').click();
   assert(await page.locator('#q-generate-button').isVisible(),'Question generation button hidden');
-  const reset=page.locator('#q-extra-actions button[onclick="resetQuestionCycle()"]');
+  const reset=page.locator('#q-extra-actions button[data-pmdf-onclick="resetQuestionCycle()"]');
   assert(!(await reset.isVisible()),'Secondary actions should be collapsed');
   await page.locator('#q-extra-actions > summary').click();
   assert(await reset.isVisible(),'Secondary actions not reachable');
@@ -182,7 +232,7 @@ async function checkFlashcards(page){
   await page.locator('#anki-generation-mode').selectOption('advanced');
   await page.locator('#anki-mode').selectOption('all');
   await page.locator('#anki-batch-size').selectOption('50');
-  await page.locator('button[onclick="startAnki()"]').click();
+  await page.locator('button[data-pmdf-onclick="startAnki()"]').click();
   await page.waitForFunction(()=>document.querySelector('#anki-panel .anki-question')?.textContent?.length>35,
     null,{timeout:20000});
   assert((await page.evaluate(()=>window.eval('ANKI_STATE.cards.length')))<=50,
@@ -203,18 +253,18 @@ async function checkFlashcards(page){
   assert(first.length>35,'Flashcard sem pergunta substantiva');
   assert(!first.includes('Identifique o instituto, seu requisito principal'),
     'Flashcard genérico antigo reapareceu');
-  await page.locator('button[onclick="revealAnki()"]').click();
+  await page.locator('button[data-pmdf-onclick="revealAnki()"]').click();
   assert(await page.locator('#anki-panel .anki-proof').isVisible(),'Fundamento do verso ausente');
   assert(await page.locator('#anki-panel .anki-learn-aid').count()>=1,'Verso sem orientação prática');
   assert(await page.locator('#anki-nav-next').isVisible(),'Botão próximo ausente no flashcard');
   assert(await page.locator('#anki-nav-prev').isDisabled(),'Retornar antes do primeiro cartão não foi bloqueado');
   assert((await page.locator('#anki-panel .anki-proof').innerText()).length>45,'Fundamento incompleto');
-  assert(await page.locator('button[onclick="gradeAnki(false)"]').isVisible(),
+  assert(await page.locator('button[data-pmdf-onclick="gradeAnki(false)"]').isVisible(),
     'Falta botão de avaliação honesta');
   assert.equal(await page.locator('#anki-panel .anki-grade-choices button').count(),4,
     'Revisão estilo Anki deve mostrar 4 avaliações');
   const before=await page.evaluate(()=>window.eval('ANKI_STATE.cards[ANKI_STATE.index].id'));
-  await page.locator('button[onclick="gradeAnki(false)"]').click();
+  await page.locator('button[data-pmdf-onclick="gradeAnki(false)"]').click();
   const state=await page.evaluate(id=>({box:window.eval('getCardBox('+JSON.stringify(id)+').box'),
     wrong:window.eval('ANKI_STATE.wrong')}),before);
   assert.equal(state.box,0,'Cartão marcado como não lembrado avançou a caixa');
@@ -227,16 +277,16 @@ async function checkFlashcards(page){
   assert.equal(await page.evaluate(()=>window.eval('ANKI_STATE.wrong')),1,'Retorno duplicou erros');
   await page.locator('#anki-nav-next').click();
   assert.equal(await page.evaluate(()=>window.eval('ANKI_STATE.index')),1,'Próximo não retornou ao ponto anterior');
-  await page.locator('button[onclick="revealAnki()"]').click();
+  await page.locator('button[data-pmdf-onclick="revealAnki()"]').click();
   const hardId=await page.evaluate(()=>window.eval('ANKI_STATE.cards[ANKI_STATE.index].id'));
-  await page.locator('button[onclick="gradeAnkiRating(\'hard\')"]').click();
+  await page.locator('button[data-pmdf-onclick="gradeAnkiRating(\'hard\')"]').click();
   const hardState=await page.evaluate(id=>window.eval('getCardBox('+JSON.stringify(id)+')'),hardId);
   assert(hardState.due>Date.now()+11*3600000&&hardState.due<Date.now()+13*3600000,
     'Difícil não agendou a revisão em aproximadamente 12 horas');
-  await page.locator('button[onclick="revealAnki()"]').click();
+  await page.locator('button[data-pmdf-onclick="revealAnki()"]').click();
   const easyId=await page.evaluate(()=>window.eval('ANKI_STATE.cards[ANKI_STATE.index].id'));
   const oldBox=await page.evaluate(id=>window.eval('getCardBox('+JSON.stringify(id)+').box'),easyId);
-  await page.locator('button[onclick="gradeAnkiRating(\'easy\')"]').click();
+  await page.locator('button[data-pmdf-onclick="gradeAnkiRating(\'easy\')"]').click();
   const easyState=await page.evaluate(id=>window.eval('getCardBox('+JSON.stringify(id)+')'),easyId);
   assert.equal(easyState.box,Math.min(4,oldBox+2),'Fácil não avançou duas caixas');
   assert(easyState.due>Date.now(),'Fácil não programou revisão futura');
@@ -275,7 +325,7 @@ async function longSource(page){
   await page.locator('details.qstudio-paste summary').click();
   await page.locator('#q-inline-title').fill('Regulamento fictício de 90 dispositivos QA');
   await page.locator('#q-inline-text').fill(rules);
-  await page.locator('button[onclick="questionUseText()"]').click();
+  await page.locator('button[data-pmdf-onclick="questionUseText()"]').click();
   await page.waitForFunction(()=>document.getElementById('q-document-indicator')?.textContent?.includes('Regulamento fictício de 90'),
     null,{timeout:15000});
   await page.locator('#q-format').selectOption('CE');
@@ -306,10 +356,35 @@ async function longSource(page){
   assert.match(await page.locator('#anki-generation-status').innerText(),/Cobertura:/);
   return {first:first.length,second:second.length,flashcards:flash};
 }
+async function verifyCsp(browser){
+  const context=await browser.newContext();
+  try{
+    const page=await context.newPage();
+    const res=await page.goto(BASE+'?qa_csp='+Date.now(),{waitUntil:'domcontentloaded',timeout:60000});
+    assert.equal(res?.status(),200,'CSP: publicação indisponível');
+    const result=await page.evaluate(()=>{
+      window.__pmdfUnsafeInlineMarker=0;
+      const button=document.createElement('button');
+      button.setAttribute('onclick','window.__pmdfUnsafeInlineMarker=1');
+      document.body.appendChild(button);button.click();button.remove();
+      const script=document.createElement('script');
+      script.textContent='window.__pmdfUnsafeInlineMarker=2';
+      document.body.appendChild(script);script.remove();
+      return window.__pmdfUnsafeInlineMarker;
+    });
+    assert.equal(result,0,'CSP não bloqueou scripts e eventos inline');
+    // axe injeta o analisador no DOM; apenas esta fase usa bypass depois do teste CSP.
+    const devtools=await context.newCDPSession(page);
+    await devtools.send('Page.setBypassCSP',{enabled:true});
+    await page.reload({waitUntil:'domcontentloaded'});
+    await auditAccessibility(page,{name:'landing'},'initial');
+  } finally {await context.close();}
+}
 async function main(){
   await published();
   const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
   try{
+    await verifyCsp(browser);
     for(const view of [
       {name:'desktop',viewport:{width:1366,height:900}},
       {name:'mobile',viewport:{width:390,height:844},isMobile:true,hasTouch:true}
@@ -317,20 +392,60 @@ async function main(){
       const context=await browser.newContext({viewport:view.viewport,
         ...(view.isMobile?{isMobile:true,hasTouch:true}:{}),deviceScaleFactor:1});
       const page=await context.newPage();
+      await page.addInitScript(()=>{
+        // PerformanceObserver captura Web Vitals sem bibliotecas nem rastreamento pessoal.
+        window.__pmdfVitals={lcp:null,cls:0,inp:0};
+        try{new PerformanceObserver(list=>{
+          for(const item of list.getEntries())window.__pmdfVitals.lcp=Math.round(item.startTime);
+        }).observe({type:'largest-contentful-paint',buffered:true});}catch(_){}
+        try{new PerformanceObserver(list=>{
+          for(const item of list.getEntries())if(!item.hadRecentInput)window.__pmdfVitals.cls+=item.value;
+        }).observe({type:'layout-shift',buffered:true});}catch(_){}
+        try{new PerformanceObserver(list=>{
+          for(const item of list.getEntries())if(item.interactionId)
+            window.__pmdfVitals.inp=Math.max(window.__pmdfVitals.inp,item.duration||0);
+        }).observe({type:'event',durationThreshold:40,buffered:true});}catch(_){}
+      });
+      // A execução funcional necessita manipular um estado autenticado fictício por window.eval.
+      // CSP é verificada separadamente acima; o bypass existe SOMENTE no navegador de QA.
+      const devtools=await context.newCDPSession(page);
+      await devtools.send('Page.setBypassCSP',{enabled:true});
       const errors=[];
       page.on('pageerror',err=>errors.push(String(err.message||err)));
       page.on('crash',()=>errors.push('Chromium renderer crashed'));
       try{
         await setup(page);
         await checkUsability(page,view);
+        const a11y=await auditAccessibility(page,view,'app');
+        const currentTheme=await page.evaluate(()=>document.body.dataset.theme||'dark');
+        await page.evaluate(()=>window.applyTheme('dark'));
+        const darkTabs={};
+        for(const tab of ['leis','questoes','anki','resultados','redacao']){
+          await page.locator('#tab-btn-'+tab).click();
+          darkTabs[tab]=await auditAccessibility(page,view,'dark-tab-'+tab);
+        }
+        await page.locator('#tab-btn-questoes').click();
+        const darkA11y=await auditAccessibility(page,view,'dark');
+        await page.evaluate(theme=>window.applyTheme(theme),currentTheme);
         const ce=await generate(page,'CE');
         const mc=await generate(page,'MC');
         const mix=await generate(page,'MIX');
         await checkFlashcards(page);
         const large=view.name==='desktop'?await longSource(page):null;
         assert.deepEqual(errors,[],'Erros no navegador: '+errors.join(' | '));
+        // Medições observacionais de Web Vitals (sem travar CI por variação da rede).
+        const perf=await page.evaluate(()=>({
+          fcp:performance.getEntriesByName('first-contentful-paint')[0]?.startTime??null,
+          navigation:performance.getEntriesByType('navigation')[0]?.duration??null,
+          resources:performance.getEntriesByType('resource').length,
+          transfer:performance.getEntriesByType('resource').reduce((n,r)=>n+(r.transferSize||0),0),
+          lcp:window.__pmdfVitals?.lcp??null,
+          cls:window.__pmdfVitals?.cls??null,
+          inp:window.__pmdfVitals?.inp??null
+        }));
+        writeFileSync(output+'/performance-'+view.name+'.json',JSON.stringify(perf,null,2));
         await page.screenshot({path:output+'/'+view.name+'-ok.png',fullPage:true});
-        report.push({viewport:view.name,status:'PASS',ce:ce.num,mc:mc.num,mix:mix.num,large});
+        report.push({viewport:view.name,status:'PASS',ce:ce.num,mc:mc.num,mix:mix.num,large,a11y,darkA11y});
       }catch(e){
         report.push({viewport:view.name,status:'FAIL',error:String(e.stack||e),errors});
         try{await page.screenshot({path:output+'/'+view.name+'-failure.png',fullPage:true});}catch(_){}
@@ -342,6 +457,8 @@ async function main(){
       sha:process.env.GITHUB_SHA||'local',report},null,2));
     await browser.close();
   }
+  writeFileSync(output+'/axe-summary.json',JSON.stringify({severe:severeViolations},null,2));
+  assert.equal(severeViolations.length,0,'WCAG AA: violações relevantes — veja axe-summary.json: '+JSON.stringify(severeViolations).slice(0,1200));
   console.log('QA ONLINE PASS: navegação, acessibilidade, controles opcionais, CE/MC/MIX, flashcards, desktop e mobile.');
 }
 await main();

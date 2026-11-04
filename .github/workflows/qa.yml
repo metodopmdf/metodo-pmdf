@@ -28,7 +28,6 @@ jobs:
   online:
     name: Operação online em Chromium (desktop e celular)
     needs: smoke
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     steps:
@@ -39,13 +38,18 @@ jobs:
         with:
           node-version: '22'
       - name: Instalar Playwright
-        run: npm install --no-save --no-package-lock playwright@1.57.0
+        run: npm install --no-save --no-package-lock playwright@1.57.0 @axe-core/playwright@4.10.2
       - name: Instalar Chromium e dependências
         run: npx playwright install --with-deps chromium
-      - name: Testar o GitHub Pages REAL após a publicação desta revisão
+      - name: Subir prévia local isolada (somente pull requests)
+        if: github.event_name == 'pull_request'
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 > /tmp/pmdf-preview.log 2>&1 &
+          sleep 2
+      - name: Testar Chromium no PR ou GitHub Pages publicado
         env:
-          PMDF_ONLINE_URL: https://metodopmdf.github.io/metodo-pmdf/
-          PMDF_DEPLOY_ATTEMPTS: '65'
+          PMDF_ONLINE_URL: ${{ github.event_name == 'pull_request' && 'http://127.0.0.1:8000/' || 'https://metodopmdf.github.io/metodo-pmdf/' }}
+          PMDF_DEPLOY_ATTEMPTS: ${{ github.event_name == 'pull_request' && '3' || '65' }}
         run: node tests/online-e2e.mjs
       - name: Guardar relatório e capturas (inclusive falhas)
         if: always()

@@ -2,9 +2,12 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
-const scripts=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)];
-assert(scripts.length>=1,'Script principal não encontrado');
-const code=scripts.at(-1)[1];
+// Arquitetura modular: aplicação carregada por script externo, sem JavaScript inline.
+const guidesCode=readFileSync(new URL('../assets/pmdf-guides.js',import.meta.url),'utf8');
+const code=guidesCode+'\n'+readFileSync(new URL('../assets/pmdf-app.js',import.meta.url),'utf8');
+assert(html.includes('src="assets/pmdf-app.js'),'Aplicação externa não vinculada');
+assert(html.includes('src="assets/pmdf-guides.js'),'Catálogo inicial não vinculado');
+assert(!/<script\b(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/i.test(html),'Script inline viola CSP');
 new Function(code);
 assert(!html.includes("fetch('/api/"),'O site estático ainda chama uma rota /api/');
 assert(html.includes("https://metodopmdf.github.io/metodo-pmdf/"),'URL nova ausente');
@@ -13,7 +16,7 @@ assert(html.includes('name="viewport"'),'Viewport móvel ausente');
 for(const id of ['pmdf-context-bar','pmdf-primary-jump','pmdf-advanced-law','q-extra-actions','auto-questions-section','anki-start']){
   assert(html.includes('id="'+id+'"'),'UX: controle ausente '+id);
 }
-assert(html.includes('function pmdfTabKeydown(e)'),'Navegação por teclado ausente');
+assert(code.includes('function pmdfTabKeydown(e)'),'Navegação por teclado ausente');
 for(const [k,panel] of Object.entries({leis:'tab-leis',questoes:'tab-questoes',anki:'tab-anki',resultados:'tab-resultados',redacao:'tab-redacao'})){
   assert(html.includes('id="tab-btn-'+k+'" role="tab" aria-controls="'+panel+'"'),'ARIA: aba '+k);
   assert(html.includes('id="'+panel+'" role="tabpanel"'),'ARIA: painel '+k);

@@ -3,6 +3,8 @@ on:
   push:
     paths:
       - 'index.html'
+      - 'assets/pmdf-app.js'
+      - 'assets/pmdf-guides.js'
       - 'assets/pmdf-neural-questions.js'
       - 'assets/pmdf-neural-flashcards.js'
       - 'tests/neural-questions.test.cjs'
@@ -12,6 +14,8 @@ on:
   pull_request:
     paths:
       - 'index.html'
+      - 'assets/pmdf-app.js'
+      - 'assets/pmdf-guides.js'
       - 'assets/pmdf-neural-questions.js'
       - 'assets/pmdf-neural-flashcards.js'
       - 'tests/neural-questions.test.cjs'

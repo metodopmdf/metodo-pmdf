@@ -6,7 +6,11 @@ const asset=fs.readFileSync(require("node:path").join(root,"assets/pmdf-neural-q
 const html=fs.readFileSync(require("node:path").join(root,"index.html"),"utf8");
 const sql=fs.readFileSync(require("node:path").join(root,"supabase/migrations/20261103_questoes_neurais.sql"),"utf8");
 new Function(asset);
-new Function(html.slice(html.lastIndexOf("<script>")+8,html.lastIndexOf("</script>")));
+const guides=fs.readFileSync(require("node:path").join(root,"assets","pmdf-guides.js"),"utf8");
+const app=fs.readFileSync(require("node:path").join(root,"assets","pmdf-app.js"),"utf8");
+new Function(guides);
+new Function(app);
+assert.match(html,/assets\/pmdf-app\.js/,"Aplicação modular ausente");
 assert.match(html,/pmdf-neural-questions\.js/);
 assert.doesNotMatch(html,/gemini/i);
 assert.match(html,/id="q-neural-save"/);
