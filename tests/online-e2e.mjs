@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {readFileSync,mkdirSync,writeFileSync} from 'node:fs';
 import {chromium} from 'playwright';
+import AxeBuilder from '@axe-core/playwright';
 
 const BASE=(process.env.PMDF_ONLINE_URL||'https://metodopmdf.github.io/metodo-pmdf/').replace(/\/?$/,'/');
 const expected=readFileSync(new URL('../index.html',import.meta.url));
@@ -89,6 +90,21 @@ async function setup(page){
   await page.locator('#q-engine-neural').click();
   await page.locator('#q-source').selectOption('current');
   await page.locator('#q-neural-target').selectOption('30');
+}
+// Auditoria WCAG automatizada; resultados completos ficam anexados ao CI.
+async function auditAccessibility(page,view,phase){
+  const results=await new AxeBuilder({page})
+    .withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa']).analyze();
+  const violations=results.violations.map(v=>({
+    id:v.id,impact:v.impact,description:v.help,
+    nodes:v.nodes.slice(0,8).map(n=>({target:n.target,summary:n.failureSummary}))
+  }));
+  writeFileSync(output+'/axe-'+view.name+'-'+phase+'.json',JSON.stringify({
+    at:new Date().toISOString(),violations,passed:results.passes.length
+  },null,2));
+  const critical=violations.filter(v=>v.impact==='critical');
+  assert.equal(critical.length,0,'WCAG: violações críticas '+JSON.stringify(critical).slice(0,500));
+  return {violations:violations.length,critical:critical.length,issues:violations.map(v=>v.id)};
 }
 async function checkUsability(page,view){
   for(const t of ['leis','questoes','anki','resultados','redacao']){
@@ -326,6 +342,7 @@ async function verifyCsp(browser){
   try{
     const page=await context.newPage();
     const res=await page.goto(BASE+'?qa_csp='+Date.now(),{waitUntil:'domcontentloaded',timeout:60000});
+    await auditAccessibility(page,{name:'landing'},'initial');
     assert.equal(res?.status(),200,'CSP: publicação indisponível');
     const result=await page.evaluate(()=>{
       window.__pmdfUnsafeInlineMarker=0;
@@ -362,14 +379,23 @@ async function main(){
       try{
         await setup(page);
         await checkUsability(page,view);
+        const a11y=await auditAccessibility(page,view,'app');
         const ce=await generate(page,'CE');
         const mc=await generate(page,'MC');
         const mix=await generate(page,'MIX');
         await checkFlashcards(page);
         const large=view.name==='desktop'?await longSource(page):null;
         assert.deepEqual(errors,[],'Erros no navegador: '+errors.join(' | '));
+        // Medições observacionais de Web Vitals (sem travar CI por variação da rede).
+        const perf=await page.evaluate(()=>({
+          fcp:performance.getEntriesByName('first-contentful-paint')[0]?.startTime??null,
+          navigation:performance.getEntriesByType('navigation')[0]?.duration??null,
+          resources:performance.getEntriesByType('resource').length,
+          transfer:performance.getEntriesByType('resource').reduce((n,r)=>n+(r.transferSize||0),0)
+        }));
+        writeFileSync(output+'/performance-'+view.name+'.json',JSON.stringify(perf,null,2));
         await page.screenshot({path:output+'/'+view.name+'-ok.png',fullPage:true});
-        report.push({viewport:view.name,status:'PASS',ce:ce.num,mc:mc.num,mix:mix.num,large});
+        report.push({viewport:view.name,status:'PASS',ce:ce.num,mc:mc.num,mix:mix.num,large,a11y});
       }catch(e){
         report.push({viewport:view.name,status:'FAIL',error:String(e.stack||e),errors});
         try{await page.screenshot({path:output+'/'+view.name+'-failure.png',fullPage:true});}catch(_){}
