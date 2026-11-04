@@ -115,6 +115,7 @@ async function checkUsability(page,view){
     assert.equal(await page.locator('#tab-btn-'+t).getAttribute('tabindex'),'0','Focus order '+t);
     assert.equal(await page.locator('#tab-'+t).getAttribute('role'),'tabpanel','Tab panel semantics '+t);
     assert(await page.locator('#pmdf-context-'+t).isVisible(),'Tool guidance '+t);
+    await auditAccessibility(page,view,'light-tab-'+t);
   }
   // Teclado e diálogos: foco inicial, Tab circular, Escape e devolução do foco.
   await page.locator('#tab-btn-leis').focus();
@@ -417,6 +418,12 @@ async function main(){
         const a11y=await auditAccessibility(page,view,'app');
         const currentTheme=await page.evaluate(()=>document.body.dataset.theme||'dark');
         await page.evaluate(()=>window.applyTheme('dark'));
+        const darkTabs={};
+        for(const tab of ['leis','questoes','anki','resultados','redacao']){
+          await page.locator('#tab-btn-'+tab).click();
+          darkTabs[tab]=await auditAccessibility(page,view,'dark-tab-'+tab);
+        }
+        await page.locator('#tab-btn-questoes').click();
         const darkA11y=await auditAccessibility(page,view,'dark');
         await page.evaluate(theme=>window.applyTheme(theme),currentTheme);
         const ce=await generate(page,'CE');
