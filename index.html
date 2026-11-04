@@ -2447,6 +2447,7 @@ body .pmdf-more-actions:not([open])>.pmdf-import-body{display:none!important}
 /* Acesso por teclado, legibilidade em telas pequenas e preferência por movimento reduzido. */
 .pmdf-skip-link{position:fixed;z-index:9999;top:10px;left:10px;padding:12px 16px;background:#f3d479;color:#0a1426;border:2px solid #071020;border-radius:10px;font-weight:700;transform:translateY(-180%);transition:transform .15s ease}
 .pmdf-skip-link:focus-visible{transform:translateY(0)}
+body.landing-active .pmdf-skip-link{display:none}
 body :is(button,a,input,select,textarea,summary,[role="tab"]):focus-visible{outline:3px solid var(--accent,#d4af37);outline-offset:3px}
 #pmdf-main-content:focus{outline:none}
 #gen-modal:focus,#prompt-modal:focus{outline:none}
