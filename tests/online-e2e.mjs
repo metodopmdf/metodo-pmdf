@@ -342,7 +342,6 @@ async function verifyCsp(browser){
   try{
     const page=await context.newPage();
     const res=await page.goto(BASE+'?qa_csp='+Date.now(),{waitUntil:'domcontentloaded',timeout:60000});
-    await auditAccessibility(page,{name:'landing'},'initial');
     assert.equal(res?.status(),200,'CSP: publicação indisponível');
     const result=await page.evaluate(()=>{
       window.__pmdfUnsafeInlineMarker=0;
@@ -355,6 +354,11 @@ async function verifyCsp(browser){
       return window.__pmdfUnsafeInlineMarker;
     });
     assert.equal(result,0,'CSP não bloqueou scripts e eventos inline');
+    // axe injeta o analisador no DOM; apenas esta fase usa bypass depois do teste CSP.
+    const devtools=await context.newCDPSession(page);
+    await devtools.send('Page.setBypassCSP',{enabled:true});
+    await page.reload({waitUntil:'domcontentloaded'});
+    await auditAccessibility(page,{name:'landing'},'initial');
   } finally {await context.close();}
 }
 async function main(){
