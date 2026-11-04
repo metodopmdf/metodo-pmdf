@@ -1254,10 +1254,22 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             ['url','text','file'].forEach(k => {
                 const panel = $('source-' + k + '-panel'), tab = $('source-tab-' + k);
                 if (panel) panel.classList.toggle('hidden', k !== mode);
-                if (tab) { tab.classList.toggle('active', k === mode); tab.setAttribute('aria-selected', String(k === mode)); }
+                if (tab) { tab.classList.toggle('active', k === mode); tab.setAttribute('aria-selected', String(k === mode)); tab.tabIndex=k===mode?0:-1; }
             });
             if (window.lucide) lucide.createIcons();
         }
+        // Navegação padrão WAI-ARIA das três fontes: setas, Home e End.
+        document.addEventListener('keydown',event=>{
+            const tab=event.target?.closest?.('[role="tab"][id^="source-tab-"]');
+            if(!tab||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+            const keys=['url','text','file'];
+            const index=keys.indexOf(tab.id.slice('source-tab-'.length));
+            if(index<0)return;
+            event.preventDefault();
+            const next=event.key==='Home'?0:event.key==='End'?keys.length-1:
+                (index+(event.key==='ArrowRight'?1:-1)+keys.length)%keys.length;
+            setSourceMode(keys[next]);$('source-tab-'+keys[next])?.focus();
+        });
         function countLawText() {
             const t = $('law-text') ? $('law-text').value : '';
             const words = (t.match(/\S+/g) || []).length;
@@ -1720,7 +1732,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const executive=LEVEL==='iniciante'?'<ol class="list-decimal pl-5">'+[S.centralObjective,...concepts.slice(0,3)].map(x=>'<li>'+esc(firstSentences(x,260))+'</li>').join('')+'</ol>':'<p>'+esc(S.centralObjective||'')+'</p><ul>'+concepts.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
             const glossary=LEVEL==='iniciante'?glossaryHtml(g):'';
             const articleCard=(a,i)=>{const tags=bankTags(a),hl=interactive&&((eb==='cebraspe'&&tags.c)||(eb==='fgv'&&tags.f));const id=(CUR.key||'x')+'|'+String(a.article).slice(0,40),noteKey='note:'+id,note=store.get(noteKey)||'';let noteId=-1;if(interactive)noteId=NOTE_IDS.push(noteKey)-1;
-                const checkbox=interactive?'<input type="checkbox" class="no-print mr-2 accent-[#D4AF37]" data-id="'+esc(id)+'" '+(done.includes(id)?'checked':'')+' data-pmdf-onchange="toggleStudied(this)">':'';
+                const checkbox=interactive?'<input type="checkbox" class="no-print mr-2 accent-[#D4AF37]" data-id="'+esc(id)+'" aria-label="Marcar '+esc(a.article)+' como estudado" '+(done.includes(id)?'checked':'')+' data-pmdf-onchange="toggleStudied(this)">':'';
                 return '<div class="g-card" data-incidence="'+a.incidence+'" style="'+(hl?'border-left:4px solid #D4AF37':'')+'">'+(hl?'<span class="g-tag">⭐ Afinidade temática com a banca (estimativa)</span>':'')+(tags.documented?'<span class="g-tag">📚 '+tags.documented+' referência(s) em provas importadas</span>':'')+'<p>'+checkbox+'<b>'+esc(a.article)+'</b> <span class="g-tag">'+a.incidence+' incidência</span></p><p>'+esc(a.plainExplanation)+'</p><p class="g-ex"><b>Aplicação:</b> '+esc(a.practicalExample)+'</p>'+(note?'<p class="g-ex"><b>📝 Nota:</b> '+esc(note)+'</p>':'')+(interactive?'<button class="no-print g-tag" data-pmdf-special="edit-note" data-pmdf-value="'+noteId+'">📝 Nota</button>':'')+'</div>';};
             const compareRows=rows.slice(0,8).map(a=>'<tr><td>'+esc(a.article)+'</td><td>'+esc(firstSentences(a.plainExplanation,230))+'</td><td>'+esc(uniq(a.plainExplanation.match(PRAZO)||[]).join('; ')||'Não identificado no trecho')+'</td><td>'+esc(uniq(a.plainExplanation.match(RESTR)||[]).join('; ')||'Não identificado no trecho')+'</td></tr>').join('');
             let body='';
@@ -1743,7 +1755,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 const traps=safeArray(T.examTraps), questions=getCachedPool(g,boardFmt(),LEVEL).slice(0,20);
                 body=wrap('Fichamento de Pegadinhas & Questões',traps.map((t,i)=>'<div class="g-card"><b>Pegadinha '+(i+1)+'</b><p>'+esc(t)+'</p></div>').join('')+'<h3>Assertivas Certo/Errado comentadas</h3>'+questions.map((q,i)=>'<div class="g-card"><b>'+ (i+1)+'. '+esc(q.answer==='C'?'CERTO':'ERRADO')+'</b><p>'+esc(q.statement)+'</p><p class="g-ex">'+esc(q.explanation)+'</p></div>').join(''));
             }
-            const tools=interactive?'<div class="no-print flex flex-wrap gap-2 mt-3"><button data-pmdf-onclick="openFlash()" class="'+BTN+'">🃏 Revisão de flashcards</button><button data-pmdf-onclick="openErrors()" class="'+BTN+'">📕 Caderno de Erros</button><button data-pmdf-onclick="openMindMap()" class="'+BTN+'">🌳 Mapa mental</button><button data-pmdf-onclick="openPanel()" class="'+BTN+'">📊 Painel do Edital &amp; Backup</button><button data-pmdf-onclick="toggleCloze()" class="'+BTN+'">🙈 Modo Lacunas</button><input type="search" id="guide-search" data-pmdf-oninput="filterGuide(this.value)" placeholder="Buscar neste guia..." class="px-3 py-2 rounded-xl bg-[#0E1B33] border border-[#1E2E4F] text-xs text-slate-200 w-64"><button type="button" data-pmdf-onclick="clearGuideOptions()" class="'+BTN+'">↺ Limpar filtros do guia</button><button data-pmdf-onclick="searchAll()" class="'+BTN+'">🔎 Busca global</button>'+(LEVEL!=='iniciante'?'<select data-pmdf-onchange="setBank(this.value)" class="px-2 py-2 rounded-xl bg-[#0E1B33] border border-[#1E2E4F] text-xs text-slate-200"><option value="auto" '+(BANK==='auto'?'selected':'')+'>Conforme a banca</option><option value="todas" '+(BANK==='todas'?'selected':'')+'>Todas</option><option value="cebraspe" '+(BANK==='cebraspe'?'selected':'')+'>Cebraspe</option><option value="fgv" '+(BANK==='fgv'?'selected':'')+'>FGV/AOCP</option></select>':'')+'</div>':'';
+            const tools=interactive?'<div class="no-print flex flex-wrap gap-2 mt-3"><button data-pmdf-onclick="openFlash()" class="'+BTN+'">🃏 Revisão de flashcards</button><button data-pmdf-onclick="openErrors()" class="'+BTN+'">📕 Caderno de Erros</button><button data-pmdf-onclick="openMindMap()" class="'+BTN+'">🌳 Mapa mental</button><button data-pmdf-onclick="openPanel()" class="'+BTN+'">📊 Painel do Edital &amp; Backup</button><button data-pmdf-onclick="toggleCloze()" class="'+BTN+'">🙈 Modo Lacunas</button><input type="search" id="guide-search" data-pmdf-oninput="filterGuide(this.value)" placeholder="Buscar neste guia..." class="px-3 py-2 rounded-xl bg-[#0E1B33] border border-[#1E2E4F] text-xs text-slate-200 w-64"><button type="button" data-pmdf-onclick="clearGuideOptions()" class="'+BTN+'">↺ Limpar filtros do guia</button><button data-pmdf-onclick="searchAll()" class="'+BTN+'">🔎 Busca global</button>'+(LEVEL!=='iniciante'?'<select aria-label="Filtrar guia por banca" data-pmdf-onchange="setBank(this.value)" class="px-2 py-2 rounded-xl bg-[#0E1B33] border border-[#1E2E4F] text-xs text-slate-200"><option value="auto" '+(BANK==='auto'?'selected':'')+'>Conforme a banca</option><option value="todas" '+(BANK==='todas'?'selected':'')+'>Todas</option><option value="cebraspe" '+(BANK==='cebraspe'?'selected':'')+'>Cebraspe</option><option value="fgv" '+(BANK==='fgv'?'selected':'')+'>FGV/AOCP</option></select>':'')+'</div>':'';
             return tools+(interactive?'<p id="g-progress" class="no-print mt-2"></p>':'')+
                 '<div class="pmdf-report pmdf-report-'+SUMMARY_FORMAT+'">'+
                 intro+
