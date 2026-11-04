@@ -15,6 +15,7 @@ const expected=readFileSync(new URL('../index.html',import.meta.url));
 const expectedNeural=readFileSync(new URL('../assets/pmdf-neural-questions.js',import.meta.url));
 const expectedFlashcards=readFileSync(new URL('../assets/pmdf-neural-flashcards.js',import.meta.url));
 const expectedApp=readFileSync(new URL('../assets/pmdf-app.js',import.meta.url));
+const expectedGuides=readFileSync(new URL('../assets/pmdf-guides.js',import.meta.url));
 const expectedBase=readFileSync(new URL('../assets/pmdf-tailwind.css',import.meta.url));
 const expectedStyles=readFileSync(new URL('../assets/pmdf-components.css',import.meta.url));
 const hash=b=>createHash('sha256').update(b).digest('hex');
@@ -36,7 +37,7 @@ async function published(){
             headers:{'Cache-Control':'no-cache'},signal:AbortSignal.timeout(15000)});
           if(flash.ok&&hash(Buffer.from(await flash.arrayBuffer()))===hash(expectedFlashcards)){
             const assets=[
-              ['assets/pmdf-app.js',expectedApp],['assets/pmdf-tailwind.css',expectedBase],
+              ['assets/pmdf-app.js',expectedApp],['assets/pmdf-guides.js',expectedGuides],['assets/pmdf-tailwind.css',expectedBase],
               ['assets/pmdf-components.css',expectedStyles]
             ];
             let confirmed=true;
