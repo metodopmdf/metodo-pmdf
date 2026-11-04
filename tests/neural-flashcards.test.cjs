@@ -73,6 +73,19 @@ const topicOnly=api.build({lawName:"Código Penal Militar QA",articlesMapping:{h
 }],mediumIncidence:[],lowIncidence:[]}});
 assert.equal(topicOnly.cards.length,0,"Motor criou cartão com rótulo em vez de fato verificável");
 
+// Lei penal militar: separar tempo e lugar do crime por teorias, não pelo título.
+const theoryGuide={lawName:"Código Penal Militar — QA",articlesMapping:{
+ highIncidence:[{article:"Arts. 5º e 6º (Parte Geral - Título I) — Tempo e Lugar do Crime",
+  sourceText:"Para o Tempo do Crime, o CPM adota a Teoria da Atividade. Para o Lugar do Crime, nos crimes comissivos adota a Teoria da Ubiquidade e nos omissivos a Teoria da Atividade."}],
+ mediumIncidence:[],lowIncidence:[]}};
+const theoryCards=api.build(theoryGuide).cards;
+assert(theoryCards.length>=3,"O CPM deixou de gerar os cartões das teorias");
+assert(theoryCards.some(c=>c.back==="Teoria da Atividade"&&c.cloze),"Não ocultou teoria do tempo do crime");
+assert(theoryCards.some(c=>c.back==="Teoria da Ubiquidade"&&c.cloze),"Não ocultou teoria dos crimes comissivos");
+assert(theoryCards.every(c=>c.front!=="Título I — Tempo e Lugar do Crime"),"Cartão voltou a exibir somente o título");
+assert(theoryCards.every(c=>c.tip?.includes("teoria")),"Faltam dicas específicas para distinguir as teorias");
+assert(theoryCards.every(c=>c.pitfall?.includes("inverter")),"Faltam alertas de troca das teorias");
+
 const entries=Array.from({length:520},(_,i)=>({
  article:"Art. "+(i+1)+"º — Processo "+i,
  sourceText:"A autoridade responsável pelo procedimento "+i+
