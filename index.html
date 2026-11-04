@@ -6343,7 +6343,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                             ' dispositivos · '+count+' cartões identificados';}});
                     if(token!==ANKI_GENERATION||result.cancelled)return;
                     let deck=result.cards;
-                    if(!deck.length)deck=buildStudyCardsLegacy(guide);
+                    // Não ressuscitar cartões genéricos quando a fonte não contém fato testável.
                     decks.push(deck.map(card=>({...card,law:guide.lawName})));
                     reports.push(result.report);
                     if(index%4===3)await new Promise(resolve=>setTimeout(resolve,0));
@@ -6378,7 +6378,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     store.set(key,String(cursor+selected.length));
                     cards=selected;
                 }else cards=cards.slice(0,limit);
-                ANKI_STATE={cards,index:0,seen:0,back:false,graded:null,correct:0,wrong:0};
+                ANKI_STATE={cards,index:0,seen:0,back:false,graded:null,correct:0,wrong:0,ratings:{}};
                 saveStudySession();$('anki-panel').classList.remove('hidden');
                 $('anki-status').textContent='Motor neural local · banco de '+bank.length+' cartões válidos · '+
                     cards.length+' neste lote · '+available+' elegíveis para revisão.';
@@ -6429,7 +6429,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 store.set(cycleKey,String(cursor+batch.length));
                 cards=batch;
             }else cards=cards.slice(0,limit);
-            ANKI_STATE={cards,index:0,seen:0,back:false,graded:null,correct:0,wrong:0};
+            ANKI_STATE={cards,index:0,seen:0,back:false,graded:null,correct:0,wrong:0,ratings:{}};
             saveStudySession();$('anki-panel').classList.remove('hidden');
             $('anki-status').textContent='Revisão pronta · '+cards.length+' cartões neste lote, de '+available+
                 ' elegíveis · '+LEVELS[LEVEL].label+'. Avalie a recordação para programar as próximas revisões.';
@@ -6452,12 +6452,14 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         function drawAnki(){
             const el=$('anki-panel'),s=ANKI_STATE;if(!el||!s)return;
             if(s.index>=s.cards.length){
-                el.innerHTML='<div class="anki-finish"><h3 class="text-xl font-bold text-[#E5C158]">Revisão concluída</h3>'+
-                    '<p class="mt-2">Você revisou '+s.seen+' cartões. '+(s.correct||0)+' lembrados · '+(s.wrong||0)+' para reforçar.</p>'+
-                    '<button type="button" class="qstudio-primary mt-4" onclick="startAnki()">Nova revisão</button></div>';
+                el.innerHTML='<div class="anki-finish"><h3 class="text-xl font-bold text-[#E5C158]">Sessão percorrida</h3>'+
+                    '<p class="mt-2">Você avaliou '+s.seen+' cartões. '+(s.correct||0)+' lembrados · '+(s.wrong||0)+' para reforçar. Cartões pulados não foram avaliados.</p>'+
+                    '<div class="pmdf-study-nav"><button type="button" id="anki-nav-prev" onclick="previousAnki()" class="qstudio-secondary">← Rever último cartão</button>'+
+                    '<button type="button" class="qstudio-primary" onclick="startAnki()">Nova revisão</button></div></div>';
                 return;
             }
             const c=s.cards[s.index],state=getCardBox(c.id),percent=Math.round(s.index/Math.max(1,s.cards.length)*100);
+            const evaluated=Object.prototype.hasOwnProperty.call(s.ratings||{},s.index);
             const name=esc(c.kind||'Conceito essencial'),law=esc(c.law||''),article=esc(c.article||'');
             const focus=s.back?'VERSO · RESPOSTA':'FRENTE · RECUPERAÇÃO ATIVA';
             el.innerHTML='<div class="study-progress-meter" role="progressbar" aria-valuemin="0" aria-valuemax="'+s.cards.length+
@@ -6479,26 +6481,34 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 (s.back?'<div class="anki-proof"><b>Fundamento rastreável / Extra</b>'+
                     '<p class="anki-source-note">Fonte: '+law+' · '+article+
                     '. '+esc(c.scope||'Conteúdo do material selecionado')+'.</p>'+
+                    (c.tip?'<div class="anki-learn-aid"><strong>💡 Dica para a prova</strong><p>'+esc(c.tip)+'</p></div>':'')+
+                    (c.pitfall?'<div class="anki-learn-aid anki-exam-trap"><strong>🎯 Pegadinha da banca</strong><p>'+esc(c.pitfall)+'</p></div>':'')+
+                    (c.application?'<div class="anki-learn-aid"><strong>🧭 Aplicação prática</strong><p>'+esc(c.application)+'</p></div>':'')+
                     '<details class="anki-evidence-details"><summary>Consultar texto-base e alerta de banca</summary>'+
                     '<p class="anki-evidence-text">'+esc(c.extra||c.source||c.back)+'</p>'+
                     (c.warning?'<p class="anki-source-note"><strong>Alerta:</strong> '+esc(c.warning)+'</p>':'')+
                     (c.tags?'<p class="anki-source-note">Tags: '+esc(c.tags)+'</p>':'')+
                     '</details></div>':
                     '<p class="anki-hint">Recupere somente a lacuna ou o conceito essencial. Revele a resposta para conferir.</p>')+
-                '<div class="anki-actions '+(s.back?'anki-grade-choices':'')+'">'+(!s.back?
+                '<div class="anki-study-controls"><div class="anki-actions '+(s.back&&!evaluated?'anki-grade-choices':'')+'">'+(!s.back?
                     '<button type="button" class="qstudio-primary" onclick="revealAnki()">Revelar resposta</button>':
+                    evaluated?'<span class="anki-reviewed-hint">Já avaliado como '+esc(s.ratings[s.index])+'. Voltar não altera sua nota.</span>':
                     '<button type="button" class="qstudio-secondary" onclick="gradeAnki(false)">Errei <small>Rever</small></button>'+
                     '<button type="button" class="qstudio-secondary" onclick="gradeAnkiRating(\'hard\')">Difícil <small>12 h</small></button>'+
                     '<button type="button" class="qstudio-primary" onclick="gradeAnki(true)">Bom <small>Avançar</small></button>'+
                     '<button type="button" class="qstudio-primary" onclick="gradeAnkiRating(\'easy\')">Fácil <small>Avançar +2</small></button>')+
-                '</div>';
+                '</div><div class="anki-nav-pair"><button type="button" id="anki-nav-prev" onclick="previousAnki()" '+(s.index===0?'disabled':'')+' class="qstudio-secondary">← Anterior</button>'+
+                '<button type="button" id="anki-nav-next" onclick="nextAnki()" class="qstudio-secondary" title="Avançar sem nota; não registra acerto ou erro">Próximo →</button></div></div>';
         }
         function revealAnki(){if(!ANKI_STATE||ANKI_STATE.back)return;ANKI_STATE.back=true;saveStudySession();drawAnki();}
         function gradeAnki(known){return gradeAnkiRating(known?'good':'again');}
         function gradeAnkiRating(rating){
             const session=ANKI_STATE;
             if(!session||!session.back||session.index>=session.cards.length||
-                !['again','hard','good','easy'].includes(rating))return;
+                !['again','hard','good','easy'].includes(rating)||
+                Object.prototype.hasOwnProperty.call(session.ratings||{},session.index))return;
+            session.ratings=session.ratings||{};
+            session.ratings[session.index]=rating;
             const card=session.cards[session.index];
             if(rating==='again'||rating==='good')setCardBox(card.id,rating==='good');
             else{
@@ -6511,13 +6521,23 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             }
             if(rating==='again')session.wrong=(session.wrong||0)+1;
             else session.correct=(session.correct||0)+1;
-            session.index++;session.seen++;session.back=false;session.graded=rating!=='again';
+            session.index++;session.seen++;
+            session.back=Object.prototype.hasOwnProperty.call(session.ratings,session.index);
+            session.graded=rating!=='again';
+            saveStudySession();drawAnki();
+        }
+        function previousAnki(){
+            if(!ANKI_STATE||ANKI_STATE.index<=0)return;
+            ANKI_STATE.index--;
+            ANKI_STATE.back=Object.prototype.hasOwnProperty.call(ANKI_STATE.ratings||{},ANKI_STATE.index);
             saveStudySession();drawAnki();
         }
         function nextAnki(){
-            // Compatibilidade com sessões antigas: avançar sem nota NÃO equivale a ter aprendido.
-            if(!ANKI_STATE||!ANKI_STATE.back)return;
-            gradeAnki(false);
+            // Pular cartão não equivale a lembrar ou errar e não altera o agendamento.
+            if(!ANKI_STATE||ANKI_STATE.index>=ANKI_STATE.cards.length)return;
+            ANKI_STATE.index++;
+            ANKI_STATE.back=Object.prototype.hasOwnProperty.call(ANKI_STATE.ratings||{},ANKI_STATE.index);
+            saveStudySession();drawAnki();
         }
                 // Catálogo complementar: 11 normas com referências oficiais e guias pedagógicos.
         const EXTRA_LAW_URLS = {"jecrim":"https://www.planalto.gov.br/ccivil_03/leis/l9099.htm","orcrim":"https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2013/lei/l12850.htm","genocidio":"https://www.planalto.gov.br/ccivil_03/leis/l2889.htm","racismo":"https://www.planalto.gov.br/ccivil_03/leis/l7716.htm","eca":"https://www.planalto.gov.br/ccivil_03/leis/l8069.htm","improbidade":"https://www.planalto.gov.br/ccivil_03/leis/l8429.htm","temporaria":"https://www.planalto.gov.br/ccivil_03/leis/l7960.htm","jef":"https://www.planalto.gov.br/ccivil_03/leis/leis_2001/l10259.htm","r200":"https://www.planalto.gov.br/ccivil_03/decreto/d88777compilado.htm","d10443":"https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2020/decreto/d10443.htm","l14751":"https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14751.htm"};
