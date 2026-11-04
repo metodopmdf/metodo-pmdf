@@ -991,3 +991,10 @@ body[data-theme="light"] .g-tag,
 body[data-theme="light"] .pmdf-report .g-tag,
 body[data-theme="light"] button[data-pmdf-value]{color:#644000!important}
 body[data-theme="light"] .g-card .g-tag{background:#fff7e2!important}
+
+/* Contraste do guia: a especificidade inclui #printable-area para superar a paleta-base do relatório. */
+body[data-theme="light"] #printable-area .pmdf-report .g-tag,
+body[data-theme="light"] #printable-area .pmdf-report .mm-article,
+body[data-theme="light"] #printable-area .pmdf-report button[data-pmdf-value]{
+    color:#644000!important;
+}
