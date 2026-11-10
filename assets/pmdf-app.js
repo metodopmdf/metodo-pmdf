@@ -2265,6 +2265,8 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const board=$('q-board');if(board){board.disabled=isBank||(isProgram&&QUESTION_ENGINE==='local');board.title=isBank?
                 'Banca não consta de todos os registros legados; este filtro só vale para a geração.':
                 isProgram&&QUESTION_ENGINE==='local'?'Questões autorais fixas: a banca escolhida não altera questões revisadas.':'';}
+            const level=$('q-level');if(level){level.disabled=isProgram&&QUESTION_ENGINE==='local';
+                level.title=level.disabled?'Acervo de questões autorais introdutórias/intermediárias; para variar dificuldade use o motor neural.':'';}
             updateNeuralFormatUI();
         }
         function stopQuestionAI(){window.PMDFNeuralQuestions?.stop?.();}
