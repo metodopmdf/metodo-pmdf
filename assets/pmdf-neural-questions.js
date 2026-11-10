@@ -638,9 +638,15 @@ async function save(){
     info(rows.length+" questões salvas em seu banco privado do Supabase.");
     host().toast("Lote salvo no Supabase.","ok");
   }catch(e){
-    info("Falha no Supabase: "+String(e?.message||e)+
-      ". Confirme se a migração SQL da tabela questoes já foi aplicada.");
-    host().toast("Banco de questões indisponível: "+String(e?.message||e),"error");
+    const message=String(e?.message||e);
+    const missing=/PGRST205|PGRST204|schema cache|could not find the table|could not find the .*column|relation .*questoes.* does not exist/i.test(message);
+    if(missing){
+      info("Banco de questões ainda não configurado. O administrador deve executar o instalador SQL completo no Supabase. As questões geradas permanecem disponíveis nesta sessão e no JSON exportável.");
+      host().toast("Não foi possível salvar: banco de questões ainda não instalado.","error");
+    }else{
+      info("Não foi possível salvar o lote. Revise a conexão e suas permissões; exporte JSON para não perder o material.");
+      host().toast("Falha ao salvar questões no banco. Você pode exportar o JSON.","error");
+    }
   }finally{if(b)b.disabled=false;}
 }
 root.PMDFNeuralQuestions=Object.freeze({start,stop,reset,save,json,status,
