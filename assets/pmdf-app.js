@@ -2008,9 +2008,116 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             ESSAY_MD=h.result||'';$('essay-out').innerHTML=pmdfSafeHtml(md(ESSAY_MD));$('essay-result').classList.remove('hidden');closeModal();showTab('redacao');saveStudySession();}
         function restoreEssayLastResult(){const h=jget('essay:history',[])[0];if(h?.result){ESSAY_MD=h.result;$('essay-out').innerHTML=pmdfSafeHtml(md(ESSAY_MD));$('essay-result').classList.remove('hidden');}}
         // ==================== Abas de prática integradas ao conteúdo selecionado ====================
+        // Catálogo de Praça: sempre visível, independente de questões armazenadas.
+        const PMDF_PRACA = window.PMDF_PRACA_CATALOG || null;
+        function initQuestaoCatalogo(){
+            const select=$('q-disciplina');if(!select)return;
+            const antigo=select.value;
+            select.replaceChildren(new Option('Selecione a disciplina',''));
+            for(const d of (PMDF_PRACA?.disciplinas||[]))select.add(new Option(d.nome+' ('+d.assuntos.length+' tópicos)',d.slug));
+            if(PMDF_PRACA?.disciplina(antigo))select.value=antigo;
+            onQuestaoDisciplinaChange();
+        }
+        function onQuestaoDisciplinaChange(){
+            const d=PMDF_PRACA?.disciplina($('q-disciplina')?.value);
+            const assunto=$('q-assunto');if(!assunto)return;
+            const previous=assunto.value;
+            assunto.replaceChildren(new Option('Todos os assuntos',''));
+            for(const t of (d?.assuntos||[]))assunto.add(new Option(t.nome,t.slug));
+            if(d?.assuntos.some(a=>a.slug===previous))assunto.value=previous;
+            assunto.disabled=!d;
+            refreshQuestionStudio();
+        }
+        function onQuestaoAssuntoChange(){refreshQuestionStudio();}
+        function pmdfRetiredDiscipline(name){
+            return /administra(?:ção|cao) geral/i.test(String(name||''));
+        }
+        function activeResultsAggregates(){
+            return Object.fromEntries(Object.entries(resultsAggregates()).filter(([key])=>
+                !pmdfRetiredDiscipline(key.split(' • ')[0])));
+        }
+        function questionCatalogCycleKey(){
+            return 'q:catalogo-praca:v1:'+[$('q-disciplina')?.value||'', $('q-assunto')?.value||'',
+                $('q-format')?.value||'', $('q-level')?.value||''].join('|');
+        }
+        function toCatalogQuestion(row){
+            const type=row.formato==='MULTIPLA_ESCOLHA'?'MC':row.formato==='CERTO_ERRADO'?'CE':null;
+            const raw=Array.isArray(row.alternativas)?row.alternativas:
+                (row.alternativas&&typeof row.alternativas==='object'?Object.entries(row.alternativas).map(([letra,texto])=>({letra,texto})):[]);
+            const options=raw.map(v=>String(typeof v==='string'?v:(v?.texto??v?.text??'' )).trim());
+            const statement=String(row.enunciado||'').trim();
+            const answer=type==='CE'?(/^(CERTO|C)$/i.test(row.gabarito)?'C':/^(ERRADO|E)$/i.test(row.gabarito)?'E':''):
+                String(row.gabarito||'').trim().toUpperCase();
+            if(!type||statement.length<15||!answer)return null;
+            if(type==='MC'&&(![4,5].includes(options.length)||new Set(options).size!==options.length||
+                !'ABCDE'.slice(0,options.length).includes(answer)||options.some(x=>!x)))return null;
+            const d=PMDF_PRACA?.disciplina(row.disciplina_slug),a=PMDF_PRACA?.assunto(row.disciplina_slug,row.assunto_slug);
+            return {id:row.id,coverageId:'catalogo:'+row.id,type,statement,
+                options:type==='MC'?options:undefined,answer,
+                law:d?.nome||row.disciplina||'Catálogo PMDF',topic:a?.nome||row.assunto||'Geral',
+                explanation:row.comentario_gabarito||'Confira a fonte original e a legislação vigente.',
+                lawBasis:String(row.texto_origem||'Fonte não informada').slice(0,1800),
+                origin:'supabase-catalogo'};
+        }
+        async function startCatalogQuestions(nextBatch=false){
+            if(!AUTH_USER)return toast('Faça login para consultar o banco de questões.','error');
+            const slug=$('q-disciplina')?.value,topic=$('q-assunto')?.value||'';
+            const d=PMDF_PRACA?.disciplina(slug);
+            if(!d)return toast('Selecione uma disciplina do edital.','error');
+            const format=$('q-format')?.value||'CE';
+            const level=$('q-level')?.value||'intermediario';
+            const difficulty={iniciante:'Fácil',intermediario:'Médio',avancado:'Difícil'}[level];
+            const params=new URLSearchParams({
+                select:'id,disciplina,assunto,disciplina_slug,assunto_slug,formato,dificuldade,enunciado,alternativas,gabarito,comentario_gabarito,texto_origem',
+                disciplina_slug:'eq.'+slug,order:'criado_em.desc',limit:'1000'
+            });
+            if(topic)params.set('assunto_slug','eq.'+topic);
+            if(format==='CE')params.set('formato','eq.CERTO_ERRADO');
+            else if(format==='MC')params.set('formato','eq.MULTIPLA_ESCOLHA');
+            const status=$('q-status'),button=$('q-generate-button');
+            if(button)button.disabled=true;
+            if(status)status.textContent='Buscando questões cadastradas com gabarito...';
+            try{
+                const data=await sbAuthed('/rest/v1/questoes?'+params.toString());
+                if(!Array.isArray(data))throw Error('Resposta inesperada do banco.');
+                const pool=uniqueQuestions(data.filter(row=>row.dificuldade===difficulty)
+                    .map(toCatalogQuestion).filter(Boolean));
+                if(!pool.length){
+                    $('q-panel')?.classList.add('hidden');
+                    if(status)status.textContent='Não existem questões verificáveis para '+d.nome+
+                        (topic?' › '+(PMDF_PRACA.assunto(slug,topic)?.nome||''):'')+
+                        ' no nível selecionado. Envie um texto na opção “Documento / lei selecionada” para gerar questões próprias.';
+                    if($('q-coverage'))$('q-coverage').textContent='0 questões neste recorte. Catálogo de '+d.assuntos.length+' assuntos disponível.';
+                    return;
+                }
+                const key=questionCatalogCycleKey(),done=new Set(jget(key,[]));
+                const available=shuffle(pool.filter(q=>!done.has(q.coverageId)));
+                if(!available.length){
+                    if(status)status.textContent='Todas as '+pool.length+' questões deste recorte já foram apresentadas. Reinicie a cobertura para revisar.';
+                    return;
+                }
+                const configured=Number($('q-batch')?.value??30);
+                const batch=(configured===0?available.length:Math.min(Math.max(configured,1),available.length));
+                const picked=available.slice(0,batch);
+                picked.forEach(q=>done.add(q.coverageId));store.set(key,JSON.stringify([...done]));
+                Q_STATE={items:picked,engine:'catalogo',index:0,hits:0,wrong:0,blank:0,pending:0,
+                    answered:false,questionStart:Date.now(),
+                    coverage:{total:pool.length,shown:done.size,remaining:Math.max(0,pool.length-done.size),cycleKey:key}};
+                saveStudySession();$('q-panel').classList.remove('hidden');drawQuestions();
+                if(status)status.textContent=d.nome+' · '+difficulty+' · '+picked.length+' questões cadastradas com gabarito.';
+                if($('q-coverage'))$('q-coverage').textContent='Cobertura: '+done.size+'/'+pool.length+
+                    ' questões disponíveis para esta disciplina/assunto/nível.';
+            }catch(e){
+                if(status)status.textContent='Banco indisponível: '+String(e?.message||e)+
+                    '. A migração do catálogo precisa estar aplicada no Supabase.';
+                toast('Falha ao consultar questões: '+String(e?.message||e),'error');
+            }finally{if(button)button.disabled=false;}
+        }
+
         const pickStudyGuides = kind => {
             const selected=$(kind+'-source')?.value || 'current';
             if(selected==='all')return Object.values(BUILTIN_PMDF_GUIDES);
+            if(selected==='catalogo')return [];
             return CUR.guide ? [CUR.guide] : [];
         };
         function clearGuideOptions(){BANK='auto';if(CUR.guide)rerenderPreservingStudyState();clearGuideSearch();toast('Filtros do guia limpos.','ok');}
@@ -2024,6 +2131,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         function clearQuestionFilters(){
             stopQuestionAI();setQuestionEngine('local');
             $('q-source').value='current';$('q-format').value='CE';$('q-level').value='intermediario';$('q-board').value='Cebraspe';if($('q-batch'))$('q-batch').value='30';
+            if($('q-disciplina'))$('q-disciplina').value='';onQuestaoDisciplinaChange();refreshQuestionStudio();
             $('q-status').textContent='Filtros limpos.';$('q-panel').classList.add('hidden');Q_STATE=null;
         }
         function clearAnkiFilters(){
@@ -2074,15 +2182,26 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         }
         function updateNeuralFormatUI(){
             const mixed=$('q-format')?.querySelector('option[value="MIX"]');
-            if(mixed)mixed.disabled=QUESTION_ENGINE!=='neural';
-            if(QUESTION_ENGINE==='local'&&$('q-format')?.value==='MIX')$('q-format').value='CE';
+            const catalogo=$('q-source')?.value==='catalogo';
+            if(mixed)mixed.disabled=QUESTION_ENGINE!=='neural'&&!catalogo;
+            if(QUESTION_ENGINE==='local'&&!catalogo&&$('q-format')?.value==='MIX')$('q-format').value='CE';
             $('q-neural-command-wrap')?.classList.toggle('hidden',QUESTION_ENGINE!=='neural'||$('q-format')?.value!=='MC');
         }
         function refreshQuestionStudio(){
             const selected=$('q-source')?.value,el=$('q-document-indicator');
-            if(el)el.textContent=selected==='imported'?'Provas importadas: utilize o modo Tradicional':
+            const d=PMDF_PRACA?.disciplina($('q-disciplina')?.value);
+            const a=d?PMDF_PRACA.assunto(d.slug,$('q-assunto')?.value):null;
+            if(el)el.textContent=selected==='catalogo'?'Banco de questões catalogadas da Praça PMDF':
+                selected==='imported'?'Provas importadas: utilize o modo Tradicional':
                 selected==='all'?'Catálogo inteiro (guias didáticos, não leis integrais)':
                 CUR.guide?'Fonte: '+CUR.guide.lawName:'Nenhum documento selecionado';
+            const c=$('q-catalog-status');if(c)c.textContent=(PMDF_PRACA?.disciplinas.length||0)+
+                ' disciplinas · '+(PMDF_PRACA?.disciplinas.reduce((n,x)=>n+x.assuntos.length,0)||0)+
+                ' tópicos. '+(d?d.nome+' · '+(a?.nome||d.assuntos.length+' assuntos'):'Selecione uma disciplina para classificar ou consultar questões.')+
+                (selected==='catalogo'?' Consultas restritas às questões salvas com gabarito.':'');
+            const board=$('q-board');if(board){board.disabled=selected==='catalogo';board.title=selected==='catalogo'?
+                'Banca não consta de todos os registros legados; este filtro só vale para a geração.':'';}
+            updateNeuralFormatUI();
         }
         function stopQuestionAI(){window.PMDFNeuralQuestions?.stop?.();}
         function startNeuralQuestions(more=false){
@@ -2156,10 +2275,15 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             },
             persist:async rows=>{
                 if(!AUTH_USER)throw Error('Faça login antes de salvar.');
+                const d=$('q-source')?.value==='current'?PMDF_PRACA?.disciplina($('q-disciplina')?.value):null;
+                const a=d?PMDF_PRACA.assunto(d.slug,$('q-assunto')?.value):null;
+                const tagged=rows.map(q=>({...q,...(d?{disciplina:d.nome,disciplina_slug:d.slug,
+                    assunto:a?.nome||q.assunto,assunto_slug:a?.slug||null}:{}) ,
+                    banca:$('q-board')?.value==='todas'?null:($('q-board')?.value||null)}));
                 const token=await sbToken();
                 const response=await fetch(SB_URL+'/rest/v1/questoes?on_conflict=hash_unico',{
                     method:'POST',headers:{...sbHeaders(token),Prefer:'resolution=merge-duplicates,return=minimal'},
-                    body:JSON.stringify(rows)});
+                    body:JSON.stringify(tagged)});
                 if(!response.ok){const data=await response.json().catch(()=>({}));
                     throw Error(data.message||data.error||('HTTP '+response.status));}
                 return true;
@@ -2182,6 +2306,11 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             return 'q:coverage:v3:'+(hash(fingerprint)>>>0).toString(36);
         }
         function resetQuestionCycle(){
+            if($('q-source')?.value==='catalogo'){
+                store.del(questionCatalogCycleKey());
+                if($('q-coverage'))$('q-coverage').textContent='Cobertura do catálogo reiniciada. Seu desempenho foi mantido.';
+                return toast('Cobertura reiniciada sem apagar respostas.','ok');
+            }
             if(QUESTION_ENGINE==='neural')return window.PMDFNeuralQuestions?.reset?.();
             const imported=$('q-source').value==='imported',guides=imported?[]:pickStudyGuides('q');
             const fmt=$('q-format').value==='MC'?'MC':'CE',lvl=LEVELS_SAFE_LEVEL($('q-level').value);
@@ -2190,6 +2319,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             toast('Histórico de lotes reiniciado; suas estatísticas foram mantidas.','ok');
         }
         async function startQuestions(nextBatch=false){
+            if($('q-source')?.value==='catalogo')return startCatalogQuestions(nextBatch);
             if(QUESTION_ENGINE==='neural'&&!SAFE_FALLBACK_ACTIVE)return startNeuralQuestions(nextBatch);
             if(!AUTH_USER)return toast('Faça login para gerar questões.','error');
             const imported=$('q-source').value==='imported';
@@ -2961,7 +3091,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         function resultsEvents(){const events=jget('pmdf:results:events',[]);return Array.isArray(events)?events.filter(e=>e&&typeof e.topic==='string'&&typeof e.correct==='boolean'):[];}
         function onResultsTopicChange(){renderResultsChart();}
         function renderResults(){
-            const aggregate=resultsAggregates(),select=$('results-topic'),old=select.value;
+            const aggregate=activeResultsAggregates(),select=$('results-topic'),old=select.value;
             const topics=Object.keys(aggregate).sort((a,b)=>a.localeCompare(b,'pt-BR'));
             select.innerHTML='<option value="">Selecione um tema</option><option value="*">Todos os temas</option>'+topics.map(t=>'<option value="'+esc(t)+'">'+esc(t)+'</option>').join('');
             select.value=topics.includes(old)||old==='*'?old:'';
@@ -2974,7 +3104,9 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             renderResultsChart();
         }
         function renderResultsChart(){
-            const selected=$('results-topic').value,events=resultsEvents().filter(e=>selected==='*'||e.law+' • '+e.topic===selected),aggregate=resultsAggregates(),rows=Object.entries(aggregate).filter(([key])=>selected==='*'||key===selected),chart=$('results-chart'),side=$('results-time'),table=$('results-rows');
+            const selected=$('results-topic').value,events=resultsEvents().filter(e=>!pmdfRetiredDiscipline(e.law)&&
+                (selected==='*'||e.law+' • '+e.topic===selected)),aggregate=activeResultsAggregates(),
+                rows=Object.entries(aggregate).filter(([key])=>selected==='*'||key===selected),chart=$('results-chart'),side=$('results-time'),table=$('results-rows');
             if(!selected){chart.innerHTML='<p class="text-sm text-slate-300">Escolha um tema para visualizar o gráfico de acertos e erros.</p>';side.textContent='Aguardando seleção de tema.';table.textContent='';return;}
             const total=rows.reduce((a,[,g])=>a+g.a,0),ok=rows.reduce((a,[,g])=>a+g.c,0),bad=total-ok,time=rows.reduce((a,[,g])=>a+g.seconds,0);
             side.innerHTML='<p><strong>Tempo total:</strong> '+fmtSeconds(time)+'</p><p><strong>Tempo médio por questão:</strong> '+fmtSeconds(total?time/total:0)+'</p><p><strong>Acertos:</strong> '+ok+'</p><p><strong>Erros:</strong> '+bad+'</p>';
@@ -3001,7 +3133,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             ['essay-theme','essay-lines','essay-motiv'].forEach(id=>{const el=$(id);if(el)el.addEventListener('input',saveEssayDraft);});
             restoreEssayDraft();if(window.lucide)lucide.createIcons();restoreLastGuide();
             try{const imported=jget('exam:imports',[]);if(Array.isArray(imported))IMPORTED_QUESTIONS.push(...imported.slice(0,500).filter(q=>q&&['CE','MC'].includes(q.type)&&typeof q.statement==='string'));}catch(e){}
-            refreshImportedExamSources();refreshWelcome();showQuestionTotals();updateNeuralFormatUI();void bootstrapAccount();
+            refreshImportedExamSources();refreshWelcome();initQuestaoCatalogo();showQuestionTotals();updateNeuralFormatUI();void bootstrapAccount();
             document.addEventListener('visibilitychange',()=>{if(document.hidden&&CLOUD_DIRTY)void flushCloudSave();});
             document.addEventListener('keydown',event=>{
                 if(event.key==='Tab') return pmdfTrapDialog(event);
@@ -3143,6 +3275,8 @@ const PMDF_EVENT_HANDLERS = Object.freeze({
 "refreshCurrentBuiltInLawMetadata()": function(event){ refreshCurrentBuiltInLawMetadata() },
 "setSummaryFormat(this.value)": function(event){ setSummaryFormat(this.value) },
 "refreshQuestionStudio()": function(event){ refreshQuestionStudio() },
+"onQuestaoDisciplinaChange()": function(event){ onQuestaoDisciplinaChange() },
+"onQuestaoAssuntoChange()": function(event){ onQuestaoAssuntoChange() },
 "questionUploadFile(this)": function(event){ questionUploadFile(this) },
 "updateNeuralFormatUI()": function(event){ updateNeuralFormatUI() },
 "importOfficialExamFile(this)": function(event){ importOfficialExamFile(this) },
