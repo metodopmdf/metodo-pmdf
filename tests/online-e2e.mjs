@@ -16,6 +16,7 @@ const expectedNeural=readFileSync(new URL('../assets/pmdf-neural-questions.js',i
 const expectedFlashcards=readFileSync(new URL('../assets/pmdf-neural-flashcards.js',import.meta.url));
 const expectedApp=readFileSync(new URL('../assets/pmdf-app.js',import.meta.url));
 const expectedGuides=readFileSync(new URL('../assets/pmdf-guides.js',import.meta.url));
+const expectedCatalog=readFileSync(new URL('../assets/pmdf-catalogo-praca.js',import.meta.url));
 const expectedBase=readFileSync(new URL('../assets/pmdf-tailwind.css',import.meta.url));
 const expectedStyles=readFileSync(new URL('../assets/pmdf-components.css',import.meta.url));
 const hash=b=>createHash('sha256').update(b).digest('hex');
@@ -38,7 +39,7 @@ async function published(){
             headers:{'Cache-Control':'no-cache'},signal:AbortSignal.timeout(15000)});
           if(flash.ok&&hash(Buffer.from(await flash.arrayBuffer()))===hash(expectedFlashcards)){
             const assets=[
-              ['assets/pmdf-app.js',expectedApp],['assets/pmdf-guides.js',expectedGuides],['assets/pmdf-tailwind.css',expectedBase],
+              ['assets/pmdf-app.js',expectedApp],['assets/pmdf-guides.js',expectedGuides],['assets/pmdf-catalogo-praca.js',expectedCatalog],['assets/pmdf-tailwind.css',expectedBase],
               ['assets/pmdf-components.css',expectedStyles]
             ];
             let confirmed=true;
@@ -63,6 +64,16 @@ async function setup(page){
     typeof window.PMDFNeuralQuestions?.start==='function'&&
     typeof window.PMDFNeuralFlashcards?.buildAsync==='function',{},{timeout:30000});
   assert.equal(await page.locator('#q-engine-neural').count(),1,'Seletor neural ausente');
+  assert.equal(await page.locator('#q-source option[value="catalogo"]').count(),1,'Banco Praça PMDF ausente');
+  assert.equal(await page.locator('#q-disciplina option').count(),16,'Devem existir 15 disciplinas e placeholder');
+  assert(!(await page.locator('#q-disciplina').textContent()).includes('Administração Geral'),'Administração Geral apareceu no novo edital');
+  await page.locator('#q-disciplina').selectOption({label:'Noções de Primeiros Socorros (8 tópicos)'});
+  assert.equal(await page.locator('#q-assunto option').count(),9,'Primeiros Socorros precisa de 8 assuntos e Todos');
+  assert((await page.locator('#q-catalog-status').textContent()).includes('163 tópicos'),'Contagem programática divergente');
+  await page.locator('#q-source').selectOption('catalogo');
+  assert(await page.locator('#q-board').isDisabled(),'Filtro de banca legado deve ser desativado no banco sem metadado confiável');
+  await page.locator('#q-source').selectOption('current');
+  assert(await page.locator('#q-board').isEnabled(),'Filtro de banca da geração não foi restaurado');
   const secret=page.locator('#account-password');
   assert.equal(await secret.getAttribute('type'),'password','Senha deve iniciar oculta');
   await secret.fill('Senha-de-auditoria-nao-real-123');
