@@ -2068,7 +2068,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const level=$('q-level')?.value||'intermediario';
             const difficulty={iniciante:'Fácil',intermediario:'Médio',avancado:'Difícil'}[level];
             const params=new URLSearchParams({
-                select:'id,disciplina,assunto,disciplina_slug,assunto_slug,formato,dificuldade,enunciado,alternativas,gabarito,comentario_gabarito,texto_origem',
+                select:'id,disciplina,assunto,disciplina_slug,assunto_slug,formato,dificuldade,publicada,enunciado,alternativas,gabarito,comentario_gabarito,texto_origem',
                 disciplina_slug:'eq.'+slug,publicada:'eq.true',
                 order:'criado_em.desc',limit:'1000'
             });
@@ -2081,7 +2081,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             try{
                 const data=await sbAuthed('/rest/v1/questoes?'+params.toString());
                 if(!Array.isArray(data))throw Error('Resposta inesperada do banco.');
-                const pool=uniqueQuestions(data.filter(row=>row.dificuldade===difficulty)
+                const pool=uniqueQuestions(data.filter(row=>row.publicada===true&&row.dificuldade===difficulty)
                     .map(toCatalogQuestion).filter(Boolean));
                 if(!pool.length){
                     $('q-panel')?.classList.add('hidden');
