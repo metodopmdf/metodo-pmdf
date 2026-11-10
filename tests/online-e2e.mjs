@@ -17,6 +17,7 @@ const expectedFlashcards=readFileSync(new URL('../assets/pmdf-neural-flashcards.
 const expectedApp=readFileSync(new URL('../assets/pmdf-app.js',import.meta.url));
 const expectedGuides=readFileSync(new URL('../assets/pmdf-guides.js',import.meta.url));
 const expectedCatalog=readFileSync(new URL('../assets/pmdf-catalogo-praca.js',import.meta.url));
+const expectedEditorial=readFileSync(new URL('../assets/pmdf-questoes-programaticas.js',import.meta.url));
 const expectedBase=readFileSync(new URL('../assets/pmdf-tailwind.css',import.meta.url));
 const expectedStyles=readFileSync(new URL('../assets/pmdf-components.css',import.meta.url));
 const hash=b=>createHash('sha256').update(b).digest('hex');
@@ -39,7 +40,7 @@ async function published(){
             headers:{'Cache-Control':'no-cache'},signal:AbortSignal.timeout(15000)});
           if(flash.ok&&hash(Buffer.from(await flash.arrayBuffer()))===hash(expectedFlashcards)){
             const assets=[
-              ['assets/pmdf-app.js',expectedApp],['assets/pmdf-guides.js',expectedGuides],['assets/pmdf-catalogo-praca.js',expectedCatalog],['assets/pmdf-tailwind.css',expectedBase],
+              ['assets/pmdf-app.js',expectedApp],['assets/pmdf-guides.js',expectedGuides],['assets/pmdf-catalogo-praca.js',expectedCatalog],['assets/pmdf-questoes-programaticas.js',expectedEditorial],['assets/pmdf-tailwind.css',expectedBase],
               ['assets/pmdf-components.css',expectedStyles]
             ];
             let confirmed=true;
@@ -97,6 +98,16 @@ async function setup(page){
   await page.locator('#q-disciplina').selectOption({label:'Noções de Primeiros Socorros (8 tópicos)'});
   assert.equal(await page.locator('#q-assunto option').count(),9,'Primeiros Socorros precisa de 8 assuntos e Todos');
   assert((await page.locator('#q-catalog-status').textContent()).includes('163 tópicos'),'Contagem programática divergente');
+  assert.equal(await page.evaluate(()=>window.PMDF_TOPIC_BANK?.count()),184,'Acervo didático precisa de 163 CE e 21 MC');
+  await page.locator('#q-source').selectOption('programa');
+  assert(await page.locator('#q-board').isDisabled(),'Banca não deve alterar questões autorais já elaboradas');
+  const firstAidTopic=await page.locator('#q-assunto option').nth(1).getAttribute('value');
+  await page.locator('#q-assunto').selectOption(firstAidTopic);
+  await page.locator('#q-generate-button').click();
+  assert(await page.locator('#q-alternatives .q-choice').count()===2,'Questão CE autoral não carregou');
+  assert((await page.locator('#q-panel').textContent()).includes('Avaliação inicial da vítima'),'Tópico foi misturado');
+  await page.locator('#q-alternatives .q-choice').first().click();
+  assert(await page.locator('#q-feedback a[href^="https://"]').count()===1,'Questão sem link de referência');
   await page.locator('#q-source').selectOption('catalogo');
   assert(await page.locator('#q-board').isDisabled(),'Filtro de banca legado deve ser desativado no banco sem metadado confiável');
   await page.locator('#q-source').selectOption('current');
