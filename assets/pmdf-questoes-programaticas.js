@@ -65,8 +65,16 @@
    return (dslug?[catalog.disciplina(dslug)].filter(Boolean):catalog.disciplinas).map(d=>{
      const pack=packs.get(d.slug);
      const rows=(pack?.questions||[]).filter(q=>q.type==="CE"&&(!aslug||q.topicSlug===aslug))
-       .map(q=>({article:q.topic,sourceText:String(q.evidence||"").trim(),
-         plainExplanation:q.explanation,practicalExample:q.statement}));
+       .flatMap(q=>{
+         // Apenas proposições verdadeiras: nunca usa assertiva editorial marcada ERRADO
+         // como texto-base do gerador de variações.
+         const evidence=[q.evidence,q.answer==="C"?q.explanation:null]
+           .filter(text=>String(text||"").trim().length>=45);
+         return [...new Set(evidence)].map(text=>({
+           article:q.topic,sourceText:String(text).trim(),
+           plainExplanation:q.explanation,practicalExample:q.answer==="C"?q.statement:q.explanation
+         }));
+       });
      return {lawName:d.nome,articlesMapping:{highIncidence:rows,mediumIncidence:[],lowIncidence:[]},
        curriculum:true};
    }).filter(g=>g.articlesMapping.highIncidence.length);
