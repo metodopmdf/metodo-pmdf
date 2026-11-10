@@ -457,14 +457,14 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
                         <label class="text-xs text-[#E5C158] font-semibold">Fonte do conteúdo
-                            <select id="q-source" data-pmdf-onchange="refreshQuestionStudio()" class="qstudio-input mt-1 w-full"><option value="current">Documento / lei selecionada</option><option value="all">Todas as leis cadastradas</option><option value="catalogo">Banco Praça PMDF (15 disciplinas)</option><option value="imported">Provas anteriores importadas</option></select>
+                            <select id="q-source" data-pmdf-onchange="refreshQuestionStudio()" class="qstudio-input mt-1 w-full"><option value="current">Documento / lei selecionada</option><option value="programa">Questões por matéria e assunto · acervo local</option><option value="all">Todas as leis cadastradas</option><option value="catalogo">Banco Praça PMDF (15 disciplinas)</option><option value="imported">Provas anteriores importadas</option></select>
                         </label>
                         <label class="qstudio-upload cursor-pointer text-sm font-bold text-center">
                             <i data-lucide="file-up" class="inline w-4 h-4 mr-1"></i> Enviar PDF / DOCX / TXT
                             <input type="file" accept=".pdf,.docx,.txt,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="hidden" data-pmdf-onchange="questionUploadFile(this)">
                         </label>
                     </div>
-                    <p class="text-xs text-slate-400">O <strong>Banco Praça PMDF</strong> consulta questões publicadas e revisadas; não cria questões neste modo. Para gerar novas questões a partir de leis ou documentos, escolha a fonte correspondente.</p>
+                    <p class="text-xs text-slate-400"><strong>Questões por matéria e assunto</strong>: acervo autoral com 163 itens de certo/errado (todos os tópicos) e 21 de múltipla escolha, além de variações elaboradas pelo motor local. <strong>Banco Praça PMDF</strong>: somente questões publicadas no Supabase. Para elaborar a partir de um documento, escolha “Documento / lei selecionada”.</p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" aria-label="Catálogo programático de Praça PMDF">
                         <label for="q-disciplina" class="text-xs text-[#E5C158] font-semibold">Disciplina do edital
                             <select id="q-disciplina" class="qstudio-input block w-full mt-1" data-pmdf-onchange="onQuestaoDisciplinaChange()">
@@ -692,10 +692,11 @@
 
 
     <script defer src="assets/pmdf-catalogo-praca.js?v=20261109-praca-v1"></script>
+    <script defer src="assets/pmdf-questoes-programaticas.js?v=20261110-editorial-v1"></script>
     <script defer src="assets/pmdf-guides.js?v=20261104-arch-v2"></script>
     <script defer src="assets/pmdf-neural-questions.js?v=20261110-banco-v1"></script>
     <script defer src="assets/pmdf-neural-flashcards.js?v=20261104-anki-quality-v4"></script>
-        <script defer src="assets/pmdf-app.js?v=20261110-banco-v2"></script>
+        <script defer src="assets/pmdf-app.js?v=20261110-editorial-v1"></script>
 </body>
 </html>
 
