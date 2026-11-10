@@ -30,3 +30,11 @@ O GitHub Actions executa também Playwright/Chromium e axe-core em desktop/mobil
 ## Segurança e manutenção
 
 Autenticação e dados são protegidos pelas regras do serviço de backend (Supabase); nenhuma credencial privada deve ser disponibilizada no JavaScript público. A versão estática usa uma CSP que bloqueia scripts inline e eventos delegados, preservando a possibilidade de impressão A4. Consulte [o relatório técnico da refatoração](docs/refatoracao-integral-2026-11-04.md) para decisões, limitações e estratégia de testes.
+
+## Catálogo Praça PMDF (2026-11-09)
+
+O módulo **Questões** dispõe de 15 disciplinas e 163 assuntos definidos em `assets/pmdf-catalogo-praca.js`; não contém **Administração Geral** no catálogo ativo e inclui **Noções de Primeiros Socorros** (8 tópicos).
+
+**Para habilitar o banco no Supabase:** execute `supabase/migrations/20261109_catalogo_praca_pmdf.sql` no SQL Editor do seu projeto, após validar um backup. O catálogo funciona sem exigir questões pré-cadastradas, mas a consulta a questões classificadas requer a migração. Ela preserva o histórico antigo e as políticas RLS já existentes de `questoes`.
+
+Teste: `node tests/catalogo-praca.test.cjs`. Diagnóstico e testes: [QA Praça PMDF](docs/qa-praca-2026-11-09.md).
