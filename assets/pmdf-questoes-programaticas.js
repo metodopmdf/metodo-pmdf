@@ -18,7 +18,8 @@
    if(!checkedUrl(source?.url))throw Error("URL de referência inválida: "+d.nome);
    const questions=[];
    rows.forEach((r,i)=>{
-     const [statement,answer,explanation]=r;
+     const [statement,answer,explanation,itemRef]=r;
+     if(itemRef?.url && !checkedUrl(itemRef.url))throw Error("Referência inválida: "+d.nome+" #"+(i+1));
      if(!["C","E"].includes(answer)||String(statement).trim().length<75||String(explanation).trim().length<48)
        throw Error("Revisar item "+d.nome+" #"+(i+1));
      const a=d.assuntos[i],id=d.slug+"|"+a.slug+"|CE|1";
@@ -29,7 +30,7 @@
        statement:String(statement).trim(),answer,
        explanation:String(explanation).trim(),
        law:d.nome,topic:a.nome,disciplineSlug:d.slug,topicSlug:a.slug,
-       lawBasis:source.label,sourceUrl:source.url,
+       lawBasis:itemRef?.label||source.label,sourceUrl:itemRef?.url||source.url,
        evidence:(answer==="C"?statement:explanation),
        origin:"curriculo-autoral",board:"Estilo Cebraspe · questão autoral",
        difficulty:"Médio"
