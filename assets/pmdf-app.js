@@ -2069,7 +2069,8 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const difficulty={iniciante:'Fácil',intermediario:'Médio',avancado:'Difícil'}[level];
             const params=new URLSearchParams({
                 select:'id,disciplina,assunto,disciplina_slug,assunto_slug,formato,dificuldade,enunciado,alternativas,gabarito,comentario_gabarito,texto_origem',
-                disciplina_slug:'eq.'+slug,order:'criado_em.desc',limit:'1000'
+                disciplina_slug:'eq.'+slug,publicada:'eq.true',
+                order:'criado_em.desc',limit:'1000'
             });
             if(topic)params.set('assunto_slug','eq.'+topic);
             if(format==='CE')params.set('formato','eq.CERTO_ERRADO');
@@ -2108,9 +2109,17 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 if($('q-coverage'))$('q-coverage').textContent='Cobertura: '+done.size+'/'+pool.length+
                     ' questões disponíveis para esta disciplina/assunto/nível.';
             }catch(e){
-                if(status)status.textContent='Banco indisponível: '+String(e?.message||e)+
-                    '. A migração do catálogo precisa estar aplicada no Supabase.';
-                toast('Falha ao consultar questões: '+String(e?.message||e),'error');
+                const message=String(e?.message||e);
+                const semTabela=/PGRST205|PGRST204|schema cache|could not find the table|could not find the .*column|relation .*questoes.* does not exist/i.test(message);
+                if(semTabela){
+                    if(status)status.textContent='Banco público de questões ainda não configurado. O administrador deve executar o instalador SQL completo no Supabase. Até lá, escolha “Documento / lei selecionada” ou “Todas as leis cadastradas” para gerar questões localmente.';
+                    if($('q-coverage'))$('q-coverage').textContent='Catálogo de disciplinas disponível; consulta de questões aguardando configuração do banco.';
+                    $('q-panel')?.classList.add('hidden');
+                    toast('Banco de questões em configuração. Use o gerador local por enquanto.','error');
+                }else{
+                    if(status)status.textContent='Não foi possível carregar as questões publicadas. Tente novamente; seu histórico permanece salvo.';
+                    toast('Falha na consulta ao banco. Verifique conexão, login e permissões.','error');
+                }
             }finally{if(button)button.disabled=false;}
         }
 
@@ -2167,6 +2176,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         let QUESTION_ENGINE='local',SAFE_FALLBACK_ACTIVE=false;
         function setQuestionEngine(mode){
             if(!['local','neural'].includes(mode))return;
+            if(mode==='neural'&&$('q-source')?.value==='catalogo')return;
             if(QUESTION_ENGINE!==mode)stopQuestionAI();
             QUESTION_ENGINE=mode;
             for(const item of ['local','neural']){const button=$('q-engine-'+item);
@@ -2189,6 +2199,12 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         }
         function refreshQuestionStudio(){
             const selected=$('q-source')?.value,el=$('q-document-indicator');
+            if(selected==='catalogo'&&QUESTION_ENGINE!=='local'){setQuestionEngine('local');return;}
+            const isBank=selected==='catalogo';
+            const btn=$('q-generate-button'),next=$('q-next-button'),neural=$('q-engine-neural');
+            if(btn)btn.textContent=isBank?'Consultar questões publicadas':QUESTION_ENGINE==='neural'?'Gerar com motor neural':'Gerar e iniciar questões';
+            if(next)next.textContent=isBank?'Próximo lote do banco':QUESTION_ENGINE==='neural'?'Próximo lote neural':'Próximo lote inédito';
+            if(neural){neural.disabled=isBank;neural.title=isBank?'No banco público, selecione as questões publicadas; a geração local está disponível nas outras fontes.':'';}
             const d=PMDF_PRACA?.disciplina($('q-disciplina')?.value);
             const a=d?PMDF_PRACA.assunto(d.slug,$('q-assunto')?.value):null;
             if(el)el.textContent=selected==='catalogo'?'Banco de questões catalogadas da Praça PMDF':
@@ -2198,7 +2214,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const c=$('q-catalog-status');if(c)c.textContent=(PMDF_PRACA?.disciplinas.length||0)+
                 ' disciplinas · '+(PMDF_PRACA?.disciplinas.reduce((n,x)=>n+x.assuntos.length,0)||0)+
                 ' tópicos. '+(d?d.nome+' · '+(a?.nome||d.assuntos.length+' assuntos'):'Selecione uma disciplina para classificar ou consultar questões.')+
-                (selected==='catalogo'?' Consultas restritas às questões salvas com gabarito.':'');
+                (selected==='catalogo'?' Exibindo apenas questões revisadas e publicadas no banco; neste modo não há geração automática.':'');
             const board=$('q-board');if(board){board.disabled=selected==='catalogo';board.title=selected==='catalogo'?
                 'Banca não consta de todos os registros legados; este filtro só vale para a geração.':'';}
             updateNeuralFormatUI();
