@@ -1007,3 +1007,11 @@ body[data-theme="light"] #printable-area .pmdf-report-footer span:not(:first-chi
 body[data-theme="light"] #printable-area .pmdf-report-footer span:first-child{
     color:#634200!important;
 }
+
+/* WCAG AA — abas inativas móveis: contraste estável também durante hover/foco. */
+body[data-theme="dark"] nav.pmdf-app-tabs > button[role="tab"][aria-selected="false"],
+body[data-theme="dark"] nav.pmdf-app-tabs > button[role="tab"][aria-selected="false"]:hover,
+body[data-theme="dark"] nav.pmdf-app-tabs > button[role="tab"][aria-selected="false"]:focus-visible{
+  color:#ffffff!important;
+  transition:none!important;
+}
