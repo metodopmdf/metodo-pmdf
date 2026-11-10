@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 // Arquitetura modular: aplicação carregada por script externo, sem JavaScript inline.
+const catalogCode=readFileSync(new URL('../assets/pmdf-catalogo-praca.js',import.meta.url),'utf8');
 const guidesCode=readFileSync(new URL('../assets/pmdf-guides.js',import.meta.url),'utf8');
-const code=guidesCode+'\n'+readFileSync(new URL('../assets/pmdf-app.js',import.meta.url),'utf8');
+const code=catalogCode+'\n'+guidesCode+'\n'+readFileSync(new URL('../assets/pmdf-app.js',import.meta.url),'utf8');
 assert(html.includes('src="assets/pmdf-app.js'),'Aplicação externa não vinculada');
 assert(html.includes('src="assets/pmdf-guides.js'),'Catálogo inicial não vinculado');
 assert(!/<script\b(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/i.test(html),'Script inline viola CSP');
@@ -505,6 +506,59 @@ bridgeApp.setQuestionEngine('local');
 bridge.$('q-format').value='CE';
 await bridgeApp.startQuestions();
 assert(bridgeApp.questionState()?.items.length>0,'Alternância para Tradicional falhou');
+
+// Banco público: falha de schema cache deve resultar em orientação, não erro bruto.
+let missingUrl='';
+const offlineBank=createClient(async url=>{
+  if(String(url).includes('/rest/v1/questoes?')){
+    missingUrl=String(url);
+    return {ok:false,status:404,json:async()=>({
+      code:'PGRST205',message:"Could not find the table 'public.questoes' in the schema cache"
+    })};
+  }
+  return {ok:true,status:200,json:async()=>[]};
+});
+offlineBank.application.auth('qa-catalogo-ausente');
+offlineBank.$('q-source').value='catalogo';
+offlineBank.$('q-disciplina').value='nocoes-de-primeiros-socorros';
+await offlineBank.application.startQuestions();
+assert(missingUrl.includes('publicada=eq.true'),'Consulta pública precisa filtrar publicada=true');
+assert.match(offlineBank.$('q-status').textContent,/administrador deve executar o instalador SQL completo/i,
+  'Erro PGRST205 não orienta instalação do banco');
+assert(!offlineBank.$('q-status').textContent.includes('Could not find the table'),
+  'Erro bruto do Supabase foi exposto ao candidato');
+
+const visibleRow={
+  id:'123e4567-e89b-12d3-a456-426614174000',
+  disciplina:'Noções de Primeiros Socorros',
+  assunto:'Avaliação inicial da vítima e segurança da cena',
+  disciplina_slug:'nocoes-de-primeiros-socorros',
+  assunto_slug:'avaliacao-inicial-da-vitima-e-seguranca-da-cena',
+  formato:'CERTO_ERRADO',
+  dificuldade:'Médio',
+  publicada:true,
+  enunciado:'Antes de se aproximar de uma vítima, o socorrista precisa verificar a segurança da cena e os possíveis riscos para as pessoas presentes.',
+  alternativas:null,
+  gabarito:'CERTO',
+  comentario_gabarito:'O atendimento exige avaliação prévia dos riscos.',
+  texto_origem:'Primeiros socorros: segurança da cena.'
+};
+let bankUrl='';
+const publicBank=createClient(async url=>{
+  if(String(url).includes('/rest/v1/questoes?')){
+    bankUrl=String(url);
+    return {ok:true,status:200,json:async()=>[visibleRow]};
+  }
+  return {ok:true,status:200,json:async()=>[]};
+});
+publicBank.application.auth('qa-catalogo-publicado');
+publicBank.$('q-source').value='catalogo';
+publicBank.$('q-disciplina').value='nocoes-de-primeiros-socorros';
+await publicBank.application.startQuestions();
+assert(bankUrl.includes('publicada=eq.true'),'Banco de candidatos sem filtro de publicação');
+assert.equal(publicBank.application.questionState()?.engine,'catalogo','Consulta não carregou o banco público');
+assert.equal(publicBank.application.questionState()?.items.length,1,'Questão publicada não apareceu');
+assert.equal(publicBank.application.questionState()?.items[0].answer,'C','Gabarito do banco não foi convertido');
 
 // Documento longo e explícito: o gerador deve atingir mais de 100 questões
 // apenas se existirem dispositivos e alterações comprováveis na própria fonte.
