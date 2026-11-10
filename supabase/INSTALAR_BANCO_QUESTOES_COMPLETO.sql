@@ -1,0 +1,213 @@
+-- INSTALADOR ÚNICO E REEXECUTÁVEL, independente de migrações anteriores.
+-- Método PMDF | Praça PMDF | Matriz 2026-11-09 (15 disciplinas, 163 assuntos).
+-- Aplicar via SQL Editor do Supabase com papel de administrador do projeto.
+-- IDEMPOTENTE: preserva IDs existentes, histórico, RLS de questoes e respostas.
+-- Não publica questões, não fabrica gabaritos e não altera as credenciais.
+BEGIN;
+-- ======================================================================
+-- MÉTODO PMDF | INSTALAÇÃO COMPLETA DO BANCO DE QUESTÕES PÚBLICO
+-- Executar INTEGRALMENTE no SQL Editor do MESMO projeto Supabase do site.
+-- Idempotente: NÃO APAGA questões, usuários ou histórico.
+-- DICA: faça backup e revise políticas antigas antes da primeira execução.
+-- ======================================================================
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE TABLE IF NOT EXISTS public.questoes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  hash_unico text NOT NULL UNIQUE,
+  disciplina text NOT NULL,
+  assunto text NOT NULL,
+  formato text NOT NULL,
+  dificuldade text NOT NULL,
+  score_dificuldade numeric(4,3) NOT NULL,
+  tipo_armadilha text,
+  enunciado text NOT NULL,
+  alternativas jsonb,
+  gabarito text NOT NULL,
+  comentario_gabarito text,
+  texto_origem text,
+  criado_em timestamptz NOT NULL DEFAULT now(),
+  criado_por uuid REFERENCES auth.users(id) ON DELETE SET NULL DEFAULT auth.uid(),
+  publicada boolean NOT NULL DEFAULT false,
+  disciplina_slug text,
+  assunto_slug text,
+  banca text
+);
+-- Instalação tolerante a projetos que já executaram apenas migrações antigas.
+ALTER TABLE public.questoes
+  ADD COLUMN IF NOT EXISTS criado_por uuid REFERENCES auth.users(id) ON DELETE SET NULL DEFAULT auth.uid(),
+  ADD COLUMN IF NOT EXISTS publicada boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS disciplina_slug text,
+  ADD COLUMN IF NOT EXISTS assunto_slug text,
+  ADD COLUMN IF NOT EXISTS banca text;
+UPDATE public.questoes SET publicada=false WHERE publicada IS NULL;
+ALTER TABLE public.questoes ALTER COLUMN publicada SET DEFAULT false;
+CREATE INDEX IF NOT EXISTS pmdf_questoes_autor_idx ON public.questoes(criado_por,criado_em DESC);
+CREATE INDEX IF NOT EXISTS pmdf_questoes_publicas_idx
+  ON public.questoes(disciplina_slug,assunto_slug,formato,dificuldade,criado_em DESC)
+  WHERE publicada=true;
+ALTER TABLE public.questoes ENABLE ROW LEVEL SECURITY;
+-- Remove políticas antigas que poderiam publicar material privado.
+DROP POLICY IF EXISTS "Permitir leitura pública de questões" ON public.questoes;
+DROP POLICY IF EXISTS "Permitir inserção pública de questões" ON public.questoes;
+DROP POLICY IF EXISTS "Permitir atualização pública de questões" ON public.questoes;
+DROP POLICY IF EXISTS "questoes_ler_autorizadas" ON public.questoes;
+DROP POLICY IF EXISTS "questoes_inserir_proprias" ON public.questoes;
+DROP POLICY IF EXISTS "questoes_atualizar_proprias" ON public.questoes;
+DROP POLICY IF EXISTS "pmdf_questoes_leitura_restritiva" ON public.questoes;
+DROP POLICY IF EXISTS "pmdf_questoes_insert_restritivo" ON public.questoes;
+DROP POLICY IF EXISTS "pmdf_questoes_update_restritivo" ON public.questoes;
+-- Políticas permissivas: acesso público apenas ao conteúdo publicado,
+-- acesso particular apenas ao autor, gravação privada exclusiva do autor.
+CREATE POLICY "questoes_ler_autorizadas" ON public.questoes
+ FOR SELECT TO anon,authenticated
+ USING (publicada=true OR criado_por=(SELECT auth.uid()));
+CREATE POLICY "questoes_inserir_proprias" ON public.questoes
+ FOR INSERT TO authenticated
+ WITH CHECK (criado_por=(SELECT auth.uid()) AND publicada=false);
+CREATE POLICY "questoes_atualizar_proprias" ON public.questoes
+ FOR UPDATE TO authenticated
+ USING (criado_por=(SELECT auth.uid()) AND publicada=false)
+ WITH CHECK (criado_por=(SELECT auth.uid()) AND publicada=false);
+-- Políticas RESTRITIVAS adicionais impedem que políticas permissivas
+-- esquecidas ampliem leitura, insert ou promoção de rascunhos.
+CREATE POLICY "pmdf_questoes_leitura_restritiva" ON public.questoes
+ AS RESTRICTIVE FOR SELECT TO anon,authenticated
+ USING (publicada=true OR criado_por=(SELECT auth.uid()));
+CREATE POLICY "pmdf_questoes_insert_restritivo" ON public.questoes
+ AS RESTRICTIVE FOR INSERT TO authenticated
+ WITH CHECK (criado_por=(SELECT auth.uid()) AND publicada=false);
+CREATE POLICY "pmdf_questoes_update_restritivo" ON public.questoes
+ AS RESTRICTIVE FOR UPDATE TO authenticated
+ USING (criado_por=(SELECT auth.uid()) AND publicada=false)
+ WITH CHECK (criado_por=(SELECT auth.uid()) AND publicada=false);
+REVOKE ALL ON public.questoes FROM anon,authenticated;
+GRANT SELECT ON public.questoes TO anon;
+GRANT SELECT,INSERT,UPDATE ON public.questoes TO authenticated;
+-- ATENÇÃO: somente o administrador no SQL Editor (ou backend privilegiado)
+-- poderá inserir/promover questões com publicada=true.
+COMMENT ON TABLE public.questoes IS
+  'Banco PMDF: publicada=true para questões revisadas; geração privada por usuário com RLS.';
+
+CREATE TABLE IF NOT EXISTS public.pmdf_disciplinas (
+  slug text PRIMARY KEY,
+  nome text NOT NULL,
+  ordem integer NOT NULL,
+  ativo boolean NOT NULL DEFAULT true,
+  atualizado_em timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS public.pmdf_assuntos (
+  disciplina_slug text NOT NULL REFERENCES public.pmdf_disciplinas(slug) ON DELETE RESTRICT,
+  slug text NOT NULL,
+  nome text NOT NULL,
+  ordem integer NOT NULL,
+  ativo boolean NOT NULL DEFAULT true,
+  atualizado_em timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(disciplina_slug,slug)
+);
+CREATE INDEX IF NOT EXISTS pmdf_assuntos_ativos_idx ON public.pmdf_assuntos(disciplina_slug,ordem) WHERE ativo;
+-- Catálogo canônico completo em JSON, sem dados sensíveis.
+CREATE TEMP TABLE _pmdf_catalogo_seed (payload jsonb NOT NULL) ON COMMIT DROP;
+INSERT INTO _pmdf_catalogo_seed(payload) VALUES
+($catalogo$[{"slug":"lingua-portuguesa","nome":"Língua Portuguesa","ordem":1,"assuntos":[{"slug":"acentuacao-grafica","nome":"Acentuação gráfica","ordem":1},{"slug":"formacao-classe-e-emprego-de-palavras-morfologia","nome":"Formação, classe e emprego de palavras - Morfologia","ordem":2},{"slug":"dominio-dos-mecanismos-de-coesao-e-emprego-de-elementos-de-referenciacao-substituicao-e-repeticao","nome":"Domínio dos mecanismos de coesão e emprego de elementos de referenciação, substituição e repetição","ordem":3},{"slug":"emprego-de-tempos-e-modos-verbais","nome":"Emprego de tempos e modos verbais","ordem":4},{"slug":"dominio-da-estrutura-sintatica-do-periodo","nome":"Domínio da estrutura sintática do período","ordem":5},{"slug":"relacoes-de-subordinacao-entre-oracoes-e-entre-termos-da-oracao","nome":"Relações de subordinação entre orações e entre termos da oração","ordem":6},{"slug":"relacoes-de-coordenacao-entre-oracoes-e-entre-termos-da-oracao","nome":"Relações de coordenação entre orações e entre termos da oração","ordem":7},{"slug":"emprego-dos-sinais-de-pontuacao","nome":"Emprego dos sinais de pontuação","ordem":8},{"slug":"concordancia-verbal-e-nominal","nome":"Concordância verbal e nominal","ordem":9},{"slug":"regencia-verbal-e-nominal","nome":"Regência verbal e nominal","ordem":10},{"slug":"emprego-do-sinal-indicativo-de-crase","nome":"Emprego do sinal indicativo de crase","ordem":11},{"slug":"colocacao-pronominal","nome":"Colocação pronominal","ordem":12},{"slug":"reescrita-de-frases-e-paragrafos-do-texto","nome":"Reescrita de frases e parágrafos do texto","ordem":13},{"slug":"reconhecimento-de-tipos-e-generos-textuais","nome":"Reconhecimento de tipos e gêneros textuais","ordem":14},{"slug":"compreensao-e-interpretacao-de-textos-de-generos-variados","nome":"Compreensão e interpretação de textos de gêneros variados","ordem":15},{"slug":"correspondencia-oficial-conforme-manual-de-redacao-da-presidencia-da-republica","nome":"Correspondência oficial (conforme Manual de Redação da Presidência da República)","ordem":16},{"slug":"ortografia","nome":"Ortografia","ordem":17}]},{"slug":"raciocinio-logico-e-matematico-rlm","nome":"Raciocínio Lógico e Matemático (RLM)","ordem":2,"assuntos":[{"slug":"conjuntos-numericos-numeros-inteiros-racionais-e-reais","nome":"Conjuntos numéricos: números inteiros, racionais e reais","ordem":1},{"slug":"equacoes-do-1-e-2-graus-e-sistemas-lineares","nome":"Equações do 1º e 2º graus e sistemas lineares","ordem":2},{"slug":"estruturas-logicas-logica-de-primeira-ordem","nome":"Estruturas lógicas (Lógica de Primeira Ordem)","ordem":3},{"slug":"logica-de-argumentacao","nome":"Lógica de argumentação","ordem":4},{"slug":"logica-sentencial-ou-proposicional","nome":"Lógica sentencial (ou proposicional)","ordem":5},{"slug":"nocao-de-funcoes-potenciacao-e-radiciacao","nome":"Noção de funções, potenciação e radiciação","ordem":6},{"slug":"operacoes-com-conjuntos","nome":"Operações com conjuntos","ordem":7},{"slug":"padroes-em-sequencias-progressao-aritmetica-e-progressao-geometrica","nome":"Padrões em sequências; Progressão aritmética e progressão geométrica","ordem":8},{"slug":"principio-fundamental-da-contagem-e-analise-combinatoria","nome":"Princípio Fundamental da contagem e Análise combinatória","ordem":9},{"slug":"raciocinio-logico-envolvendo-problemas-aritmeticos-geometricos-e-matriciais","nome":"Raciocínio lógico envolvendo problemas aritméticos, geométricos e matriciais","ordem":10},{"slug":"razao-e-proporcao-com-aplicacoes-regra-de-tres-simples-e-composta","nome":"Razão e proporção com aplicações; Regra de três simples e composta","ordem":11},{"slug":"sistema-legal-de-medidas","nome":"Sistema legal de medidas","ordem":12}]},{"slug":"lingua-inglesa-ingles","nome":"Língua Inglesa (Inglês)","ordem":3,"assuntos":[{"slug":"compreensao-de-textos-escritos-em-lingua-inglesa-e-itens-gramaticais-relevantes-para-o-entendimento-dos-sentidos-dos-textos","nome":"Compreensão de textos escritos em língua inglesa e itens gramaticais relevantes para o entendimento dos sentidos dos textos","ordem":1},{"slug":"itens-gramaticais-relevantes-para-a-compreensao-dos-conteudos-semanticos","nome":"Itens gramaticais relevantes para a compreensão dos conteúdos semânticos","ordem":2}]},{"slug":"legislacao-aplicavel-a-policia-militar-do-distrito-federal","nome":"Legislação Aplicável à Polícia Militar do Distrito Federal","ordem":4,"assuntos":[{"slug":"lei-organica-do-distrito-federal-seguranca-publica","nome":"Lei Orgânica do Distrito Federal: Segurança pública","ordem":1},{"slug":"lei-n-7-289-1984-aprova-o-estatuto-dos-policiais-militares-da-policia-militar-do-distrito-federal-e-da-outras-providencias","nome":"Lei nº 7.289/1984 (aprova o Estatuto dos Policiais Militares da Polícia Militar do Distrito Federal e dá outras providências)","ordem":2},{"slug":"lei-n-12-086-2009-dispoe-sobre-os-militares-da-policia-militar-do-distrito-federal-e-do-corpo-de-bombeiros-militar-do-distrito-federal-e-da-outras-providencias","nome":"Lei nº 12.086/2009 (dispõe sobre os militares da Polícia Militar do Distrito Federal e do Corpo de Bombeiros Militar do Distrito Federal e dá outras providências)","ordem":3},{"slug":"decreto-n-88-777-1983-aprova-o-regulamento-para-as-policias-militares-e-corpos-de-bombeiros-militares-r-200","nome":"Decreto nº 88.777/1983 (aprova o regulamento para as polícias militares e corpos de bombeiros militares (R-200))","ordem":4},{"slug":"decreto-n-10-443-2020-dispoe-sobre-a-organizacao-basica-da-policia-militar-do-distrito-federal","nome":"Decreto nº 10.443/2020 (Dispõe sobre a organização básica da Polícia Militar do Distrito Federal)","ordem":5},{"slug":"lei-n-14-751-2023-lei-organica-nacional-das-policias-militares-e-dos-corpos-de-bombeiros-militares-dos-estados-do-distrito-federal-e-dos-territorios","nome":"Lei nº 14.751/2023 - Lei Orgânica Nacional das polícias militares e dos corpos de bombeiros militares dos estados, do Distrito Federal e dos Territórios","ordem":6}]},{"slug":"ride-realidade-do-df-e-entorno","nome":"RIDE (Realidade do DF e Entorno)","ordem":5,"assuntos":[{"slug":"aspectos-da-geografia-fisica-do-distrito-federal","nome":"Aspectos da Geografia Física do Distrito Federal","ordem":1},{"slug":"realidade-etnica-social-economica-geografica-e-cultural-do-distrito-federal","nome":"Realidade Étnica, Social, Econômica, Geográfica e Cultural do Distrito Federal","ordem":2},{"slug":"realidade-historica-do-distrito-federal","nome":"Realidade Histórica do Distrito Federal","ordem":3},{"slug":"regiao-integrada-de-desenvolvimento-do-distrito-federal-e-entorno-ride","nome":"Região Integrada de Desenvolvimento do Distrito Federal e Entorno - RIDE","ordem":4},{"slug":"plano-distrital-de-politicas-para-mulheres-pdpm","nome":"Plano Distrital de Políticas para Mulheres (PDPM)","ordem":5}]},{"slug":"criminologia","nome":"Criminologia","ordem":6,"assuntos":[{"slug":"criminologia-conceito-cientificidade-objeto-metodo-sistema-e-funcoes","nome":"Criminologia: conceito, cientificidade, objeto, método, sistema e funções","ordem":1},{"slug":"criminologia-ambiental","nome":"Criminologia ambiental","ordem":2},{"slug":"fundamentos-historicos-da-criminologia-escolas-criminologicas","nome":"Fundamentos históricos da Criminologia. Escolas Criminológicas","ordem":3},{"slug":"prevencao-e-reacao-ao-fenomeno-criminal","nome":"Prevenção e Reação ao Fenômeno Criminal","ordem":4},{"slug":"teorias-sociologicas-teorias-do-consenso-e-do-conflito","nome":"Teorias sociológicas: teorias do consenso e do conflito","ordem":5}]},{"slug":"direitos-humanos","nome":"Direitos Humanos","ordem":7,"assuntos":[{"slug":"conceitos-basicos-de-direitos-humanos-afirmacao-historica","nome":"Conceitos básicos de Direitos Humanos; Afirmação histórica","ordem":1},{"slug":"direitos-humanos-e-responsabilidade-do-estado","nome":"Direitos humanos e responsabilidade do Estado","ordem":2},{"slug":"direitos-humanos-na-constituicao-federal","nome":"Direitos humanos na Constituição Federal","ordem":3},{"slug":"politica-nacional-de-direitos-humanos-politicas-de-seguranca-publica-voltadas-para-grupos-vulneraveis-lgbtqiapn","nome":"Política Nacional de Direitos Humanos; políticas de segurança pública voltadas para grupos vulneráveis (LGBTQIAPN+)","ordem":4},{"slug":"teoria-geral-dos-direitos-humanos","nome":"Teoria Geral dos Direitos Humanos","ordem":5},{"slug":"declaracao-universal-de-direitos-humanos","nome":"Declaração Universal de Direitos Humanos","ordem":6},{"slug":"emenda-constitucional-n-45-2004","nome":"Emenda Constitucional nº 45/2004","ordem":7}]},{"slug":"nocoes-de-primeiros-socorros","nome":"Noções de Primeiros Socorros","ordem":8,"assuntos":[{"slug":"avaliacao-inicial-da-vitima-e-seguranca-da-cena","nome":"Avaliação inicial da vítima e segurança da cena","ordem":1},{"slug":"suporte-basico-de-vida-sbv-e-reanimacao-cardiopulmonar-rcp","nome":"Suporte Básico de Vida (SBV) e Reanimação Cardiopulmonar (RCP)","ordem":2},{"slug":"obstrucao-de-vias-aereas-por-corpo-estranho-ovace","nome":"Obstrução de Vias Aéreas por Corpo Estranho (OVACE)","ordem":3},{"slug":"controle-de-hemorragias-e-estado-de-choque","nome":"Controle de hemorragias e estado de choque","ordem":4},{"slug":"ferimentos-curativos-e-queimaduras","nome":"Ferimentos, curativos e queimaduras","ordem":5},{"slug":"traumas-musculoesqueleticos-fraturas-entorses-luxacoes-e-imobilizacoes","nome":"Traumas musculoesqueléticos, fraturas, entorses, luxações e imobilizações","ordem":6},{"slug":"emergencias-clinicas-convulsoes-desmaios-avc-infarto-e-intoxicacoes-envenenamentos","nome":"Emergências clínicas (convulsões, desmaios, AVC, infarto) e intoxicações/envenenamentos","ordem":7},{"slug":"movimentacao-remocao-e-transporte-de-acidentados","nome":"Movimentação, remoção e transporte de acidentados","ordem":8}]},{"slug":"legislacao-extravagante","nome":"Legislação Extravagante","ordem":9,"assuntos":[{"slug":"juizados-especiais-criminais-lei-n-9-099-1995","nome":"Juizados especiais criminais (Lei nº 9.099/1995)","ordem":1},{"slug":"lei-n-11-340-2006-lei-maria-da-penha","nome":"Lei nº 11.340/2006 - Lei Maria da Penha","ordem":2},{"slug":"lei-n-12-850-2013-crime-organizado","nome":"Lei nº 12.850/2013 - Crime organizado","ordem":3},{"slug":"lei-n-2-889-1956-crime-de-genocidio","nome":"Lei nº 2.889/1956 - Crime de genocídio","ordem":4},{"slug":"lei-n-7-716-1989-crimes-resultantes-de-preconceito-de-raca-ou-cor","nome":"Lei nº 7.716/1989 - Crimes resultantes de preconceito de raça ou cor","ordem":5},{"slug":"lei-n-9-503-1997-crimes-de-transito-codigo-de-transito-brasileiro","nome":"Lei nº 9.503/1997 - Crimes de trânsito - Código de Trânsito Brasileiro","ordem":6},{"slug":"lei-n-9-605-1998-crimes-ambientais","nome":"Lei nº 9.605/1998 - Crimes Ambientais","ordem":7},{"slug":"lei-n-10-826-2003-estatuto-do-desarmamento","nome":"Lei nº 10.826/2003 - Estatuto do Desarmamento","ordem":8},{"slug":"lei-n-11-343-2006-lei-de-drogas","nome":"Lei nº 11.343/2006 - Lei de Drogas","ordem":9},{"slug":"lei-n-13-869-2019-abuso-de-autoridade","nome":"Lei nº 13.869/2019 - Abuso de autoridade","ordem":10},{"slug":"lei-n-8-072-1990-crimes-hediondos","nome":"Lei nº 8.072/1990 - Crimes hediondos","ordem":11},{"slug":"lei-n-9-455-1997-crimes-de-tortura","nome":"Lei nº 9.455/1997 - Crimes de tortura","ordem":12},{"slug":"lei-n-9-613-1998-lavagem-de-dinheiro","nome":"Lei nº 9.613/1998 - Lavagem de Dinheiro","ordem":13},{"slug":"codigo-de-transito-brasileiro-lei-n-9-503-1997-capitulos-1-2-8-17-e-19","nome":"Código de Trânsito Brasileiro (Lei nº 9.503/1997): Capítulos 1, 2, 8, 17 e 19","ordem":14},{"slug":"lei-n-8-069-1990-estatuto-da-crianca-e-do-adolescente","nome":"Lei nº 8.069/1990 - Estatuto da Criança e do Adolescente","ordem":15},{"slug":"improbidade-administrativa-lei-n-8-429-1992-alterada-e-atualizada-pela-lei-n-14-230-2021","nome":"Improbidade Administrativa (Lei nº 8.429/1992 alterada e atualizada pela Lei nº 14.230/2021)","ordem":16},{"slug":"lei-n-7-960-1989-prisao-temporaria","nome":"Lei nº 7.960/1989 (Prisão Temporária)","ordem":17},{"slug":"lei-n-10-259-2001-juizados-especiais-civeis-e-criminais-no-ambito-da-justica-federal","nome":"Lei nº 10.259/2001 (Juizados Especiais Cíveis e Criminais no âmbito da Justiça Federal)","ordem":18}]},{"slug":"direito-administrativo","nome":"Direito Administrativo","ordem":10,"assuntos":[{"slug":"agentes-publicos-especies-e-classificacao-cargo-emprego-e-funcao-publica","nome":"Agentes públicos: Espécies e classificação. Cargo, emprego e função pública","ordem":1},{"slug":"atos-administrativos-conceito-requisitos-atributos-classificacao-especies-formacao-e-extincao-dos-atos","nome":"Atos administrativos: conceito, requisitos, atributos, classificação, espécies, formação e extinção dos atos","ordem":2},{"slug":"controle-da-administracao-administrativo-judicial-e-legislativo","nome":"Controle da administração: administrativo, judicial e legislativo","ordem":3},{"slug":"decreto-n-11-531-2023-e-portaria-interministerial-n-424-2016","nome":"Decreto nº 11.531/2023 e Portaria Interministerial nº 424/2016","ordem":4},{"slug":"introducao-ao-direito-administrativo-origem-conceito-objetos-fontes-e-sistemas-administrativos-estado-governo-e-administracao-publica","nome":"Introdução ao Direito Administrativo - Origem, Conceito, Objetos, Fontes e Sistemas administrativos; Estado, Governo e Administração Pública","ordem":5},{"slug":"licitacoes-e-contratos-administrativos-lei-n-14-133-2021","nome":"Licitações e Contratos Administrativos - Lei nº 14.133/2021","ordem":6},{"slug":"organizacao-administrativa-administracao-direta-e-indireta-centralizada-e-descentralizada","nome":"Organização Administrativa: Administração direta e indireta, centralizada e descentralizada","ordem":7},{"slug":"poderes-administrativos-hierarquico-disciplinar-regulamentar-e-de-policia-uso-e-abuso-do-poder","nome":"Poderes administrativos: Hierárquico, disciplinar, regulamentar e de polícia. Uso e abuso do poder","ordem":8},{"slug":"processo-administrativo-lei-n-9-784-1999","nome":"Processo Administrativo - Lei nº 9.784/1999","ordem":9},{"slug":"regime-juridico-administrativo-e-principios-de-direito-administrativo","nome":"Regime Jurídico Administrativo e Princípios de Direito Administrativo","ordem":10},{"slug":"responsabilidade-civil-do-estado","nome":"Responsabilidade civil do Estado","ordem":11}]},{"slug":"direito-constitucional","nome":"Direito Constitucional","ordem":11,"assuntos":[{"slug":"administracao-publica","nome":"Administração pública","ordem":1},{"slug":"aplicabilidade-das-normas-constitucionais","nome":"Aplicabilidade das normas constitucionais","ordem":2},{"slug":"defesa-do-estado-e-das-instituicoes-democraticas-seguranca-publica-forcas-armadas","nome":"Defesa do Estado e das instituições democráticas: segurança pública; forças armadas","ordem":3},{"slug":"direitos-e-garantias-fundamentais-direitos-e-deveres-individuais-e-coletivos","nome":"Direitos e garantias fundamentais: Direitos e deveres individuais e coletivos","ordem":4},{"slug":"direitos-politicos-e-partidos-politicos","nome":"Direitos políticos e partidos políticos","ordem":5},{"slug":"direitos-sociais","nome":"Direitos Sociais","ordem":6},{"slug":"introducao-aos-direitos-e-garantias-fundamentais","nome":"Introdução aos direitos e garantias fundamentais","ordem":7},{"slug":"nacionalidade","nome":"Nacionalidade","ordem":8},{"slug":"organizacao-politico-administrativa","nome":"Organização político-administrativa","ordem":9},{"slug":"poder-executivo-conselho-da-republica-e-conselho-de-defesa-nacional","nome":"Poder Executivo - Conselho da República e Conselho de Defesa Nacional","ordem":10},{"slug":"poder-judiciario-disposicoes-gerais-e-justica-militar-da-uniao-e-dos-estados","nome":"Poder Judiciário - Disposições gerais e Justiça militar da União e dos Estados","ordem":11},{"slug":"poder-legislativo-prerrogativas-parlamentares","nome":"Poder Legislativo - Prerrogativas parlamentares","ordem":12},{"slug":"principios-fundamentais","nome":"Princípios Fundamentais","ordem":13},{"slug":"remedios-constitucionais","nome":"Remédios Constitucionais","ordem":14},{"slug":"teoria-geral-da-constituicao-conceitos-e-classificacao","nome":"Teoria Geral da Constituição: conceitos e classificação","ordem":15}]},{"slug":"direito-penal","nome":"Direito Penal","ordem":12,"assuntos":[{"slug":"acao-penal-e-extincao-da-punibilidade","nome":"Ação Penal e Extinção da Punibilidade","ordem":1},{"slug":"aplicacao-da-lei-penal","nome":"Aplicação da Lei Penal","ordem":2},{"slug":"concurso-de-pessoas","nome":"Concurso de pessoas","ordem":3},{"slug":"crimes-contra-a-administracao-publica-crimes-contra-a-administracao-publica-estrangeira-crimes-contra-a-administracao-da-justica-crimes-contra-as-financas-publicas","nome":"Crimes contra a administração pública: Crimes contra a administração pública estrangeira. Crimes contra a administração da Justiça. Crimes contra as finanças públicas","ordem":4},{"slug":"crimes-contra-a-administracao-publica-crimes-em-licitacoes-e-contratos-administrativos","nome":"Crimes contra a administração pública: Crimes em licitações e contratos administrativos","ordem":5},{"slug":"crimes-contra-a-administracao-publica-crimes-praticados-por-funcionario-publico-contra-a-administracao-em-geral","nome":"Crimes contra a administração pública: Crimes praticados por funcionário público contra a administração em geral","ordem":6},{"slug":"crimes-contra-a-administracao-publica-crimes-praticados-por-particular-contra-a-administracao-em-geral","nome":"Crimes contra a administração pública: Crimes praticados por particular contra a administração em geral","ordem":7},{"slug":"crimes-contra-a-fe-publica","nome":"Crimes contra a fé pública","ordem":8},{"slug":"das-penas-cominacao-das-penas-suspensao-condicional-da-pena-e-livramento-condicional","nome":"Das Penas - Cominação das penas, Suspensão condicional da pena e Livramento Condicional","ordem":9},{"slug":"das-penas-teoria-geral-da-pena-e-especies","nome":"Das Penas - Teoria Geral da pena e Espécies","ordem":10},{"slug":"prescricao","nome":"Prescrição","ordem":11},{"slug":"principios-e-disposicoes-constitucionais-aplicaveis-ao-direito-penal","nome":"Princípios e Disposições constitucionais aplicáveis ao Direito Penal","ordem":12},{"slug":"teoria-geral-do-crime-culpabilidade-e-imputabilidade","nome":"Teoria Geral do Crime: Culpabilidade e Imputabilidade","ordem":13},{"slug":"teoria-geral-do-crime-erro-tentativa-e-ilicitude","nome":"Teoria Geral do Crime: Erro, tentativa e Ilicitude","ordem":14},{"slug":"crimes-contra-a-pessoa-crimes-contra-a-vida-e-lesoes-corporais","nome":"Crimes contra a pessoa - Crimes contra a vida e Lesões corporais","ordem":15},{"slug":"crimes-contra-a-pessoa-crimes-contra-a-honra","nome":"Crimes contra a pessoa - Crimes contra a honra","ordem":16},{"slug":"crimes-contra-a-pessoa-periclitacao-da-vida-e-saude-rixa-e-crimes-contra-a-liberdade-individual","nome":"Crimes contra a pessoa - Periclitação da Vida e Saúde, Rixa e Crimes Contra a Liberdade Individual","ordem":17},{"slug":"crimes-contra-o-patrimonio-furto-e-roubo","nome":"Crimes contra o patrimônio - Furto e Roubo","ordem":18},{"slug":"crimes-contra-o-patrimonio-extorsao-dano-e-apropriacao-indebita","nome":"Crimes Contra o Patrimônio - Extorsão, Dano e apropriação indébita","ordem":19},{"slug":"crimes-contra-o-patrimonio-estelionato-receptacao-e-disposicoes-gerais","nome":"Crimes Contra o Patrimônio - Estelionato, receptação e disposições gerais","ordem":20},{"slug":"crimes-contra-a-dignidade-sexual","nome":"Crimes contra a Dignidade Sexual","ordem":21},{"slug":"crimes-contra-a-incolumidade-publica","nome":"Crimes contra a Incolumidade Pública","ordem":22}]},{"slug":"direito-penal-militar","nome":"Direito Penal Militar","ordem":13,"assuntos":[{"slug":"acao-penal-e-extincao-da-punibilidade","nome":"Ação penal e Extinção da punibilidade","ordem":1},{"slug":"aplicacao-da-lei-penal-militar","nome":"Aplicação da lei penal militar","ordem":2},{"slug":"crimes-contra-a-autoridade-e-disciplina-militares","nome":"Crimes contra a autoridade e disciplina militares","ordem":3},{"slug":"crimes-contra-o-servico-militar-e-o-dever-militar","nome":"Crimes contra o Serviço Militar e o Dever Militar","ordem":4},{"slug":"crimes-militares-em-tempo-de-paz-crimes-contra-a-administracao-militar-e-crimes-contra-a-administracao-da-justica-militar","nome":"Crimes militares em tempo de paz - Crimes Contra a Administração Militar e Crimes contra a Administração da Justiça Militar","ordem":5},{"slug":"crimes-militares-em-tempo-de-paz-crimes-contra-a-pessoa-no-cpm","nome":"Crimes militares em tempo de paz - Crimes Contra a Pessoa no CPM","ordem":6},{"slug":"crimes-militares-em-tempo-de-paz-crimes-contra-a-seguranca-externa-do-pais-e-crimes-contra-a-incolumidade-publica","nome":"Crimes militares em tempo de paz - Crimes Contra a Segurança Externa do País e Crimes Contra a Incolumidade Pública","ordem":7},{"slug":"crimes-militares-em-tempo-de-paz-crimes-contra-o-patrimonio-no-cpm","nome":"Crimes militares em tempo de paz - Crimes Contra o Patrimônio no CPM","ordem":8},{"slug":"da-aplicacao-da-pena","nome":"Da aplicação da pena","ordem":9},{"slug":"das-penas-penas-acessorias-e-efeitos-da-condenacao","nome":"Das Penas, penas acessórias e efeitos da condenação","ordem":10},{"slug":"suspensao-condicional-da-pena-e-livramento-condicional","nome":"Suspensão condicional da pena e Livramento condicional","ordem":11},{"slug":"do-crime","nome":"Do Crime","ordem":12},{"slug":"imputabilidade-penal-e-concurso-de-agentes","nome":"Imputabilidade penal e Concurso de agentes","ordem":13},{"slug":"medidas-de-seguranca","nome":"Medidas de segurança","ordem":14}]},{"slug":"direito-processual-penal","nome":"Direito Processual Penal","ordem":14,"assuntos":[{"slug":"acao-penal","nome":"Ação penal","ordem":1},{"slug":"do-juiz-do-ministerio-publico-do-acusado-e-defensor-dos-assistentes-e-auxiliares-da-justica","nome":"Do Juiz, do Ministério Público, do Acusado e Defensor, dos Assistentes e Auxiliares da Justiça","ordem":2},{"slug":"inquerito-policial","nome":"Inquérito policial","ordem":3},{"slug":"nocoes-introdutorias-principios-sistemas-processuais-lei-processual-penal-no-tempo-no-espaco-e-em-relacao-as-pessoas-fontes-interpretacao-e-integracao-da-lei-processual","nome":"Noções Introdutórias: Princípios; sistemas processuais; lei processual penal no tempo, no espaço e em relação às pessoas; fontes; interpretação e integração da lei processual","ordem":4},{"slug":"prazos-e-nulidades","nome":"Prazos e Nulidades","ordem":5},{"slug":"prisao-e-liberdade-provisoria-prisao-em-flagrante-preventiva-temporaria-e-liberdade-provisoria","nome":"Prisão e liberdade provisória: prisão em flagrante, preventiva, temporária e liberdade provisória","ordem":6},{"slug":"processo-procedimento-e-relacao-juridica-processual","nome":"Processo, procedimento e relação jurídica processual","ordem":7},{"slug":"provas-teoria-geral-e-provas-em-especie-pericia-exame-de-corpo-de-delito-prova-documental-interrogatorio-testemunho-reconhecimento-de-pessoas-e-coisas-acareacao-confissao","nome":"Provas: teoria geral e provas em espécie: Perícia, Exame de Corpo de Delito, Prova Documental, Interrogatório, Testemunho, Reconhecimento de Pessoas e Coisas, Acareação, Confissão","ordem":8}]},{"slug":"direito-processual-penal-militar","nome":"Direito Processual Penal Militar","ordem":15,"assuntos":[{"slug":"acao-penal-militar-e-denuncia","nome":"Ação penal militar e denúncia","ordem":1},{"slug":"atos-probatorios-das-provas","nome":"Atos probatórios (Das provas)","ordem":2},{"slug":"comunicacoes-processuais-citacao-intimacao-e-notificacao","nome":"Comunicações processuais (citação, intimação e notificação)","ordem":3},{"slug":"do-foro-militar-e-da-competencia-em-geral","nome":"Do foro militar e da competência em geral","ordem":4},{"slug":"execucao-suspensao-condicional-da-pena-livramento-indulto-comutacao-da-pena-anistia-e-reabilitacao-e-execucao-das-medidas-de-seguranca","nome":"Execução, suspensão condicional da pena, livramento, indulto, comutação da pena, anistia e reabilitação e execução das medidas de segurança","ordem":5},{"slug":"inquerito-policial-militar","nome":"Inquérito policial militar","ordem":6},{"slug":"medidas-preventivas-e-assecuratorias-providencias-que-recaem-sobre-coisa","nome":"Medidas preventivas e assecuratórias - Providências que recaem sobre coisa","ordem":7},{"slug":"medidas-preventivas-e-assecuratorias-providencias-que-recaem-sobre-pessoas","nome":"Medidas preventivas e assecuratórias - Providências que recaem sobre pessoas","ordem":8},{"slug":"nulidades-e-recursos","nome":"Nulidades e recursos","ordem":9},{"slug":"processo-penal-militar-e-sua-aplicacao-policia-judiciaria-militar","nome":"Processo penal militar e sua aplicação; Polícia judiciária militar","ordem":10},{"slug":"processo-penal-militar-juiz-auxiliares-e-partes-do-processo","nome":"Processo penal militar; Juiz, auxiliares e partes do processo","ordem":11},{"slug":"processos-especiais-desercao-de-oficial-e-de-praca","nome":"Processos especiais (Deserção de oficial e de praça)","ordem":12},{"slug":"questoes-prejudiciais-e-incidentes","nome":"Questões prejudiciais e incidentes","ordem":13}]}]$catalogo$::jsonb);
+WITH src AS (
+  SELECT entry->>'slug' AS slug,entry->>'nome' AS nome,
+         (entry->>'ordem')::integer AS ordem
+  FROM _pmdf_catalogo_seed, jsonb_array_elements(payload) entry
+)
+INSERT INTO public.pmdf_disciplinas (slug,nome,ordem,ativo)
+SELECT slug,nome,ordem,true FROM src
+ON CONFLICT(slug) DO UPDATE SET nome=EXCLUDED.nome,ordem=EXCLUDED.ordem,
+  ativo=true,atualizado_em=now();
+WITH src AS (
+  SELECT d->>'slug' AS disciplina_slug,a->>'slug' AS slug,
+         a->>'nome' AS nome,(a->>'ordem')::integer AS ordem
+  FROM _pmdf_catalogo_seed,
+       jsonb_array_elements(payload) d,
+       jsonb_array_elements(d->'assuntos') a
+)
+INSERT INTO public.pmdf_assuntos(disciplina_slug,slug,nome,ordem,ativo)
+SELECT disciplina_slug,slug,nome,ordem,true FROM src
+ON CONFLICT(disciplina_slug,slug) DO UPDATE SET nome=EXCLUDED.nome,
+  ordem=EXCLUDED.ordem,ativo=true,atualizado_em=now();
+-- Desativa categorias e assuntos retirados; NÃO deleta questões nem respostas.
+UPDATE public.pmdf_disciplinas d SET ativo=false,atualizado_em=now()
+WHERE d.ativo AND NOT EXISTS (
+  SELECT 1 FROM _pmdf_catalogo_seed c,jsonb_array_elements(c.payload) e
+  WHERE e->>'slug'=d.slug
+);
+UPDATE public.pmdf_assuntos a SET ativo=false,atualizado_em=now()
+WHERE a.ativo AND NOT EXISTS (
+  SELECT 1 FROM _pmdf_catalogo_seed c,jsonb_array_elements(c.payload) d,
+    jsonb_array_elements(d->'assuntos') t
+  WHERE d->>'slug'=a.disciplina_slug AND t->>'slug'=a.slug
+);
+-- Se já houver 'administração-geral' no catálogo, permanece apenas como inativo.
+UPDATE public.pmdf_disciplinas SET ativo=false,atualizado_em=now()
+WHERE slug IN ('administracao-geral','administracao')
+  OR lower(nome) IN ('administração geral','administracao geral');
+-- Novo catálogo é leitura pública e imutável para usuários comuns.
+ALTER TABLE public.pmdf_disciplinas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pmdf_assuntos ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS pmdf_disciplinas_ler_ativas ON public.pmdf_disciplinas;
+CREATE POLICY pmdf_disciplinas_ler_ativas ON public.pmdf_disciplinas
+  FOR SELECT TO anon,authenticated USING (ativo=true);
+DROP POLICY IF EXISTS pmdf_assuntos_ler_ativos ON public.pmdf_assuntos;
+CREATE POLICY pmdf_assuntos_ler_ativos ON public.pmdf_assuntos
+  FOR SELECT TO anon,authenticated USING (
+    ativo=true AND EXISTS (
+      SELECT 1 FROM public.pmdf_disciplinas d
+      WHERE d.slug=disciplina_slug AND d.ativo=true
+    )
+  );
+REVOKE ALL ON public.pmdf_disciplinas FROM anon,authenticated;
+REVOKE ALL ON public.pmdf_assuntos FROM anon,authenticated;
+GRANT SELECT ON public.pmdf_disciplinas,public.pmdf_assuntos TO anon,authenticated;
+-- Normalizador ASCII idêntico ao frontend (sem alterar labels oficiais).
+CREATE OR REPLACE FUNCTION public.pmdf_slugify(value text)
+RETURNS text LANGUAGE sql IMMUTABLE PARALLEL SAFE
+SET search_path = pg_catalog
+AS $$
+ SELECT trim(BOTH '-' FROM regexp_replace(
+   translate(lower(coalesce(value,'')),
+     'áàâãäéèêëíìîïóòôõöúùûüçñ',
+     'aaaaaeeeeiiiiooooouuuucn'),
+   '[^a-z0-9]+','-','g'));
+$$;
+-- Colunas novas opcionais: mantém texto/IDs históricos e é compatível com a tabela antiga.
+DO $$
+BEGIN
+ IF to_regclass('public.questoes') IS NOT NULL THEN
+   ALTER TABLE public.questoes
+     ADD COLUMN IF NOT EXISTS disciplina_slug text,
+     ADD COLUMN IF NOT EXISTS assunto_slug text,
+     ADD COLUMN IF NOT EXISTS banca text;
+   CREATE INDEX IF NOT EXISTS pmdf_questoes_catalogo_idx
+     ON public.questoes (disciplina_slug,assunto_slug,formato,criado_em);
+   -- Normaliza apenas correspondências exatas/aliases seguros.
+   UPDATE public.questoes q SET disciplina_slug=d.slug
+   FROM public.pmdf_disciplinas d
+   WHERE d.ativo=true AND (
+      public.pmdf_slugify(q.disciplina)=d.slug
+      OR (public.pmdf_slugify(q.disciplina)='rlm' AND d.slug='raciocinio-logico-e-matematico-rlm')
+      OR (public.pmdf_slugify(q.disciplina)='ingles' AND d.slug='lingua-inglesa-ingles')
+      OR (public.pmdf_slugify(q.disciplina)='ride' AND d.slug='ride-realidade-do-df-e-entorno')
+   ) AND q.disciplina_slug IS DISTINCT FROM d.slug;
+   UPDATE public.questoes q SET assunto_slug=a.slug
+   FROM public.pmdf_assuntos a
+   WHERE a.ativo AND q.disciplina_slug=a.disciplina_slug
+     AND public.pmdf_slugify(q.assunto)=a.slug
+     AND q.assunto_slug IS DISTINCT FROM a.slug;
+ END IF;
+END $$;
+COMMIT;
+-- Atualiza o cache da Data API (PostgREST) após CREATE/ALTER.
+NOTIFY pgrst, 'reload schema';
+-- Auditoria pós-migração:
+SELECT (SELECT count(*) FROM public.pmdf_disciplinas WHERE ativo) AS disciplinas_ativas,
+       (SELECT count(*) FROM public.pmdf_assuntos WHERE ativo) AS assuntos_ativos,
+       (SELECT count(*) FROM public.pmdf_disciplinas WHERE ativo AND nome='Administração Geral') AS administracao_geral_ativa;
+-- Esperado: 15 | 163 | 0.
+
+-- Confirma presença física da tabela e a contagem do acervo público:
+SELECT to_regclass('public.questoes') AS tabela_questoes,
+       (SELECT count(*) FROM public.questoes WHERE publicada=true) AS questoes_publicadas;
