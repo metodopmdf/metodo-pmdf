@@ -5,9 +5,11 @@ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 // Arquitetura modular: aplicação carregada por script externo, sem JavaScript inline.
 const catalogCode=readFileSync(new URL('../assets/pmdf-catalogo-praca.js',import.meta.url),'utf8');
 const guidesCode=readFileSync(new URL('../assets/pmdf-guides.js',import.meta.url),'utf8');
-const code=catalogCode+'\n'+guidesCode+'\n'+readFileSync(new URL('../assets/pmdf-app.js',import.meta.url),'utf8');
+const authoredCode=readFileSync(new URL('../assets/pmdf-questoes-programaticas.js',import.meta.url),'utf8');
+const code=catalogCode+'\n'+authoredCode+'\n'+guidesCode+'\n'+readFileSync(new URL('../assets/pmdf-app.js',import.meta.url),'utf8');
 assert(html.includes('src="assets/pmdf-app.js'),'Aplicação externa não vinculada');
 assert(html.includes('src="assets/pmdf-guides.js'),'Catálogo inicial não vinculado');
+assert(html.includes('src="assets/pmdf-questoes-programaticas.js'),'Acervo autoral não vinculado');
 assert(!/<script\b(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/i.test(html),'Script inline viola CSP');
 new Function(code);
 assert(!html.includes("fetch('/api/"),'O site estático ainda chama uma rota /api/');
@@ -588,6 +590,55 @@ connectNeural(changedClient);
 changedApp.setQuestionEngine('neural');
 await changedApp.startQuestions();
 assert(changedApp.questionState()?.items.length>0,'Gerador neural falhou após mudança de fonte');
+
+// Cobertura programática: 15 matérias / 163 assuntos com ao menos 1 CE por tópico.
+const editorialClient=createClient(),editorial=editorialClient.win.PMDF_TOPIC_BANK;
+const coverage=editorial.coverage();
+assert.equal(coverage.length,15,'Catálogo editorial incompleto');
+assert.equal(coverage.reduce((n,d)=>n+d.registrados,0),163,'Faltam tópicos com questões editoriais');
+assert.equal(coverage.reduce((n,d)=>n+d.multiplaEscolha,0),21,'Questões MC editoriais divergentes');
+for(const d of coverage)assert.equal(d.registrados,d.esperados,'Disciplina sem cobertura completa: '+d.disciplina);
+for(const d of editorialClient.win.PMDF_PRACA_CATALOG.disciplinas){
+  for(const topic of d.assuntos){
+    const questions=editorial.choose(d.slug,topic.slug,'CE');
+    assert.equal(questions.length,1,'Tópico sem questão exclusiva: '+d.nome+' / '+topic.nome);
+    assert(['C','E'].includes(questions[0].answer),'Gabarito CE inválido');
+    assert(questions[0].explanation.length>=48,'Comentário insuficiente');
+    assert(questions[0].sourceUrl.startsWith('https://'),'Fonte sem URL segura');
+  }
+}
+editorialClient.application.auth('qa-programa-autoral');
+editorialClient.$('q-source').value='programa';
+editorialClient.$('q-disciplina').value='nocoes-de-primeiros-socorros';
+editorialClient.$('q-assunto').value=editorialClient.win.PMDF_PRACA_CATALOG
+  .disciplina('nocoes-de-primeiros-socorros').assuntos[0].slug;
+await editorialClient.application.startQuestions();
+const topical=editorialClient.application.questionState();
+assert.equal(topical.engine,'programa','Roteamento do programa não foi respeitado');
+assert.equal(topical.items.length,1,'Modo por assunto não isolou a única questão');
+assert.equal(topical.items[0].topicSlug,editorialClient.$('q-assunto').value,'Mistura de tópicos');
+assert.match(editorialClient.$('q-status').textContent,/Noções de Primeiros Socorros/,'Contexto não exibido');
+// Próxima tentativa sem itens deve orientar revisão e NÃO inventar variações.
+await editorialClient.application.startQuestions(true);
+assert.match(editorialClient.$('q-status').textContent,/Reiniciar cobertura/,'Cobertura esgotada não detectada');
+editorialClient.application.resetQuestionCycle();
+await editorialClient.application.startQuestions();
+assert.equal(editorialClient.application.questionState().coverage.shown,1,'Reset editorial falhou');
+
+const curriculumNeural=createClient();
+curriculumNeural.application.auth('qa-programa-neural');
+curriculumNeural.$('q-source').value='programa';
+curriculumNeural.$('q-disciplina').value='lingua-portuguesa';
+curriculumNeural.$('q-assunto').value='';
+curriculumNeural.$('q-neural-target').value='15';
+curriculumNeural.$('q-format').value='CE';
+connectNeural(curriculumNeural);
+curriculumNeural.application.setQuestionEngine('neural');
+await curriculumNeural.application.startQuestions();
+assert(curriculumNeural.application.questionState()?.items?.length>0,
+  'Motor neural não gerou variações a partir de material programático');
+assert(curriculumNeural.application.questionState().items.every(q=>q.type==='CE'),
+  'Motor neural devolveu formato divergente do edital');
 
 console.log('PASSOU: integração do elaborador tradicional e motor neural, 75 dispositivos, lotes inéditos, 26 normas, 3 níveis, 468 resumos, questões MC/CE, importação, redação A4, flashcards e sincronização simulada.');
 console.log(JSON.stringify({counts,walkthrough},null,2));
