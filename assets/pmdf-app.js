@@ -2123,10 +2123,54 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             }finally{if(button)button.disabled=false;}
         }
 
+        // Acervo autoral: 163 tópicos, independente do Supabase.
+        function topicCycleKey(){
+            return 'q:programa:v1:'+[$('q-disciplina')?.value||'*',$('q-assunto')?.value||'*',
+                $('q-format')?.value||'CE'].join('|');
+        }
+        function startProgramQuestions(){
+            if(!AUTH_USER)return toast('Entre na sua conta para praticar questões.','error');
+            const bank=window.PMDF_TOPIC_BANK;
+            if(!bank)return toast('Acervo didático indisponível. Atualize a página.','error');
+            const d=$('q-disciplina')?.value||'',a=$('q-assunto')?.value||'';
+            if(!d)return toast('Selecione uma disciplina para estudar separadamente os assuntos.','error');
+            const fmt=$('q-format')?.value||'CE';
+            const pool=bank.choose(d,a,fmt).filter(questionIsComplete);
+            if(!pool.length){
+                $('q-panel')?.classList.add('hidden');
+                const label=fmt==='MC'?'múltipla escolha':'certo/errado';
+                $('q-status').textContent='Não há questões autorais de '+label+' para este tópico na primeira edição. Selecione Certo/Errado ou use o motor neural local para tentar novas variações fundamentadas.';
+                if($('q-coverage'))$('q-coverage').textContent='Material complementar por assunto pode ser enviado em PDF, DOCX ou TXT.';
+                return;
+            }
+            const key=topicCycleKey(),used=new Set(jget(key,[]));
+            let unseen=shuffle(pool.filter(q=>!used.has(q.coverageId)));
+            if(!unseen.length){
+                $('q-panel')?.classList.add('hidden');
+                $('q-status').textContent='Você concluiu '+pool.length+' questões desta seleção. Use “Reiniciar cobertura” para revisar.';
+                if($('q-coverage'))$('q-coverage').textContent='Todas apresentadas · questões editoriais fixas, não resultados infinitos de uma IA generativa.';
+                return;
+            }
+            const configured=Number($('q-batch')?.value??30),limit=configured===0?unseen.length:Math.min(Math.max(1,configured),unseen.length);
+            const selected=unseen.slice(0,limit);
+            selected.forEach(q=>used.add(q.coverageId));
+            store.set(key,JSON.stringify([...used]));
+            Q_STATE={items:selected.map(q=>({...q})),engine:'programa',index:0,hits:0,wrong:0,blank:0,pending:0,
+                answered:false,questionStart:Date.now(),
+                coverage:{total:pool.length,shown:used.size,remaining:Math.max(0,pool.length-used.size),cycleKey:key}};
+            saveStudySession();$('q-panel').classList.remove('hidden');drawQuestions();
+            $('q-status').textContent='Acervo autoral · '+selected.length+' questões comentadas · '+
+                (PMDF_PRACA?.disciplina(d)?.nome||'Disciplina')+' · '+(a?PMDF_PRACA.assunto(d,a)?.nome:'todos os tópicos');
+            if($('q-coverage'))$('q-coverage').textContent='Cobertura: '+used.size+'/'+pool.length+
+                ' questões desta seleção. Fonte editorial autoral, conferência recomendada.';
+        }
+
         const pickStudyGuides = kind => {
             const selected=$(kind+'-source')?.value || 'current';
             if(selected==='all')return Object.values(BUILTIN_PMDF_GUIDES);
             if(selected==='catalogo')return [];
+            if(selected==='programa'&&kind==='q')
+                return window.PMDF_TOPIC_BANK?.guide($('q-disciplina')?.value||'',$('q-assunto')?.value||'')||[];
             return CUR.guide ? [CUR.guide] : [];
         };
         function clearGuideOptions(){BANK='auto';if(CUR.guide)rerenderPreservingStudyState();clearGuideSearch();toast('Filtros do guia limpos.','ok');}
@@ -2200,23 +2244,27 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         function refreshQuestionStudio(){
             const selected=$('q-source')?.value,el=$('q-document-indicator');
             if(selected==='catalogo'&&QUESTION_ENGINE!=='local'){setQuestionEngine('local');return;}
-            const isBank=selected==='catalogo';
+            const isBank=selected==='catalogo',isProgram=selected==='programa';
             const btn=$('q-generate-button'),next=$('q-next-button'),neural=$('q-engine-neural');
-            if(btn)btn.textContent=isBank?'Consultar questões publicadas':QUESTION_ENGINE==='neural'?'Gerar com motor neural':'Gerar e iniciar questões';
-            if(next)next.textContent=isBank?'Próximo lote do banco':QUESTION_ENGINE==='neural'?'Próximo lote neural':'Próximo lote inédito';
+            if(btn)btn.textContent=isBank?'Consultar questões publicadas':isProgram&&QUESTION_ENGINE==='local'?'Praticar questões por tópico':QUESTION_ENGINE==='neural'?'Elaborar variações pelo motor local':'Gerar e iniciar questões';
+            if(next)next.textContent=isBank?'Próximo lote do banco':isProgram&&QUESTION_ENGINE==='local'?'Próximas questões autorais':QUESTION_ENGINE==='neural'?'Próximo lote neural':'Próximo lote inédito';
             if(neural){neural.disabled=isBank;neural.title=isBank?'No banco público, selecione as questões publicadas; a geração local está disponível nas outras fontes.':'';}
             const d=PMDF_PRACA?.disciplina($('q-disciplina')?.value);
             const a=d?PMDF_PRACA.assunto(d.slug,$('q-assunto')?.value):null;
-            if(el)el.textContent=selected==='catalogo'?'Banco de questões catalogadas da Praça PMDF':
+            if(el)el.textContent=selected==='programa'?'Acervo autoral de disciplinas e assuntos (funciona sem banco remoto)':
+                selected==='catalogo'?'Banco de questões catalogadas da Praça PMDF':
                 selected==='imported'?'Provas importadas: utilize o modo Tradicional':
                 selected==='all'?'Catálogo inteiro (guias didáticos, não leis integrais)':
                 CUR.guide?'Fonte: '+CUR.guide.lawName:'Nenhum documento selecionado';
             const c=$('q-catalog-status');if(c)c.textContent=(PMDF_PRACA?.disciplinas.length||0)+
                 ' disciplinas · '+(PMDF_PRACA?.disciplinas.reduce((n,x)=>n+x.assuntos.length,0)||0)+
                 ' tópicos. '+(d?d.nome+' · '+(a?.nome||d.assuntos.length+' assuntos'):'Selecione uma disciplina para classificar ou consultar questões.')+
-                (selected==='catalogo'?' Exibindo apenas questões revisadas e publicadas no banco; neste modo não há geração automática.':'');
-            const board=$('q-board');if(board){board.disabled=selected==='catalogo';board.title=selected==='catalogo'?
-                'Banca não consta de todos os registros legados; este filtro só vale para a geração.':'';}
+                (selected==='catalogo'?' Exibindo apenas questões revisadas e publicadas no banco; neste modo não há geração automática.':
+                selected==='programa'?' Acervo: '+(window.PMDF_TOPIC_BANK?.count()||0)+
+                  ' itens autorais com comentários; o motor local pode elaborar variações dos trechos, sujeitos a conferência.':'');
+            const board=$('q-board');if(board){board.disabled=isBank||(isProgram&&QUESTION_ENGINE==='local');board.title=isBank?
+                'Banca não consta de todos os registros legados; este filtro só vale para a geração.':
+                isProgram&&QUESTION_ENGINE==='local'?'Questões autorais fixas: a banca escolhida não altera questões revisadas.':'';}
             updateNeuralFormatUI();
         }
         function stopQuestionAI(){window.PMDFNeuralQuestions?.stop?.();}
@@ -2271,6 +2319,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 const result=[];
                 const perGuide=guides.length>1?Math.max(24,Math.floor(1300/guides.length)):500;
                 for(const guide of guides){
+                    if(guide.curriculum)continue; // Não transformar gabaritos editoriais em questões referenciais não validadas.
                     const ce=questionPool(guide,'CE',level);
                     const mc=questionPool(guide,'MC',level,5);
                     let taken=0;
@@ -2291,7 +2340,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             },
             persist:async rows=>{
                 if(!AUTH_USER)throw Error('Faça login antes de salvar.');
-                const d=$('q-source')?.value==='current'?PMDF_PRACA?.disciplina($('q-disciplina')?.value):null;
+                const d=['current','programa'].includes($('q-source')?.value)?PMDF_PRACA?.disciplina($('q-disciplina')?.value):null;
                 const a=d?PMDF_PRACA.assunto(d.slug,$('q-assunto')?.value):null;
                 const tagged=rows.map(q=>({...q,...(d?{disciplina:d.nome,disciplina_slug:d.slug,
                     assunto:a?.nome||q.assunto,assunto_slug:a?.slug||null}:{}) ,
@@ -2322,6 +2371,11 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             return 'q:coverage:v3:'+(hash(fingerprint)>>>0).toString(36);
         }
         function resetQuestionCycle(){
+            if($('q-source')?.value==='programa'){
+                store.del(topicCycleKey());
+                if($('q-coverage'))$('q-coverage').textContent='Cobertura do acervo programático reiniciada.';
+                return toast('Revisão reiniciada sem apagar resultados.','ok');
+            }
             if($('q-source')?.value==='catalogo'){
                 store.del(questionCatalogCycleKey());
                 if($('q-coverage'))$('q-coverage').textContent='Cobertura do catálogo reiniciada. Seu desempenho foi mantido.';
@@ -2336,6 +2390,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         }
         async function startQuestions(nextBatch=false){
             if($('q-source')?.value==='catalogo')return startCatalogQuestions(nextBatch);
+            if($('q-source')?.value==='programa'&&QUESTION_ENGINE==='local')return startProgramQuestions();
             if(QUESTION_ENGINE==='neural'&&!SAFE_FALLBACK_ACTIVE)return startNeuralQuestions(nextBatch);
             if(!AUTH_USER)return toast('Faça login para gerar questões.','error');
             const imported=$('q-source').value==='imported';
@@ -2448,9 +2503,11 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 store.set('sim:errs',JSON.stringify(errors));
             }
             const gab=!hasKey?'Não disponível: importe o gabarito oficial':q.type==='MC'?q.answer+') '+(q.options['ABCDE'.indexOf(q.answer)]||''):q.answer==='C'?'Certo':'Errado';
+            const curriculumLink=q.origin==='curriculo-autoral'&&/^https:\/\/(?:[a-z0-9.-]+\.)?(?:gov\.br|org|br)\//i.test(q.sourceUrl||'')?
+                '<p class="mt-2"><a target="_blank" rel="noopener noreferrer" class="underline text-[#E5C158]" href="'+esc(q.sourceUrl)+'">Consultar referência original</a></p>':'';
             const aiEvidence=['webllm-local','neural-local'].includes(q.origin)?'<p class="mt-2"><strong>Trecho literal:</strong> '+esc(q.sourceQuote||'Não disponível')+'</p>':'';
             const aiDistractors=['webllm-local','neural-local'].includes(q.origin)&&Array.isArray(q.optionAnalysis)&&q.optionAnalysis.length?'<div class="mt-2"><strong>Justificativa das alternativas:</strong><ul class="list-disc ml-5">'+q.optionAnalysis.map((v,i)=>'<li>'+esc('ABCDE'[i]+') '+v)+'</li>').join('')+'</ul></div>':'';
-            $('q-feedback').innerHTML='<div class="g-card mt-4"><p class="font-bold '+(correct?'text-emerald-300':'text-[#E5C158]')+'">'+(blank?'Em branco':!hasKey?'Resposta registrada — aguardando gabarito':correct?'✅ Acertou':'❌ Errou')+' · Gabarito: '+esc(gab)+'</p><p><strong>Comentário:</strong> '+esc(q.explanation||'Confira o trecho-fonte.')+'</p><p><strong>Fundamento:</strong> '+esc(q.lawBasis||'Conteúdo estudado')+'</p>'+aiEvidence+aiDistractors+(q.easyTip?'<p><strong>Dica:</strong> '+esc(q.easyTip)+'</p>':'')+'</div>';
+            $('q-feedback').innerHTML='<div class="g-card mt-4"><p class="font-bold '+(correct?'text-emerald-300':'text-[#E5C158]')+'">'+(blank?'Em branco':!hasKey?'Resposta registrada — aguardando gabarito':correct?'✅ Acertou':'❌ Errou')+' · Gabarito: '+esc(gab)+'</p><p><strong>Comentário:</strong> '+esc(q.explanation||'Confira o trecho-fonte.')+'</p><p><strong>Fundamento:</strong> '+esc(q.lawBasis||'Conteúdo estudado')+'</p>'+curriculumLink+aiEvidence+aiDistractors+(q.easyTip?'<p><strong>Dica:</strong> '+esc(q.easyTip)+'</p>':'')+'</div>';
             s.responses=s.responses||{};
             s.responses[s.index]={choice:answer,feedback:$('q-feedback').innerHTML};
             $('q-nav-next').disabled=false;
