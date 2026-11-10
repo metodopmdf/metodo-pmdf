@@ -64,16 +64,7 @@ async function setup(page){
     typeof window.PMDFNeuralQuestions?.start==='function'&&
     typeof window.PMDFNeuralFlashcards?.buildAsync==='function',{},{timeout:30000});
   assert.equal(await page.locator('#q-engine-neural').count(),1,'Seletor neural ausente');
-  assert.equal(await page.locator('#q-source option[value="catalogo"]').count(),1,'Banco Praça PMDF ausente');
-  assert.equal(await page.locator('#q-disciplina option').count(),16,'Devem existir 15 disciplinas e placeholder');
-  assert(!(await page.locator('#q-disciplina').textContent()).includes('Administração Geral'),'Administração Geral apareceu no novo edital');
-  await page.locator('#q-disciplina').selectOption({label:'Noções de Primeiros Socorros (8 tópicos)'});
-  assert.equal(await page.locator('#q-assunto option').count(),9,'Primeiros Socorros precisa de 8 assuntos e Todos');
-  assert((await page.locator('#q-catalog-status').textContent()).includes('163 tópicos'),'Contagem programática divergente');
-  await page.locator('#q-source').selectOption('catalogo');
-  assert(await page.locator('#q-board').isDisabled(),'Filtro de banca legado deve ser desativado no banco sem metadado confiável');
-  await page.locator('#q-source').selectOption('current');
-  assert(await page.locator('#q-board').isEnabled(),'Filtro de banca da geração não foi restaurado');
+
   const secret=page.locator('#account-password');
   assert.equal(await secret.getAttribute('type'),'password','Senha deve iniciar oculta');
   await secret.fill('Senha-de-auditoria-nao-real-123');
@@ -100,6 +91,16 @@ async function setup(page){
     window.beginStudies(false);
   });
   await page.locator('#tab-btn-questoes').click();
+  assert.equal(await page.locator('#q-source option[value="catalogo"]').count(),1,'Banco Praça PMDF ausente');
+  assert.equal(await page.locator('#q-disciplina option').count(),16,'Devem existir 15 disciplinas e placeholder');
+  assert(!(await page.locator('#q-disciplina').textContent()).includes('Administração Geral'),'Administração Geral apareceu no novo edital');
+  await page.locator('#q-disciplina').selectOption({label:'Noções de Primeiros Socorros (8 tópicos)'});
+  assert.equal(await page.locator('#q-assunto option').count(),9,'Primeiros Socorros precisa de 8 assuntos e Todos');
+  assert((await page.locator('#q-catalog-status').textContent()).includes('163 tópicos'),'Contagem programática divergente');
+  await page.locator('#q-source').selectOption('catalogo');
+  assert(await page.locator('#q-board').isDisabled(),'Filtro de banca legado deve ser desativado no banco sem metadado confiável');
+  await page.locator('#q-source').selectOption('current');
+  assert(await page.locator('#q-board').isEnabled(),'Filtro de banca da geração não foi restaurado');
   await page.locator('#q-engine-neural').click();
   await page.locator('#q-source').selectOption('current');
   await page.locator('#q-neural-target').selectOption('30');
