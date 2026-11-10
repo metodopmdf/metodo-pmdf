@@ -48,3 +48,9 @@ Quando aparecer `Could not find the table 'public.questoes' in the schema cache`
 3. Em **Questões > Banco Praça PMDF**, selecione disciplina, assunto, formato e nível; só registros `publicada=true` aparecem aos candidatos.
 
 Passo a passo para criar, importar e revisar questões: [Banco público de questões](docs/banco-de-questoes-publico.md). A publicação deve ser administrativa; rascunhos gerados por candidatos não são publicados automaticamente.
+
+## Questões do edital, por matéria e assunto — sem Supabase
+
+O seletor de **Fonte do conteúdo → Questões por matéria e assunto · acervo local** habilita 163 questões autorais de Certo/Errado (uma por tópico, nas 15 disciplinas), mais 21 de múltipla escolha. Questões comentadas podem ser praticadas no navegador sem tabela `public.questoes`; o motor local também pode elaborar variações a partir das afirmações fundamentadas, com limitações explícitas e sem garantir atualização normativa. O banco público Supabase continua em modo independente.
+
+Veja [matriz de cobertura, instruções e fontes](docs/acervo-questoes-edital-praca-pmdf.md).
