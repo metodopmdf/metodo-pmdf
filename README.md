@@ -38,3 +38,13 @@ O módulo **Questões** dispõe de 15 disciplinas e 163 assuntos definidos em `a
 **Para habilitar o banco no Supabase:** execute `supabase/migrations/20261109_catalogo_praca_pmdf.sql` no SQL Editor do seu projeto, após validar um backup. O catálogo funciona sem exigir questões pré-cadastradas, mas a consulta a questões classificadas requer a migração. Ela preserva o histórico antigo e as políticas RLS já existentes de `questoes`.
 
 Teste: `node tests/catalogo-praca.test.cjs`. Diagnóstico e testes: [QA Praça PMDF](docs/qa-praca-2026-11-09.md).
+
+## Banco público de questões (corrige PGRST205)
+
+Quando aparecer `Could not find the table 'public.questoes' in the schema cache`, a estrutura da API precisa ser instalada/atualizada no projeto Supabase, pois publicar o GitHub Pages não cria tabelas PostgreSQL.
+
+1. Faça backup e execute [`supabase/INSTALAR_BANCO_QUESTOES_COMPLETO.sql`](supabase/INSTALAR_BANCO_QUESTOES_COMPLETO.sql) no **SQL Editor** do projeto configurado no site. O script cria `public.questoes`, ativa RLS, instala o catálogo e recarrega o cache do PostgREST.
+2. Opcionalmente, execute [`supabase/seeds/EXEMPLOS_QUESTOES_PUBLICAS.sql`](supabase/seeds/EXEMPLOS_QUESTOES_PUBLICAS.sql) para testar quatro questões autorais publicadas (revisar antes).
+3. Em **Questões > Banco Praça PMDF**, selecione disciplina, assunto, formato e nível; só registros `publicada=true` aparecem aos candidatos.
+
+Passo a passo para criar, importar e revisar questões: [Banco público de questões](docs/banco-de-questoes-publico.md). A publicação deve ser administrativa; rascunhos gerados por candidatos não são publicados automaticamente.
