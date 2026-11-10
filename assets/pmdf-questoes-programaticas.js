@@ -9,7 +9,7 @@
  const catalog=root.PMDF_PRACA_CATALOG;
  const packs=new Map(), used=new Set();
  const norm=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
- const checkedUrl=url=>/^https:\/\/(?:www\d*\.)?(?:planalto\.gov\.br|gov\.br|www\.gov\.br|sinj\.df\.gov\.br|ibge\.gov\.br|bvsms\.saude\.gov\.br|portaldaobmep\.impa\.br|learnenglish\.britishcouncil\.org|scielo\.br|periodicos\.ufsc\.br|repositorio\.uniceub\.br)(?:\/|$)/i.test(String(url||'')) ? url : '';
+ const checkedUrl=url=>/^https:\/\/(?:www\d*\.)?(?:planalto\.gov\.br|gov\.br|www\.gov\.br|sinj\.df\.gov\.br|ibge\.gov\.br|bvsms\.saude\.gov\.br|portaldaobmep\.impa\.br|learnenglish\.britishcouncil\.org|scielo\.br|periodicos\.ufsc\.br|repositorio\.uniceub\.br|brasil\.un\.org|un\.org|ohchr\.org)(?:\/|$)/i.test(String(url||'')) ? url : '';
  function add(index, rows, source, multipleChoice=[]){
    if(!catalog)throw Error("Carregue o catálogo PMDF antes do banco autoral");
    const d=catalog.disciplinas[index-1];
