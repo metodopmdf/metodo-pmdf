@@ -3074,7 +3074,8 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         // Log granular separado para gráficos e histórico; sem inventar pontuação para questões sem gabarito.
         function recordQuestionResult(q,correct,seconds){
             if(!AUTH_USER||!q.answer)return;
-            const law=String(q.law||'Material').slice(0,100),topic=String(q.topic||'Geral').slice(0,100);
+            // Guarda o nome integral dos assuntos da matriz oficial; sem truncar rótulos longos.
+            const law=String(q.law||'Material').slice(0,180),topic=String(q.topic||'Geral').slice(0,512);
             const key=law+' • '+topic,secondsSafe=Math.min(86400,Math.round(seconds||0));
             const events=jget('pmdf:results:events',[]),old=Array.isArray(events)?events:[];
             let aggregate=jget('pmdf:results:aggregates',{});if(!aggregate||typeof aggregate!=='object'||Array.isArray(aggregate))aggregate={};
