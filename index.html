@@ -457,13 +457,26 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
                         <label class="text-xs text-[#E5C158] font-semibold">Fonte do conteúdo
-                            <select id="q-source" data-pmdf-onchange="refreshQuestionStudio()" class="qstudio-input mt-1 w-full"><option value="current">Documento / lei selecionada</option><option value="all">Todas as leis cadastradas</option><option value="imported">Provas anteriores importadas</option></select>
+                            <select id="q-source" data-pmdf-onchange="refreshQuestionStudio()" class="qstudio-input mt-1 w-full"><option value="current">Documento / lei selecionada</option><option value="all">Todas as leis cadastradas</option><option value="catalogo">Banco Praça PMDF (15 disciplinas)</option><option value="imported">Provas anteriores importadas</option></select>
                         </label>
                         <label class="qstudio-upload cursor-pointer text-sm font-bold text-center">
                             <i data-lucide="file-up" class="inline w-4 h-4 mr-1"></i> Enviar PDF / DOCX / TXT
                             <input type="file" accept=".pdf,.docx,.txt,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="hidden" data-pmdf-onchange="questionUploadFile(this)">
                         </label>
                     </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" aria-label="Catálogo programático de Praça PMDF">
+                        <label for="q-disciplina" class="text-xs text-[#E5C158] font-semibold">Disciplina do edital
+                            <select id="q-disciplina" class="qstudio-input block w-full mt-1" data-pmdf-onchange="onQuestaoDisciplinaChange()">
+                                <option value="">Selecione a disciplina</option>
+                            </select>
+                        </label>
+                        <label for="q-assunto" class="text-xs text-[#E5C158] font-semibold">Assunto / tópico
+                            <select id="q-assunto" class="qstudio-input block w-full mt-1" data-pmdf-onchange="onQuestaoAssuntoChange()" disabled>
+                                <option value="">Todos os assuntos</option>
+                            </select>
+                        </label>
+                    </div>
+                    <p id="q-catalog-status" class="text-xs text-slate-400" role="status" aria-live="polite">Carregando matriz do concurso de Praça PMDF...</p>
                     <details class="qstudio-paste">
                         <summary class="cursor-pointer text-xs font-semibold text-[#E5C158]">Ou colar diretamente uma lei / texto</summary>
                         <label class="text-xs text-slate-300 block mt-3">Título do conteúdo
@@ -677,10 +690,11 @@
     </footer>
 
 
+    <script defer src="assets/pmdf-catalogo-praca.js?v=20261109-praca-v1"></script>
     <script defer src="assets/pmdf-guides.js?v=20261104-arch-v2"></script>
     <script defer src="assets/pmdf-neural-questions.js?v=20261103-mix-flash-v5"></script>
     <script defer src="assets/pmdf-neural-flashcards.js?v=20261104-anki-quality-v4"></script>
-        <script defer src="assets/pmdf-app.js?v=20261104-arch-v4"></script>
+        <script defer src="assets/pmdf-app.js?v=20261109-praca-v1"></script>
 </body>
 </html>
 
