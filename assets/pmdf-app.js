@@ -1073,7 +1073,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         // O banco legado acima permanece íntegro; as quatro entradas ausentes
         // abaixo completam as 14 chaves exibidas na interface.
         // =====================================================================
-        const SUMMARY_FORMATS = ['full','bullets','table','mind','flash','traps'];
+        const SUMMARY_FORMATS = ['full','bullets','table','mind','flash','traps','visual'];
         let SOURCE_MODE = 'url';
         let SUMMARY_FORMAT = SUMMARY_FORMATS.includes(store.get('summaryFormat')) ? store.get('summaryFormat') : 'full';
         let LAW_FILE_NAME = '';
@@ -1728,7 +1728,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const S=g.executiveSummary||{}, X=g.structuralXRay||{}, A=g.articlesMapping||{}, T=g.trapsAndJurisprudence||{}, E=safeArray(g.essayRepertoire), rows=getVisibleArticleRows(g), done=studied(), eb=effBank();
             const wrap=(title,body)=>'<h2>'+title+'</h2>'+body;
             const concepts=safeArray(S.keyConcepts).slice(0,LEVEL==='iniciante'?4:99);
-            const intro='<div class="pmdf-report-heading"><div class="pmdf-report-emblem" aria-hidden="true">⚖</div><div class="pmdf-report-heading-copy"><span class="pmdf-report-kicker">MÉTODO PMDF · CADERNO ESTRATÉGICO</span><h1>'+esc(g.lawName)+'</h1><p>'+esc(({full:'Guia completo',bullets:'Resumo esquematizado',table:'Quadro sinótico',mind:'Mapa mental',flash:'Flashcards',traps:'Pegadinhas e questões'})[SUMMARY_FORMAT]||'Caderno de estudo')+' · Nível '+esc(LEVELS[LEVEL].label)+'</p></div></div><p class="g-banner">'+LEVELS[LEVEL].road+'</p>';
+            const intro='<div class="pmdf-report-heading"><div class="pmdf-report-emblem" aria-hidden="true">⚖</div><div class="pmdf-report-heading-copy"><span class="pmdf-report-kicker">MÉTODO PMDF · CADERNO ESTRATÉGICO</span><h1>'+esc(g.lawName)+'</h1><p>'+esc(({full:'Guia completo',bullets:'Resumo esquematizado',table:'Quadro sinótico',mind:'Mapa mental',flash:'Flashcards',traps:'Pegadinhas e questões',visual:'Resumo visual ilustrado'})[SUMMARY_FORMAT]||'Caderno de estudo')+' · Nível '+esc(LEVELS[LEVEL].label)+'</p></div></div><p class="g-banner">'+LEVELS[LEVEL].road+'</p>';
             const executive=LEVEL==='iniciante'?'<ol class="list-decimal pl-5">'+[S.centralObjective,...concepts.slice(0,3)].map(x=>'<li>'+esc(firstSentences(x,260))+'</li>').join('')+'</ol>':'<p>'+esc(S.centralObjective||'')+'</p><ul>'+concepts.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
             const glossary=LEVEL==='iniciante'?glossaryHtml(g):'';
             const articleCard=(a,i)=>{const tags=bankTags(a),hl=interactive&&((eb==='cebraspe'&&tags.c)||(eb==='fgv'&&tags.f));const id=(CUR.key||'x')+'|'+String(a.article).slice(0,40),noteKey='note:'+id,note=store.get(noteKey)||'';let noteId=-1;if(interactive)noteId=NOTE_IDS.push(noteKey)-1;
@@ -1736,7 +1736,9 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 return '<div class="g-card" data-incidence="'+a.incidence+'" style="'+(hl?'border-left:4px solid #D4AF37':'')+'">'+(hl?'<span class="g-tag">⭐ Afinidade temática com a banca (estimativa)</span>':'')+(tags.documented?'<span class="g-tag">📚 '+tags.documented+' referência(s) em provas importadas</span>':'')+'<p>'+checkbox+'<b>'+esc(a.article)+'</b> <span class="g-tag">'+a.incidence+' incidência</span></p><p>'+esc(a.plainExplanation)+'</p><p class="g-ex"><b>Aplicação:</b> '+esc(a.practicalExample)+'</p>'+(note?'<p class="g-ex"><b>📝 Nota:</b> '+esc(note)+'</p>':'')+(interactive?'<button class="no-print g-tag" data-pmdf-special="edit-note" data-pmdf-value="'+noteId+'">📝 Nota</button>':'')+'</div>';};
             const compareRows=rows.slice(0,8).map(a=>'<tr><td>'+esc(a.article)+'</td><td>'+esc(firstSentences(a.plainExplanation,230))+'</td><td>'+esc(uniq(a.plainExplanation.match(PRAZO)||[]).join('; ')||'Não identificado no trecho')+'</td><td>'+esc(uniq(a.plainExplanation.match(RESTR)||[]).join('; ')||'Não identificado no trecho')+'</td></tr>').join('');
             let body='';
-            if(SUMMARY_FORMAT==='full'){
+            if(SUMMARY_FORMAT==='visual'){
+                body=window.PMDFVisualEngine?window.PMDFVisualEngine.render(g):'<p>O módulo visual não foi carregado. Atualize a página.</p>';
+            }else if(SUMMARY_FORMAT==='full'){
                 const sec=(title,arr)=>safeArray(arr).length?'<h3>'+title+'</h3>'+safeArray(arr).map(x=>'<div class="g-card"><b>'+esc(x.title)+'</b><p>'+esc(x.reason)+'</p></div>').join(''):'';
                 body=wrap('1. Resumo Executivo',executive+glossary)+wrap('2. Raio-X Estrutural',sec('Prioridade Máxima',X.highPriority)+sec('Prioridade Secundária',X.secondaryPriority)+(LEVEL==='iniciante'?'':sec('Zonas de menor incidência',X.deadZones)))+wrap('3. Mapeamento de Dispositivos',rows.map(articleCard).join(''));
                 if(LEVEL==='intermediario')body+=wrap('4. Comparativos — Distinções de Prova','<p class="text-xs">Comparação automática dos dispositivos efetivamente identificados no material. Confira o texto integral para validar eventuais distinções.</p><div style="overflow-x:auto"><table><thead><tr><th>Dispositivo</th><th>Regra central</th><th>Prazos/quantitativos</th><th>Termos restritivos</th></tr></thead><tbody>'+compareRows+'</tbody></table></div>');
@@ -1911,7 +1913,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     }
                 } catch (e) { /* Fonte inválida não interrompe o estudo. */ }
             }
-            $('current-doc-title').textContent='Método PMDF — '+g.lawName+' · '+LEVELS[LEVEL].label+' · '+({full:'Por Extenso',bullets:'Esquematizado',table:'Quadro Sinótico',mind:'Mapa Mental',flash:'Flashcards',traps:'Pegadinhas'}[SUMMARY_FORMAT]);
+            $('current-doc-title').textContent='Método PMDF — '+g.lawName+' · '+LEVELS[LEVEL].label+' · '+({full:'Por Extenso',bullets:'Esquematizado',table:'Quadro Sinótico',mind:'Mapa Mental',flash:'Flashcards',traps:'Pegadinhas',visual:'Visual Ilustrado'}[SUMMARY_FORMAT]);
             ['summary-format-config','summary-format-toolbar'].forEach(id=>{if($(id))$(id).value=SUMMARY_FORMAT;});
             updateProgress();applyCloze();
             if(window.lucide)lucide.createIcons();
