@@ -46,6 +46,7 @@
     <!-- Arquitetura modular: folhas de estilo externas com a mesma ordem de cascata. -->
     <link rel="stylesheet" href="assets/pmdf-tailwind.css?v=20261104-arch-v1">
     <link rel="stylesheet" href="assets/pmdf-components.css?v=20261104-arch-v8">
+    <link rel="stylesheet" href="assets/pmdf-visual.css?v=20261115-v1">
 </head>
 <body class="landing-active min-h-screen flex flex-col font-sans antialiased selection:bg-[#D4AF37] selection:text-[#050B16]">
 <a href="#pmdf-main-content" class="pmdf-skip-link">Ir para o conteúdo principal</a>
@@ -368,7 +369,7 @@
                 <div class="pmdf-param-summary md:col-span-12">
                     <label for="summary-format-config" class="block text-xs font-semibold uppercase tracking-wider text-[#E5C158] mb-1.5">Modelo de Resumo</label>
                     <select id="summary-format-config" data-pmdf-onchange="setSummaryFormat(this.value)" class="w-full px-3.5 py-2.5 bg-[#040912] border border-[#1E2E4F] rounded-xl text-sm text-white focus:outline-none focus:border-[#D4AF37]">
-                        <option value="full">📖 Por Extenso (Guia Completo)</option><option value="bullets">⚡ Resumo Esquematizado (Direto ao Ponto)</option><option value="table">📊 Quadro Sinótico (Tabela Comparativa)</option><option value="mind">🌳 Mapa Mental Estruturado</option><option value="flash">🃏 Flashcards de Estudo Ativo</option><option value="traps">🎯 Fichamento de Pegadinhas &amp; Questões</option>
+                        <option value="full">📖 Por Extenso (Guia Completo)</option><option value="bullets">⚡ Resumo Esquematizado (Direto ao Ponto)</option><option value="table">📊 Quadro Sinótico (Tabela Comparativa)</option><option value="mind">🌳 Mapa Mental Estruturado</option><option value="flash">🃏 Flashcards de Estudo Ativo</option><option value="traps">🎯 Fichamento de Pegadinhas &amp; Questões</option><option value="visual">🎨 Resumo Visual Ilustrado (local)</option>
                     </select>
                 </div>
 
@@ -427,7 +428,7 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
-                <label class="text-xs text-slate-300 flex items-center gap-2">Formato de resumo <select id="summary-format-toolbar" data-pmdf-onchange="setSummaryFormat(this.value)" class="max-w-[230px] px-2.5 py-2 rounded-xl bg-[#040912] border border-[#1E2E4F] text-xs text-white"><option value="full">📖 Por Extenso</option><option value="bullets">⚡ Esquematizado</option><option value="table">📊 Quadro Sinótico</option><option value="mind">🌳 Mapa Mental</option><option value="flash">🃏 Flashcards</option><option value="traps">🎯 Pegadinhas &amp; Questões</option></select></label>
+                <label class="text-xs text-slate-300 flex items-center gap-2">Formato de resumo <select id="summary-format-toolbar" data-pmdf-onchange="setSummaryFormat(this.value)" class="max-w-[230px] px-2.5 py-2 rounded-xl bg-[#040912] border border-[#1E2E4F] text-xs text-white"><option value="full">📖 Por Extenso</option><option value="bullets">⚡ Esquematizado</option><option value="table">📊 Quadro Sinótico</option><option value="mind">🌳 Mapa Mental</option><option value="flash">🃏 Flashcards</option><option value="traps">🎯 Pegadinhas &amp; Questões</option><option value="visual">🎨 Visual Ilustrado</option></select></label>
             </div>
         </div>
 
@@ -696,7 +697,8 @@
     <script defer src="assets/pmdf-guides.js?v=20261104-arch-v2"></script>
     <script defer src="assets/pmdf-neural-questions.js?v=20261110-banco-v1"></script>
     <script defer src="assets/pmdf-neural-flashcards.js?v=20261104-anki-quality-v4"></script>
-        <script defer src="assets/pmdf-app.js?v=20261110-editorial-v3"></script>
+        <script defer src="assets/pmdf-visual-engine.js?v=20261115-v1"></script>
+        <script defer src="assets/pmdf-app.js?v=20261115-visual-v1"></script>
 </body>
 </html>
 
