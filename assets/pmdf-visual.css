@@ -1,0 +1,24 @@
+/* Resumo visual ilustrado — isolamento de estilos, A4 e mobile */
+.pmdf-visual-report{--ink:#263341;--gold:#d5ad53;--paper:#fffdf7;color:var(--ink);font-family:Inter,Arial,sans-serif;max-width:1040px;margin:auto}
+.pmdf-visual-cover{background:#47201b;color:#fff9e7;border-radius:18px;padding:30px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.pmdf-visual-kicker{font-size:11px;font-weight:800;letter-spacing:.12em;color:#f5d48b}
+.pmdf-visual-cover h2{font-size:clamp(22px,4vw,38px);line-height:1.15;margin:12px 0;font-weight:900;color:white}
+.pmdf-visual-cover p{font-size:13px;color:#f1dfcb}
+.pmdf-visual-cover-icon{font-size:65px}
+.pmdf-visual-disclaimer{font-size:12px;line-height:1.5;padding:15px 0;color:inherit}
+.pmdf-visual-card{background:var(--paper);color:var(--ink);border:1px solid #e6dfd2;border-radius:17px;padding:22px;margin:0 0 22px;break-inside:avoid;page-break-inside:avoid}
+.pmdf-visual-article{display:inline-block;background:#6a682e;color:white;font-weight:900;font-size:20px;padding:9px 21px;border-radius:7px;max-width:100%;overflow-wrap:anywhere}
+.pmdf-visual-card:nth-of-type(3n) .pmdf-visual-article{background:#ae5e3b}
+.pmdf-visual-card-grid{display:grid;grid-template-columns:180px minmax(0,1fr);gap:24px;align-items:center;margin:15px 0}
+.pmdf-visual-art{background:#f4eee2;border-radius:14px;display:grid;place-items:center;padding:10px}
+.pmdf-visual-art svg{width:100%;max-width:175px;height:auto}
+.pmdf-visual-main h3{font-size:18px;font-weight:900;margin:0 0 8px;color:#352c28}
+.pmdf-visual-main p,.pmdf-visual-facts p{font-size:14px;line-height:1.65;overflow-wrap:anywhere;white-space:normal}
+.pmdf-visual-main details{font-size:12px;margin-top:12px}.pmdf-visual-main summary{cursor:pointer;font-weight:700}
+.pmdf-visual-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.pmdf-visual-facts>div{background:#eaf5ee;border-radius:10px;padding:13px}
+.pmdf-visual-facts>div:nth-child(even){background:#fff0c4}
+.pmdf-visual-facts b{font-size:12px;color:#2c513d}.pmdf-visual-facts p{margin:5px 0 0}
+.pmdf-visual-source,.pmdf-visual-footer{display:block;margin-top:15px;font-size:11px;color:#69717c}
+@media(max-width:620px){.pmdf-visual-cover{padding:18px}.pmdf-visual-cover-icon{font-size:35px}.pmdf-visual-card{padding:13px}.pmdf-visual-card-grid{grid-template-columns:1fr;gap:10px}.pmdf-visual-art svg{max-width:115px}.pmdf-visual-main p{font-size:13px}}
+@media print{@page{size:A4;margin:13mm}.pmdf-visual-report{max-width:none!important}.pmdf-visual-card{break-inside:avoid;box-shadow:none!important}.pmdf-visual-cover,.pmdf-visual-article,.pmdf-visual-facts>div,.pmdf-visual-art{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
