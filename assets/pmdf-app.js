@@ -898,7 +898,7 @@ const CLOZE_RE = /(\d+\s*(?:dias|dia|anos|ano|meses|mês|horas|hora)|\d+\/\d+|(?
             const extraPrintCss=SUMMARY_FORMAT==='visual'
                 ?'assets/pmdf-visual.css?v=20261115-editorial-v3'
                 :SUMMARY_FORMAT==='cloze'?'assets/pmdf-cloze-strategic.css?v=20261116-cloze-v3'
-                :(SUMMARY_FORMAT==='full'||SUMMARY_FORMAT==='bullets')?'assets/pmdf-summary-editorial.css?v=20261116-editorial-v1':'';
+                :(SUMMARY_FORMAT==='full'||SUMMARY_FORMAT==='bullets'||SUMMARY_FORMAT==='flash')?'assets/pmdf-summary-editorial.css?v=20261116-editorial-v2':'';
             const visualPrintStyle=extraPrintCss
                 ?'<link id="visual-print-style" rel="stylesheet" href="'+esc(new URL(extraPrintCss,document.baseURI).href)+'">'
                 :'';
