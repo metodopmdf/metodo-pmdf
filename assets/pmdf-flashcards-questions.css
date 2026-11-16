@@ -1,0 +1,102 @@
+/* Método PMDF · Perguntas de revisão no estilo editorial de cartões físicos.
+   Design original, sem reproduzir marcas ou artes de terceiros. */
+body #tab-anki #anki-panel .anki-visual-card.anki-visual-card-qa{
+ grid-template-columns:minmax(110px,148px) minmax(0,1fr)!important;
+ background:#fff!important;border:2px solid #d9e2e9!important;
+ box-shadow:0 9px 22px rgba(19,47,71,.07)!important;
+}
+body #tab-anki #anki-panel .anki-visual-card-qa .anki-visual-aside{
+ position:relative;background:#f4f7f8!important;
+ border-right:1px solid #dce5ec!important;
+ padding:20px 12px!important;gap:7px!important;
+}
+body #tab-anki #anki-panel .anki-visual-card-qa .anki-visual-aside::before{
+ content:"?";display:block;color:#18385d!important;
+ font-family:Georgia,serif;font-size:clamp(36px,4vw,52px)!important;
+ font-weight:900!important;line-height:1!important;
+ margin-bottom:3px;
+}
+body #tab-anki #anki-panel .anki-visual-card-qa .anki-visual-illustration{
+ width:94px!important;height:99px!important;max-width:100%!important;
+ background:#fff!important;box-shadow:none!important;
+}
+body #tab-anki #anki-panel .anki-visual-card-qa .anki-visual-illustration svg{
+ width:82px!important;max-height:87px!important;
+}
+body #tab-anki #anki-panel .anki-visual-card-qa .anki-visual-art-caption,
+body #tab-anki #anki-panel .anki-visual-card-qa .anki-visual-art-subtitle{
+ font-size:11px!important;line-height:1.5!important;
+ color:#435c70!important;
+}
+body #tab-anki #anki-panel .anki-visual-card-qa .anki-visual-body-wrap{
+ border-left:4px solid #21476d!important;background:#fff!important;
+ padding:clamp(22px,3vw,42px)!important;min-height:240px!important;
+ display:flex!important;justify-content:center!important;
+}
+body #tab-anki #anki-panel .anki-visual-card-qa .anki-kicker{
+ color:#1d6070!important;font-size:11px!important;font-weight:850!important;
+ letter-spacing:.1em!important;text-align:center!important;
+ margin:0 0 18px!important;
+}
+body #tab-anki #anki-panel .anki-visual-card-qa:not(.anki-visual-is-answer) .anki-question{
+ color:#172f50!important;font-weight:850!important;
+ font-size:clamp(19px,2.4vw,27px)!important;line-height:1.48!important;
+ text-align:center!important;text-transform:uppercase!important;
+ letter-spacing:.006em!important;hyphens:auto;overflow-wrap:anywhere;
+ padding:5px 0!important;margin:0!important;
+}
+body #tab-anki #anki-panel .anki-visual-card-qa .anki-study-surface{
+ max-width:820px!important;width:100%!important;margin:auto!important;
+}
+body #tab-anki #anki-panel .anki-visual-card-qa:not(.anki-visual-is-answer) .anki-hint,
+body #tab-anki #anki-panel .anki-visual-card-qa:not(.anki-visual-is-answer) .anki-card-hint{
+ color:#546e81!important;font-size:12px!important;
+ text-align:center!important;margin-top:17px!important;
+}
+body #tab-anki #anki-panel .anki-visual-card-qa.anki-visual-is-answer .anki-study-surface .anki-question{
+ text-transform:none!important;text-align:left!important;font-size:clamp(18px,2.1vw,24px)!important;
+}
+body #tab-anki #anki-panel .anki-visual-card-qa.anki-visual-is-answer .anki-short-answer{
+ color:#165f52!important;line-height:1.62!important;
+}
+body #tab-anki #anki-panel .anki-visual-card-qa.anki-visual-is-answer .anki-kicker{
+ text-align:left!important;
+}
+body #tab-anki #anki-panel .anki-visual-card-qa .anki-proof{
+ border-top:1px solid #d7e3ea!important;margin-top:24px!important;padding-top:17px!important;
+}
+body #tab-anki #anki-panel .anki-visual-card-qa .anki-visual-body-wrap .anki-proof p{
+ color:#304c60!important;font-size:13px!important;line-height:1.7!important;
+}
+@media(max-width:760px){
+ body #tab-anki #anki-panel .anki-visual-card.anki-visual-card-qa{
+  grid-template-columns:minmax(0,1fr)!important;
+ }
+ body #tab-anki #anki-panel .anki-visual-card-qa .anki-visual-aside{
+  padding:12px 17px!important;flex-direction:row!important;
+  text-align:left!important;justify-content:flex-start!important;
+  border-right:0!important;border-bottom:1px solid #d9e4eb!important;
+ }
+ body #tab-anki #anki-panel .anki-visual-card-qa .anki-visual-aside::before{
+  font-size:33px!important;margin:0 5px 0 0!important;
+ }
+ body #tab-anki #anki-panel .anki-visual-card-qa .anki-visual-illustration{
+  width:67px!important;height:70px!important;flex:none!important;padding:4px!important;
+ }
+ body #tab-anki #anki-panel .anki-visual-card-qa .anki-visual-illustration svg{
+  width:59px!important;max-height:60px!important;
+ }
+ body #tab-anki #anki-panel .anki-visual-card-qa .anki-visual-body-wrap{
+  min-height:190px!important;padding:20px!important;border-left:0!important;
+  border-top:3px solid #21476d!important;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ body #tab-anki #anki-panel .anki-visual-card-qa *{
+  animation:none!important;transition:none!important;
+ }
+}
+@media print{
+ body #tab-anki #anki-panel .anki-visual-card-qa{box-shadow:none!important;}
+ body #tab-anki #anki-panel .anki-visual-card-qa .anki-visual-body-wrap{break-inside:avoid!important;}
+}
