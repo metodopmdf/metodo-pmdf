@@ -711,12 +711,19 @@
         </section>
         <section id="tab-anki" role="tabpanel" aria-labelledby="tab-btn-anki" class="hidden space-y-5" aria-label="Flashcards com repetição espaçada">
             <div class="anki-visual-config bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
-                <header class="anki-visual-intro"><div class="anki-visual-intro-content"><span class="anki-visual-intro-kicker">✦ MÉTODO PMDF · MEMORIZAÇÃO ESTRATÉGICA</span><h2>Flashcards <em>Ilustrados</em></h2><p>Aprendizagem ativa com ilustrações temáticas, lacunas, conceitos e distinções. Revele a resposta, consulte o fundamento e avalie sua lembrança pela repetição espaçada.</p><div class="anki-visual-intro-pills"><span>Visual editorial</span><span>Revisão Leitner</span><span>100% local</span></div></div><div class="anki-visual-intro-mark" aria-hidden="true">✦</div></header>
+                <header class="anki-visual-intro"><div class="anki-visual-intro-content"><span class="anki-visual-intro-kicker">✦ MÉTODO PMDF · MEMORIZAÇÃO ESTRATÉGICA</span><h2>Flashcards <em>Ilustrados</em></h2><p>Perguntas de revisão sobre conceitos, diferenças, competências, requisitos e exceções, criadas a partir das leis e materiais escolhidos. Revele a resposta, consulte o fundamento e avalie sua lembrança pela repetição espaçada.</p><div class="anki-visual-intro-pills"><span>Visual editorial</span><span>Revisão Leitner</span><span>100% local</span></div></div><div class="anki-visual-intro-mark" aria-hidden="true">✦</div></header>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <label class="text-xs text-[#E5C158] font-semibold">Elaboração dos cartões
                         <select id="anki-generation-mode" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]">
-                          <option value="advanced" selected>Anki avançado · lacunas e conceitos</option>
+                          <option value="advanced" selected>Motor local · perguntas estratégicas</option>
                           <option value="classic">Gerador clássico (compatibilidade)</option>
+                        </select>
+                    </label>
+                    <label class="text-xs text-[#E5C158] font-semibold">Formato dos flashcards
+                        <select id="anki-card-style" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]">
+                            <option value="questions" selected>Perguntas elaboradas · padrão</option>
+                            <option value="mixed">Misto · perguntas + lacunas</option>
+                            <option value="cloze">Lacunas contextualizadas</option>
                         </select>
                     </label>
                     <label class="text-xs text-[#E5C158] font-semibold">Material / lei
@@ -733,10 +740,10 @@
                     <button type="button" data-pmdf-onclick="clearAnkiFilters()" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">↺ Limpar filtros</button>
                     <button type="button" id="anki-export-csv" data-pmdf-onclick="exportAnkiCards('csv')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Exportar CSV (Anki)</button>
                     <button type="button" id="anki-export-tsv" data-pmdf-onclick="exportAnkiCards('tsv')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Exportar TSV</button>
-                    <button type="button" id="anki-export-cloze" data-pmdf-onclick="exportAnkiDeck('cloze')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Anki · Lacunas (.txt)</button>
+                    <button type="button" id="anki-export-cloze" data-pmdf-onclick="exportAnkiDeck('cloze')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Anki · Lacunas (.txt, se houver)</button>
                     <button type="button" id="anki-export-basic" data-pmdf-onclick="exportAnkiDeck('basic')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Anki · Conceitos/Contrastes (.txt)</button>
                 </div>
-                <p class="text-xs text-slate-400">Padrão Anki: cada cartão testa um detalhe verificável; o texto-base fica separado da frente. Exportações específicas preservam notas Cloze e Basic. O tamanho da sessão não limita o banco. Revisão Leitner adaptada (não FSRS); motor local sem IA generativa externa ou validação automática da vigência normativa.</p>
+                <p class="text-xs text-slate-400">Revisão com perguntas e respostas rastreáveis. A rede neural local ajuda a classificar a dificuldade; a elaboração utiliza regras semânticas, sem modelo generativo de linguagem. Também é possível estudar por lacunas. O tamanho da sessão não limita o banco. Revisão Leitner adaptada (não FSRS). Confira a norma vigente.</p>
                 <p id="anki-generation-status" class="text-xs text-[#E5C158]" role="status" aria-live="polite"></p>
                 <details id="anki-coverage-details" class="rounded-xl border border-[#334155] p-3">
                    <summary class="text-xs font-bold text-[#E5C158] cursor-pointer">Relatório de cobertura e modalidades</summary>
@@ -833,6 +840,7 @@
     <script defer src="assets/pmdf-guides.js?v=20261104-arch-v2"></script>
     <script defer src="assets/pmdf-neural-questions.js?v=20261110-banco-v1"></script>
     <script defer src="assets/pmdf-neural-flashcards.js?v=20261104-anki-quality-v4"></script>
+    <script defer src="assets/pmdf-flashcards-perguntas.js?v=20261116-qa-v1"></script>
         <script defer src="assets/pmdf-visual-engine.js?v=20261115-editorial-v4"></script>
         <script defer src="assets/pmdf-app.js?v=20261115-flash-v3"></script>
 </body>
