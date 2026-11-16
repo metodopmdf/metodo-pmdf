@@ -185,6 +185,7 @@
       }
     </style>
     <link rel="stylesheet" href="assets/pmdf-flashcards-questions.css?v=20261116-qa-v1">
+    <link rel="stylesheet" href="assets/pmdf-cloze-strategic.css?v=20261116-cloze-v2">
 </head>
 <body class="landing-active min-h-screen flex flex-col font-sans antialiased selection:bg-[#D4AF37] selection:text-[#050B16]">
 <a href="#pmdf-main-content" class="pmdf-skip-link">Ir para o conteúdo principal</a>
@@ -202,7 +203,7 @@
                     </svg></div>
    <span class="welcome-kicker">PLATAFORMA GRATUITA DE PREPARAÇÃO POLICIAL</span>
    <h1 class="welcome-heading">MÉTODO <span>PMDF</span></h1>
-   <p class="welcome-lead">Mapeamento estratégico de normas, simulados comentados, flashcards e redações. Seu progresso é sincronizado com sua conta online.</p>
+   <p class="welcome-lead">Estude legislação policial com resumos, lacunas estratégicas, flashcards e correção de redações.</p>
    <form id="account-form" data-pmdf-onsubmit="submitAccount(event)" class="space-y-3 rounded-2xl p-4 border border-[#D4AF37]/40 bg-[#0A1426] text-left" autocomplete="on">
      <h2 id="account-title" class="text-[#E5C158] text-lg font-bold">Acessar meus estudos</h2>
      <label class="block text-slate-300 text-xs font-semibold">Nome de usuário
@@ -230,7 +231,7 @@
      <button type="button" data-pmdf-onclick="toggleTheme()" class="welcome-secondary">☾ / ☀ Tema</button>
      <label class="welcome-secondary" style="display:grid;place-items:center;padding:10px 8px;border-radius:12px;font-weight:700;cursor:pointer">Importar backup<input type="file" accept=".json,application/json" class="hidden" data-pmdf-onchange="importProgress(this)" /></label>
    </div>
-   <div id="welcome-progress" class="welcome-progress" role="status" aria-live="polite"></div>
+   
    <p class="welcome-privacy">Ao entrar, seu histórico de estudos é sincronizado pelo Supabase e pode permanecer armazenado neste navegador. Não compartilhe sua senha. Não há recuperação automática de senha. Guarde sua credencial com segurança.</p>
   </div>
 </section>
@@ -309,7 +310,7 @@
                     <summary aria-label="Abrir opções da conta">◉ Conta <span aria-hidden="true">⌄</span></summary>
                     <div class="pmdf-account-popover">
                         <button type="button" data-pmdf-onclick="backToHome()" class="no-print px-3 py-2 bg-[#0E1B33] text-slate-100 border border-[#334155] rounded-xl text-xs font-bold">⌂ Início</button>
-                        <button type="button" data-pmdf-onclick="showTab('resultados');renderResults()" class="no-print px-3 py-2 bg-[#0E1B33] text-slate-100 border border-[#334155] rounded-xl text-xs font-bold">📊 Resultados</button>
+                        
                         <button type="button" data-pmdf-onclick="logoutAccount()" class="no-print px-3 py-2 bg-[#0E1B33] text-slate-100 border border-[#334155] rounded-xl text-xs font-bold">Sair</button>
                     </div>
                 </details>
@@ -326,7 +327,7 @@
             <button id="tab-btn-leis" role="tab" aria-controls="tab-leis" aria-selected="true" tabindex="0" data-pmdf-onclick="showTab('leis')" class="px-3 sm:px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="scale" class="w-4 h-4"></i><span class="hidden sm:inline">Mapeador de Leis</span><span class="sm:hidden">Leis</span></button>
             <button type="button" id="tab-btn-questoes" hidden inert aria-hidden="true" role="tab" aria-controls="tab-questoes" aria-selected="false" tabindex="-1" data-pmdf-onclick="showTab('questoes')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="list-checks" class="w-4 h-4"></i>Questões</button>
             <button type="button" id="tab-btn-anki" role="tab" aria-controls="tab-anki" aria-selected="false" tabindex="-1" data-pmdf-onclick="showTab('anki')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="layers" class="w-4 h-4"></i>Flashcards</button>
-            <button type="button" id="tab-btn-resultados" role="tab" aria-controls="tab-resultados" aria-selected="false" tabindex="-1" data-pmdf-onclick="showTab('resultados');renderResults()" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="chart-column" class="w-4 h-4"></i>Resultados</button>
+            <button type="button" id="tab-btn-resultados" hidden inert aria-hidden="true" role="tab" aria-controls="tab-resultados" aria-selected="false" tabindex="-1" data-pmdf-onclick="showTab('resultados');renderResults()" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="chart-column" class="w-4 h-4"></i>Resultados</button>
             <button id="tab-btn-redacao" role="tab" aria-controls="tab-redacao" aria-selected="false" tabindex="-1" data-pmdf-onclick="showTab('redacao')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="pen-line" class="w-4 h-4"></i><span class="sm:hidden">Redação</span><span class="hidden sm:inline">Corretor de Redação (Cebraspe)</span></button>
         </nav>
         <div id="pmdf-context-bar" class="pmdf-flow no-print" aria-label="Orientações para uso das ferramentas">
@@ -504,14 +505,7 @@
                     </div>
                     <p id="level-desc" class="text-xs text-slate-400 mt-1.5"></p>
                 </div>
-                <div class="pmdf-param-summary md:col-span-12">
-                    <label for="summary-format-config" class="block text-xs font-semibold uppercase tracking-wider text-[#E5C158] mb-1.5">Modelo de Resumo</label>
-                    <select id="summary-format-config" data-pmdf-onchange="setSummaryFormat(this.value)" class="w-full px-3.5 py-2.5 bg-[#040912] border border-[#1E2E4F] rounded-xl text-sm text-white focus:outline-none focus:border-[#D4AF37]">
-                        <option value="full">📖 Por Extenso (Guia Completo)</option><option value="bullets">⚡ Resumo Esquematizado (Direto ao Ponto)</option><option value="table">📊 Quadro Sinótico (Tabela Comparativa)</option><option value="mind">🌳 Mapa Mental Estruturado</option><option value="flash">🃏 Flashcards de Estudo Ativo</option><option value="visual">🎨 Resumo Visual Ilustrado (local)</option>
-                    </select>
-                </div>
-
-                <!-- Filtro opcional de Título/Capítulo -->
+                                <!-- Filtro opcional de Título/Capítulo -->
                 <div class="md:col-span-12">
                     <label for="filter-input" class="block text-xs font-medium text-slate-400 mb-1.5">
                         Recorte Específico (Opcional — deixe em branco para que o sistema faça a varredura da lei inteira e aponte os Títulos mais importantes)
@@ -566,7 +560,7 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
-                <label class="text-xs text-slate-300 flex items-center gap-2">Formato de resumo <select id="summary-format-toolbar" data-pmdf-onchange="setSummaryFormat(this.value)" class="max-w-[230px] px-2.5 py-2 rounded-xl bg-[#040912] border border-[#1E2E4F] text-xs text-white"><option value="full">📖 Por Extenso</option><option value="bullets">⚡ Esquematizado</option><option value="table">📊 Quadro Sinótico</option><option value="mind">🌳 Mapa Mental</option><option value="flash">🃏 Flashcards</option><option value="visual">🎨 Visual Ilustrado</option></select></label>
+                <label class="text-xs text-slate-300 flex items-center gap-2">Formato de resumo <select id="summary-format-toolbar" data-pmdf-onchange="setSummaryFormat(this.value)" class="max-w-[230px] px-2.5 py-2 rounded-xl bg-[#040912] border border-[#1E2E4F] text-xs text-white"><option value="full">📖 Por Extenso</option><option value="bullets">⚡ Esquematizado</option><option value="table">📊 Quadro Sinótico</option><option value="flash">🃏 Flashcards</option><option value="visual">🎨 Visual Ilustrado</option><option value="cloze">🧩 Lacunas Estratégicas</option></select></label>
             </div>
         </div>
 
@@ -754,7 +748,7 @@
             </div>
             <div id="anki-panel" class="anki-illustrated-panel bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 hidden" aria-live="polite"></div>
         </section>
-        <section id="tab-resultados" role="tabpanel" aria-labelledby="tab-btn-resultados" class="hidden space-y-5" aria-label="Resultados de estudos">
+        <section id="tab-resultados" hidden inert aria-hidden="true" role="tabpanel" aria-labelledby="tab-btn-resultados" class="hidden space-y-5" aria-label="Resultados de estudos">
           <div class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 space-y-4">
             <h2 class="font-bold text-white text-lg">📊 Meus resultados</h2>
             <p class="text-xs text-slate-400">Histórico privado sincronizado com sua conta, incluindo questões respondidas, acertos, erros, redações e tempo por tema. Itens sem gabarito não entram no percentual.</p>
@@ -842,6 +836,7 @@
     <script defer src="assets/pmdf-neural-questions.js?v=20261110-banco-v1"></script>
     <script defer src="assets/pmdf-neural-flashcards.js?v=20261104-anki-quality-v4"></script>
     <script defer src="assets/pmdf-flashcards-perguntas.js?v=20261116-classic-v4"></script>
+    <script defer src="assets/pmdf-cloze-strategic.js?v=20261116-cloze-v2"></script>
         <script defer src="assets/pmdf-visual-engine.js?v=20261115-editorial-v4"></script>
         <script defer src="assets/pmdf-app.js?v=20261116-classic-v3"></script>
 </body>
