@@ -14,7 +14,7 @@ const strip=s=>clean(s).replace(/[;,.\s]+$/,'');
 const bad=/\b(?:conferir|estudar|verificar|aprofundar|consultar)\b.{0,38}\b(?:lei|dispositivo|fonte|norma)|banca pode exigir|conforme dispositivos próprios|a norma prevê regras gerais/i;
 const modal=/\b(?:salvo|exceto|somente|apenas|exclusivamente|vedad[oa]|proibid[oa]|desde que|independe)\b/i;
 const days=/\b\d+(?:[.,]\d+)?\s*(?:dias?|meses?|anos?|horas?)\b/gi;
-const lexVerb='(?:é|são|consiste em|corresponde a|compreende|abrange|envolve|caracteriza-se por|considera-se|classifica-se como|configura|constitui)';
+const lexVerb='(?:é|são|consiste em|corresponde a|compreende|abrange|abrangem|envolve|envolvem|caracteriza-se por|caracterizam-se por|considera-se|consideram-se|classifica-se como|configura|configuram|constitui|constituem)';
 function topic(ref){
  const x=clean(ref),m=x.match(/[—–:]\s*(.+)$/);
  return m?strip(m[1]).slice(0,85):(/^(?:Art(?:s)?\.?\s*[\dº°, a-z]+|Tópico \d+)$/i.test(x)?'':strip(x).slice(0,85));
@@ -104,8 +104,8 @@ function processUnit(ctx,row,unit){
  const compared=sentence.match(/^(.{8,145}?)\s+(?:enquanto|ao passo que)\s+(.{8,180})[.!]?$/i);
  if(compared){
   const a=strip(compared[1]),b=strip(compared[2]);
-  const nameA=a.match(/^((?:a|o|as|os)\s+[\p{L}\s-]{4,66}?)\s+(?:é|são|ocorre|tem|possui|envolve|atribui|distribui)\b/iu);
-  const nameB=b.match(/^((?:a|o|as|os)\s+[\p{L}\s-]{4,66}?)\s+(?:é|são|ocorre|tem|possui|envolve|atribui|distribui)\b/iu);
+  const nameA=a.match(/^((?:a|o|as|os)\s+[\p{L}\s-]{4,66}?)\s+(?:é|são|ocorre|tem|possui|envolve|atribui|distribui|transfere)\b/iu);
+  const nameB=b.match(/^((?:a|o|as|os)\s+[\p{L}\s-]{4,66}?)\s+(?:é|são|ocorre|tem|possui|envolve|atribui|distribui|transfere)\b/iu);
   if(nameA&&nameB&&a.length+b.length<=255)
    add('Qual é a diferença entre '+strip(nameA[1])+' e '+strip(nameB[1])+'?',
        a+'; '+b,'Distinção',a,'Compare as duas proposições sem inverter seus efeitos.');
@@ -120,8 +120,8 @@ function processUnit(ctx,row,unit){
    if(/^os membros\b|^os integrantes\b|^as integrantes\b|^as pessoas\b/i.test(subject))
      q='Como são classificados '+subject.toLowerCase()+'?';
    else if(/consiste em/.test(verb))q='Em que consiste '+subject.toLowerCase()+'?';
-   else if(/abrange|compreende|envolve/.test(verb))q='O que abrange '+subject.toLowerCase()+'?';
-   else if(/constitui|configura|caracteriza/.test(verb))q='O que caracteriza '+subject.toLowerCase()+'?';
+   else if(/abrange|abrangem|compreende|envolve|envolvem/.test(verb))q='O que abrange '+subject.toLowerCase()+'?';
+   else if(/constitui|constituem|configura|configuram|caracteriza/.test(verb))q='O que caracteriza '+subject.toLowerCase()+'?';
    else if(/sao|classifica-se/.test(verb))q='Como se definem '+subject.toLowerCase()+'?';
    else q='O que significa '+subject.toLowerCase()+'?';
    add(q,predicate,'Conceito',predicate,'Identifique o núcleo da definição e os qualificadores.');
