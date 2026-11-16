@@ -895,7 +895,12 @@ const CLOZE_RE = /(\d+\s*(?:dias|dia|anos|ano|meses|mês|horas|hora)|\d+\/\d+|(?
                 window.print();return;
             }
             const safeTitle=esc(name);
-            const visualPrintStyle=SUMMARY_FORMAT==='visual'?'<link id="visual-print-style" rel="stylesheet" href="'+esc(new URL('assets/pmdf-visual.css?v=20261115-editorial-v3',document.baseURI).href)+'">':'';
+            const extraPrintCss=SUMMARY_FORMAT==='visual'
+                ?'assets/pmdf-visual.css?v=20261115-editorial-v3'
+                :SUMMARY_FORMAT==='cloze'?'assets/pmdf-cloze-strategic.css?v=20261116-cloze-v3':'';
+            const visualPrintStyle=extraPrintCss
+                ?'<link id="visual-print-style" rel="stylesheet" href="'+esc(new URL(extraPrintCss,document.baseURI).href)+'">'
+                :'';
             preview.document.open();
             preview.document.write('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">'+
                 '<meta name="viewport" content="width=device-width,initial-scale=1">'+
