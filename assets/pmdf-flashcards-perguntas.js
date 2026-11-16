@@ -70,7 +70,11 @@ function push(ctx,row,unit,front,back,kind,anchor,detail=''){
   const label=strip(generic[1])
     .replace(/\(\s*Arts?\.?\s*[^)]*\)/gi,'').replace(/\s*[—–-]\s*Arts?\.?\s*\d+.*$/i,'').trim();
   const lc=label.toLowerCase();
-  if(/^(?:o\s+)?cpm\s+(?:possui|prevê)\s+\d+\s+penas?\s+principais/i.test(label))
+  if(/^aumenta-se a pena\b|^aumento de pena\b/i.test(label))
+    front='Quais circunstâncias justificam o aumento de pena previsto no material?';
+  else if(/^se resulta lesão corporal\b/i.test(label))
+    front='Quais são as consequências penais quando o crime resulta em lesão corporal grave ou morte?';
+  else if(/^(?:o\s+)?cpm\s+(?:possui|prevê)\s+\d+\s+penas?\s+principais/i.test(label))
     front='Quais são as penas principais previstas no Código Penal Militar?';
   else if(/^são\s+efeitos?\s+da\s+condenação/i.test(label))
     front='Quais são os efeitos da condenação?';
@@ -101,6 +105,7 @@ function push(ctx,row,unit,front,back,kind,anchor,detail=''){
  if(/^(?:o que significa|como se caracteriza|como se definem)\s+[^?]{0,120}\s+(?:não|é|são|ocorrem)\?/i.test(front))return false;
  if(/^qual é o alcance (?:d[ao]|das|dos) [^?]*\s(?:não|é|são|possui|traz)\?/i.test(front))return false;
  if(/^quais são\s+o\s+|^quais são são\b/i.test(front))return false;
+ if(/^quais características são atribuídas a\s+(?:em|no|na|ao)\s/i.test(front))return false;
  if(/(?:\s(?:não|é|são)\s|[;:])[^?]{0,115}\?/i.test(front)&&
     /^(?:qual é o alcance|como se caracteriza)\s/i.test(front))return false;
  front=front.replace(/:\?$/, '?');
