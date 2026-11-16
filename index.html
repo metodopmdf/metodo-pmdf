@@ -56,6 +56,7 @@
     <link rel="stylesheet" href="assets/pmdf-ux-audit-20261116.css?v=20261116-contrast-v3">
     <link rel="stylesheet" href="assets/pmdf-summary-editorial.css?v=20261116-editorial-v2">
     <link rel="stylesheet" href="assets/pmdf-ui-intermediate-20261116.css?v=20261116-intermediate-v2">
+    <link rel="stylesheet" href="assets/pmdf-acervo-interativo.css?v=20261116-acervo-v1">
 </head>
 <body class="landing-active min-h-screen flex flex-col font-sans antialiased selection:bg-[#D4AF37] selection:text-[#050B16]">
 <a href="#pmdf-main-content" class="pmdf-skip-link">Ir para o conteúdo principal</a>
@@ -195,6 +196,7 @@
         <nav class="pmdf-app-tabs no-print flex gap-1 sm:gap-2 border-b border-[#172642] overflow-x-auto whitespace-nowrap" role="tablist" aria-label="Ferramentas de estudo" data-pmdf-onkeydown="pmdfTabKeydown(event)">
             <button id="tab-btn-leis" role="tab" aria-controls="tab-leis" aria-selected="true" tabindex="0" data-pmdf-onclick="showTab('leis')" class="px-3 sm:px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="scale" class="w-4 h-4"></i><span class="hidden sm:inline">Mapeador de Leis</span><span class="sm:hidden">Leis</span></button>
             <button type="button" id="tab-btn-questoes" hidden inert aria-hidden="true" role="tab" aria-controls="tab-questoes" aria-selected="false" tabindex="-1" data-pmdf-onclick="showTab('questoes')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="list-checks" class="w-4 h-4"></i>Questões</button>
+            <button type="button" id="tab-btn-acervo" role="tab" aria-controls="tab-acervo" aria-selected="false" tabindex="-1" data-pmdf-onclick="showTab('acervo')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="book-open-check" class="w-4 h-4"></i>Banco de questões</button>
             <button type="button" id="tab-btn-anki" role="tab" aria-controls="tab-anki" aria-selected="false" tabindex="-1" data-pmdf-onclick="showTab('anki')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="layers" class="w-4 h-4"></i>Flashcards</button>
             <button type="button" id="tab-btn-resultados" hidden inert aria-hidden="true" role="tab" aria-controls="tab-resultados" aria-selected="false" tabindex="-1" data-pmdf-onclick="showTab('resultados');renderResults()" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="chart-column" class="w-4 h-4"></i>Resultados</button>
             <button id="tab-btn-redacao" role="tab" aria-controls="tab-redacao" aria-selected="false" tabindex="-1" data-pmdf-onclick="showTab('redacao')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="pen-line" class="w-4 h-4"></i><span class="sm:hidden">Redação</span><span class="hidden sm:inline">Corretor de Redação (Cebraspe)</span></button>
@@ -202,6 +204,7 @@
         <div id="pmdf-context-bar" class="pmdf-flow no-print" aria-label="Orientações para uso das ferramentas">
           <div id="pmdf-context-leis" class="pmdf-flow-copy"><strong>Como começar</strong><span>1 · Selecione uma lei ou arquivo · 2 · Ajuste as opções · 3 · Leia e revise</span></div>
           <div id="pmdf-context-questoes" class="pmdf-flow-copy hidden"><strong>Como começar</strong><span>1 · Escolha a fonte · 2 · Configure o simulado · 3 · Gere e responda</span></div>
+          <div id="pmdf-context-acervo" class="pmdf-flow-copy hidden"><strong>Banco de questões</strong><span>1 · Importe ou carregue o acervo · 2 · Responda · 3 · Veja o gráfico e a porcentagem</span></div>
           <div id="pmdf-context-anki" class="pmdf-flow-copy hidden"><strong>Como começar</strong><span>1 · Escolha a fonte · 2 · Gere os cartões · 3 · Revele e avalie</span></div>
           <div id="pmdf-context-resultados" class="pmdf-flow-copy hidden"><strong>Como começar</strong><span>Selecione um tema e acompanhe acertos, erros e tempo de estudo.</span></div>
           <div id="pmdf-context-redacao" class="pmdf-flow-copy hidden"><strong>Como começar</strong><span>1 · Informe o tema · 2 · Cole a redação · 3 · Corrija e leia o relatório</span></div>
@@ -440,6 +443,86 @@
 
         </div><!-- /tab-leis -->
 
+
+
+        <!-- Acervo importado: sistema separado do gerador oculto e dos flashcards -->
+        <section id="tab-acervo" role="tabpanel" aria-labelledby="tab-btn-acervo" class="hidden space-y-5" aria-label="Banco de questões interativo">
+          <div id="acervo-shell" class="space-y-4">
+            <header class="acervo-block acervo-top">
+              <div>
+                <p class="text-[11px] font-bold tracking-wider uppercase text-emerald-400">Método PMDF · Estudos e simulados</p>
+                <h2>Banco de questões interativo</h2>
+                <p class="acervo-subtitle">Resolva questões dos cadernos PDF de legislação policial, com correção pelo gabarito original, estatísticas de desempenho e acompanhamento de progresso.</p>
+              </div>
+              <label class="acervo-upload" id="acervo-import-label" for="acervo-file" title="Importar o pacote de questões sem modificar os enunciados">
+                <i data-lucide="file-up" class="w-4 h-4" aria-hidden="true"></i> Importar banco (.json.gz)
+                <input id="acervo-file" type="file" accept=".json,.gz,.json.gz,application/json,application/gzip" aria-label="Selecionar pacote de questões do Método PMDF">
+              </label>
+            </header>
+            <div class="acervo-block">
+              <p id="acervo-status" role="status" aria-live="polite">Preparando banco de questões...</p>
+              <p class="acervo-subtitle mt-2">As respostas são registradas neste dispositivo. A importação não altera o enunciado, as alternativas nem o gabarito fornecidos. Revise a vigência das normas e os gabaritos antes de uso avaliativo oficial.</p>
+            </div>
+            <section class="acervo-block" aria-label="Filtros das questões">
+              <div class="acervo-grid">
+                <label class="acervo-control" for="acervo-deck">Lei ou caderno
+                  <select id="acervo-deck" class="acervo-select"><option value="all">Todas as normas</option></select>
+                </label>
+                <label class="acervo-control" for="acervo-format">Modalidade
+                  <select id="acervo-format" class="acervo-select">
+                    <option value="all">Certo/Errado e Múltipla escolha</option>
+                    <option value="CE">Certo ou errado</option>
+                    <option value="MC">Múltipla escolha — 5 alternativas</option>
+                  </select>
+                </label>
+                <label class="acervo-control" for="acervo-difficulty">Dificuldade
+                  <select id="acervo-difficulty" class="acervo-select">
+                    <option value="all">Todas as dificuldades</option>
+                    <option value="Fácil">Fácil</option>
+                    <option value="Médio">Médio</option>
+                    <option value="Difícil">Difícil</option>
+                  </select>
+                </label>
+              </div>
+              <p id="acervo-total" class="acervo-hint mt-3">0 itens no filtro</p>
+              <div class="acervo-counters" aria-label="Estatísticas do filtro selecionado">
+                <div class="acervo-counter"><strong id="acervo-hits">0</strong><span>Acertos</span></div>
+                <div class="acervo-counter"><strong id="acervo-wrong">0</strong><span>Erros</span></div>
+                <div class="acervo-counter"><strong id="acervo-pct">0,0%</strong><span>Aproveitamento</span></div>
+                <div class="acervo-counter"><strong id="acervo-done">0 de 0 respondidas</strong><span>Questões resolvidas</span></div>
+              </div>
+              <div class="acervo-actions">
+                <button type="button" id="acervo-show-chart" class="acervo-btn acervo-primary">Ver resultado em gráfico de pizza</button>
+                <button type="button" id="acervo-reset" class="acervo-btn">Reiniciar respostas do filtro</button>
+              </div>
+              <div id="acervo-chart" class="acervo-block mt-4" hidden aria-label="Gráfico de resultados">
+                <div class="acervo-chart-wrap">
+                  <div id="acervo-pie" class="acervo-pie" aria-label="Gráfico circular de acertos e erros"></div>
+                  <div class="acervo-legend">
+                    <p class="green"><strong>●</strong> Verde — acertos</p>
+                    <p class="red"><strong>●</strong> Vermelho — erros</p>
+                    <p id="acervo-pie-summary">Ainda não há respostas registradas.</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+            <section class="acervo-block" aria-label="Resolver questão">
+              <div class="acervo-actions mb-3">
+                <strong id="acervo-counter" class="text-slate-200 text-sm">Nenhuma questão selecionada</strong>
+                <span class="text-xs text-slate-400">O gabarito é exibido após responder</span>
+              </div>
+              <progress id="acervo-progress" max="100" value="0" aria-label="Progresso de navegação no caderno"></progress>
+              <div id="acervo-question" class="mt-4" aria-live="polite"><p class="acervo-empty">Importe o banco para começar.</p></div>
+              <div class="acervo-actions mt-4">
+                <button type="button" id="acervo-prev" class="acervo-btn" disabled>← Anterior</button>
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" id="acervo-next-unseen" class="acervo-btn" disabled>Próxima não respondida</button>
+                  <button type="button" id="acervo-next" class="acervo-btn acervo-primary" disabled>Próxima →</button>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
 
         <section id="tab-questoes" hidden inert aria-hidden="true" role="tabpanel" aria-labelledby="tab-btn-questoes" class="hidden space-y-5" aria-label="Elaborador de questões">
             <div class="qstudio rounded-2xl p-5 sm:p-6 space-y-5 shadow-xl">
@@ -716,6 +799,7 @@
         <script defer src="assets/pmdf-visual-engine.js?v=20261115-editorial-v4"></script>
     <script defer src="assets/pmdf-summary-editorial.js?v=20261116-editorial-v2"></script>
         <script defer src="assets/pmdf-app.js?v=20261116-intermediate-v2"></script>
+    <script defer src="assets/pmdf-acervo-interativo.js?v=20261116-acervo-v1"></script>
 </body>
 </html>
 
