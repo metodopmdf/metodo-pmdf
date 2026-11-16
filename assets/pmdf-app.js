@@ -1910,7 +1910,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     }else if(/^(?:matar|causar|submeter|impedir|transferir|adotar|promover|praticar|associar-se|incitar)\b/i.test(source)){
                         question='Qual conduta ou hipótese é expressamente prevista em '+art+'?';
                         answer=source;
-                    }else if(topic!=='o conteúdo do dispositivo'&&topic.length>=10&&topic.length<=96){
+                    }else if(topic!=='o conteúdo do dispositivo'&&topic.length>=6&&topic.length<=96){
                         question='Quais elementos jurídicos o material descreve em '+topic+'?';
                         answer=source;
                     }
