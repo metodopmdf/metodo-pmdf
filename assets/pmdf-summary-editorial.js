@@ -41,7 +41,8 @@ function rows(g){
   if(!body&&!source)continue;
   const sig=norm(name+'|'+(source||body));if(seen.has(sig))continue;seen.add(sig);
   const tags=signals(name+' '+body+' '+source);
-  const axis=careerAxes.find(z=>z[1].test(name+' '+flat(g?.lawName||'')+' '+body));
+  const scope=name+' '+flat(g?.lawName||'')+' '+body;
+  const axis=careerAxes.find(z=>z[0]==='Direito Penal e Processual Militar'&&z[1].test(scope))||careerAxes.find(z=>z[1].test(scope));
   const score=(priority==='alta'?4:priority==='media'?2:0)+tags.length+
      tags.filter(v=>/Competência|Exceção|Prazo/.test(v[0])).length;
   out.push({name,body:body||source,source,example,sourceHeading:flat(x.sourceHeading),label,priority,tags,score,axis:axis?.[0]||'',order:out.length});
