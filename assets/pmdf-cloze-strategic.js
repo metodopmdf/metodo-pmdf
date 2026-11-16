@@ -11,7 +11,7 @@ const bad=/^(?:estudar|consultar|conferir|verificar|identificar)\b|(?:\bsegundo 
 const mk=(text,index,value,type,score)=>{
  if(index<0||!value)return null;
  const part=clean(value),n=part.split(/\s+/).length;
- if(part.length<8||part.length>135||n<2||n>25||!text.startsWith(value,index))return null;
+ if((part.length<8&&!/^\d+(?:[.,]\d+)?\s*(?:dias?|meses?|anos?|horas?)$/i.test(part))||part.length>135||n<2||n>25||!text.startsWith(value,index))return null;
  return {start:index,end:index+value.length,text:value,type,score};
 };
 function segments(text){
