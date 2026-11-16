@@ -2049,7 +2049,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         function pmdfFocusPrimary(){
             // O botão de salto deve funcionar mesmo após o usuário recolher
             // os painéis de parâmetros ou de entrada de texto.
-            const ids={leis:'generate-btn',questoes:'q-generate-button',anki:'anki-start',resultados:'results-topic',redacao:'essay-theme'};
+            const ids={leis:'generate-btn',questoes:'q-generate-button',acervo:'acervo-deck',anki:'anki-start',resultados:'results-topic',redacao:'essay-theme'};
             const el=$(ids[TAB]||'generate-btn');if(!el)return;
             for(let ancestor=el.parentElement;ancestor;ancestor=ancestor.parentElement){
                 if(ancestor.tagName==='DETAILS'&&!ancestor.open)ancestor.open=true;
@@ -2064,7 +2064,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             if(t==='questoes'||t==='resultados')t='leis';
             TAB = t;
             if(APP_STARTED&&!SESSION_RESTORING)saveStudySession();if(t==='resultados')setTimeout(renderResults,0);
-            ['leis', 'questoes', 'anki', 'redacao','resultados'].forEach(k => { $('tab-' + k).classList.toggle('hidden', k !== t);$('tab-btn-'+k).setAttribute('role','tab');$('tab-btn-'+k).setAttribute('aria-selected',String(k===t));
+            ['leis', 'questoes', 'acervo', 'anki', 'redacao','resultados'].forEach(k => { $('tab-' + k).classList.toggle('hidden', k !== t);$('tab-btn-'+k).setAttribute('role','tab');$('tab-btn-'+k).setAttribute('aria-selected',String(k===t));
                 $('tab-btn-'+k).setAttribute('tabindex',k===t?'0':'-1');
                 $('pmdf-context-'+k)?.classList.toggle('hidden',k!==t);
                 $('tab-btn-' + k).className = 'px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2 transition ' + (k === t ? 'bg-[#0A1426] text-[#E5C158] border-[#D4AF37]/40' : 'bg-[#040912] text-slate-400 border-[#172642] hover:text-slate-200'); });
@@ -3352,6 +3352,7 @@ const PMDF_EVENT_HANDLERS = Object.freeze({
 "showTab('resultados');renderResults()": function(event){ showTab('resultados');renderResults() },
 "showTab('leis')": function(event){ showTab('leis') },
 "showTab('questoes')": function(event){ showTab('questoes') },
+"showTab('acervo')": function(event){ showTab('acervo') },
 "showTab('anki')": function(event){ showTab('anki') },
 "showTab('redacao')": function(event){ showTab('redacao') },
 "pmdfFocusPrimary()": function(event){ pmdfFocusPrimary() },
