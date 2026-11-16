@@ -116,7 +116,7 @@ for(const level of ['iniciante','intermediario','avancado']){
         'Pegadinha autocontida sem explicação voltou: '+key);
       assert(!c.front.includes('…')&&!c.back.includes('…'),'Flashcard truncado: '+key);
       assert(['Regra principal','Prazo e quantidade','Proibição e requisito',
-        'Aplicação contextual','Comparação entre artigos'].includes(c.kind),'Tipo desconhecido: '+c.kind);
+        'Aplicação contextual','Comparação entre artigos','Conceito e requisito'].includes(c.kind),'Tipo desconhecido: '+c.kind);
       if(c.front.includes('_____')){cloze++;assert(c.back.includes('Expressão correta:'),
         'Cartão de lacuna sem resposta: '+key);}
     }
