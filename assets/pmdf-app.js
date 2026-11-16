@@ -1775,13 +1775,23 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     ?window.PMDFClozeStrategic.render(g,{level:LEVEL,interactive})
                     :'<p>O modo de lacunas não foi carregado. Atualize a página.</p>';
             }else if(SUMMARY_FORMAT==='flash'){
-                const cards=buildStudyCards(g), cardHtml=cards.slice(0,interactive?90:150).map((c,i)=>{
+                // O limite antigo de 90/150 cartões ocultava material válido. Todo o
+                // baralho permanece acessível, dividido em lotes recolhíveis de 24.
+                const cards=window.PMDFNeuralFlashcards?.build?.(g,{level:LEVEL,style:'mixed'})?.cards||buildStudyCards(g);
+                const batches=[];
+                for(let first=0;first<cards.length;first+=24){
+                  const cardHtml=cards.slice(first,first+24).map((c,local)=>{
+                    const i=first+local;
                     const art=window.PMDFVisualEngine?.illustration?.([c.kind,c.front,c.article].filter(Boolean).join(' ').slice(0,340),i)||'⚖';
                     const artwork='<span class="pmdf-flash-summary-art" aria-hidden="true">'+art+'</span>';
                     return interactive?'<button type="button" data-pmdf-onclick="flipStudyCard(this)" class="study-card pmdf-flash-summary-card text-left" data-card-id="'+esc(c.id)+'">'+artwork+'<span class="g-tag">Card '+(i+1)+' · '+esc(c.kind||'Regra')+' · Toque para virar</span><span class="front"><b>FRENTE</b><p>'+esc(c.front)+'</p></span><span class="back"><b>VERSO / FUNDAMENTO</b><p>'+esc(c.back)+'</p><span class="g-tag">Caixa Leitner: '+getCardBox(c.id).box+'</span></span></button>':
                         '<div class="g-card pmdf-flash-summary-card">'+artwork+'<b>Frente:</b><p>'+esc(c.front)+'</p><b>Verso:</b><p>'+esc(c.back)+'</p></div>';
-                }).join('');
-                body=wrap('Flashcards de Estudo Ativo','<p>Questões de recuperação ativa e lacunas com fundamento rastreável. Foram criados '+cards.length+' cartões; aqui aparecem os primeiros '+Math.min(cards.length,interactive?90:150)+'. Para revisar todos, use a aba Flashcards.</p>'+(interactive?'<div class="flex flex-wrap gap-2 no-print mb-3"><button data-pmdf-onclick="startLeitner()" class="'+BTN+'">▶ Iniciar sessão Leitner</button></div>':'')+'<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">'+cardHtml+'</div>');
+                  }).join('');
+                  batches.push('<details class="pmdf-flash-batch"'+(first===0?' open':'')+'><summary>Lote '+(Math.floor(first/24)+1)+' de '+Math.ceil(cards.length/24)+' · Cartões '+(first+1)+' a '+Math.min(cards.length,first+24)+'</summary><div class="pmdf-flash-batch-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">'+cardHtml+'</div></details>');
+                }
+                body=wrap('Flashcards de Estudo Ativo','<p>Revisão ativa com perguntas e lacunas. Os '+cards.length+' cartões disponíveis neste material estão distribuídos em '+batches.length+' lote(s) expansíveis. Abra cada lote para estudar todos os cartões; a aba Flashcards mantém a revisão espaçada.</p>'+
+                    (interactive?'<div class="flex flex-wrap gap-2 no-print mb-3"><button data-pmdf-onclick="startLeitner()" class="'+BTN+'">▶ Iniciar sessão Leitner</button></div>':'')+
+                    (batches.join('')||'<p>Não foram extraídos cartões seguros do material. Consulte o texto-base e os resumos completos.</p>'));
             }else{
                 const traps=safeArray(T.examTraps), questions=getCachedPool(g,boardFmt(),LEVEL).slice(0,20);
                 body=wrap('Fichamento de Pegadinhas & Questões',traps.map((t,i)=>'<div class="g-card"><b>Pegadinha '+(i+1)+'</b><p>'+esc(t)+'</p></div>').join('')+'<h3>Assertivas Certo/Errado comentadas</h3>'+questions.map((q,i)=>'<div class="g-card"><b>'+ (i+1)+'. '+esc(q.answer==='C'?'CERTO':'ERRADO')+'</b><p>'+esc(q.statement)+'</p><p class="g-ex">'+esc(q.explanation)+'</p></div>').join(''));
