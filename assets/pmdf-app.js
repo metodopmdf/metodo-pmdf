@@ -2009,10 +2009,17 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             buttons[n].click();buttons[n].focus();
         }
         function pmdfFocusPrimary(){
+            // O botão de salto deve funcionar mesmo após o usuário recolher
+            // os painéis de parâmetros ou de entrada de texto.
             const ids={leis:'generate-btn',questoes:'q-generate-button',anki:'anki-start',resultados:'results-topic',redacao:'essay-theme'};
             const el=$(ids[TAB]||'generate-btn');if(!el)return;
-            el.scrollIntoView({block:'center',behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?'auto':'smooth'});
-            el.focus({preventScroll:true});
+            for(let ancestor=el.parentElement;ancestor;ancestor=ancestor.parentElement){
+                if(ancestor.tagName==='DETAILS'&&!ancestor.open)ancestor.open=true;
+                if(ancestor===document.body)break;
+            }
+            const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+            el.scrollIntoView?.({block:'center',behavior:reduced?'auto':'smooth'});
+            el.focus?.({preventScroll:true});
         }
         function showTab(t) {
             // A aba de Questões está preservada internamente, mas indisponível nesta etapa.
