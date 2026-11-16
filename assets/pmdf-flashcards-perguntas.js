@@ -108,7 +108,10 @@ function push(ctx,row,unit,front,back,kind,anchor,detail=''){
  if(/^quais características são atribuídas a\s+(?:em|no|na|ao)\s/i.test(front))return false;
  if(/(?:\s(?:não|é|são)\s|[;:])[^?]{0,115}\?/i.test(front)&&
     /^(?:qual é o alcance|como se caracteriza)\s/i.test(front))return false;
- front=front.replace(/:\?$/, '?');
+ if(/^(?:o que significa|como se definem|como se caracteriza)\s+já\b|^em que consiste diferente\b/i.test(front))return false;
+ front=front.replace(/^Quais características são atribuídas a os\s+/i,'Quais são as características dos ')
+   .replace(/^Quais características são atribuídas a as\s+/i,'Quais são as características das ')
+   .replace(/:\?$/, '?');
  if(!front.endsWith('?'))front=front.replace(/[.:;, ]+$/,'')+'?';
  if(front.length<24||front.length>205||back.length<8||back.length>280)return false;
  if(/…|\.{3}|\b(?:undefined|null)\b/i.test(front+' '+back)||fold(front)===fold(back))return false;
