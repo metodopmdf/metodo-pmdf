@@ -2618,7 +2618,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                         cancelled:()=>token!==ANKI_GENERATION,
                         onProgress:(done,total,count)=>{if(token===ANKI_GENERATION)
                             status.textContent='Fonte '+(index+1)+'/'+guides.length+' · '+done+'/'+total+
-                            ' dispositivos · '+count+' cartões identificados';}});
+                            ' trechos · '+count+' cartões elaborados';}});
                     if(token!==ANKI_GENERATION||result.cancelled)return;
                     let deck=result.cards;
                     // Não ressuscitar cartões genéricos quando a fonte não contém fato testável.
@@ -2658,7 +2658,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 }else cards=cards.slice(0,limit);
                 ANKI_STATE={cards,index:0,seen:0,back:false,graded:null,correct:0,wrong:0,ratings:{}};
                 saveStudySession();$('anki-panel').classList.remove('hidden');
-                $('anki-status').textContent='Motor neural local · banco de '+bank.length+' cartões válidos · '+
+                $('anki-status').textContent='Motor local de revisão · banco de '+bank.length+' cartões verificáveis · '+
                     cards.length+' neste lote · '+available+' elegíveis para revisão.';
                 status.textContent='Cobertura: '+uniqueTopics+' tópicos · '+sourceUnits+
                     ' unidades processadas · '+bank.length+' cartões de revisão elaborados.';
@@ -2757,7 +2757,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     (c.modality?'<span>'+esc(c.modality)+'</span>':'')+
                     (c.difficulty?'<span>'+esc(c.difficulty)+'</span>':'')+'</div>'+
                 '<p class="anki-law">'+law+'</p></div>'+ 
-                '<div class="anki-visual-card '+(c.family==='question'?'anki-visual-card-qa':'')+'"><aside class="anki-visual-aside"><div class="anki-visual-illustration">'+art+'</div><span class="anki-visual-art-caption">'+name+'</span><span class="anki-visual-art-subtitle">'+article+'</span></aside><div class="anki-visual-body-wrap">'+
+                '<div class="anki-visual-card '+(c.family==='question'?'anki-visual-card-qa':'')+(s.back?' anki-visual-is-answer':'')+'"><aside class="anki-visual-aside"><div class="anki-visual-illustration">'+art+'</div><span class="anki-visual-art-caption">'+name+'</span><span class="anki-visual-art-subtitle">'+article+'</span></aside><div class="anki-visual-body-wrap">'+
                 '<div class="anki-study-surface"><p class="anki-kicker">'+focus+'</p>'+
                 (s.back?'<p class="anki-answer-caption">NÚCLEO DA RESPOSTA</p>':'')+
                 '<p class="anki-question '+(c.cloze?'anki-question-cloze':'')+'">'+
