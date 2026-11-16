@@ -73,7 +73,7 @@ body #printable-area .pmdf-report-cloze button.pmdf-cloze-gap{
  border:1px dashed #bd8e36!important;border-radius:8px!important;vertical-align:baseline!important;
  background:#fff0be!important;color:#765216!important;box-shadow:none!important;
  padding:6px 10px!important;margin:3px 2px!important;line-height:1.45!important;
- font:750 clamp(13px,1.5vw,16px)/1.45 inherit!important;text-align:center!important;
+ font-weight:750!important;font-size:clamp(13px,1.5vw,16px)!important;font-family:inherit!important;line-height:1.45!important;text-align:center!important;
  cursor:pointer;overflow-wrap:anywhere;white-space:normal!important;
  transition:background .15s ease,border-color .15s ease!important;
 }
