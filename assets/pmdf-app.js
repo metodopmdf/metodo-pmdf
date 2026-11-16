@@ -2936,7 +2936,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 ANKI_STATE=s.anki?.cards?.length?s.anki:null;
                 if(Q_STATE){$('q-panel').classList.remove('hidden');Q_STATE.questionStart=Date.now();if(Q_STATE.engine==='neural')setQuestionEngine('neural');if(Q_STATE.items.some(q=>q.origin==='official-import')){$('q-source').value='imported';$('q-format').value=Q_STATE.items[0]?.type==='CE'?'CE':'MC';}drawQuestions();}
                 if(ANKI_STATE){$('anki-panel').classList.remove('hidden');drawAnki();}
-                restoreEssayLastResult();showTab(['leis','anki','redacao','resultados'].includes(s.tab)?s.tab:'leis');
+                restoreEssayLastResult();showTab(['leis','acervo','anki','redacao','resultados'].includes(s.tab)?s.tab:'leis');
             }else{Q_STATE=null;ANKI_STATE=null;$('q-panel')?.classList.add('hidden');$('anki-panel')?.classList.add('hidden');showTab('leis');}
             SESSION_RESTORING=false;saveStudySession();showQuestionTotals();window.scrollTo(0,0);
         }

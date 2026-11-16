@@ -56,7 +56,7 @@
     <link rel="stylesheet" href="assets/pmdf-ux-audit-20261116.css?v=20261116-contrast-v3">
     <link rel="stylesheet" href="assets/pmdf-summary-editorial.css?v=20261116-editorial-v2">
     <link rel="stylesheet" href="assets/pmdf-ui-intermediate-20261116.css?v=20261116-intermediate-v2">
-    <link rel="stylesheet" href="assets/pmdf-acervo-interativo.css?v=20261116-acervo-v1">
+    <link rel="stylesheet" href="assets/pmdf-acervo-interativo.css?v=20261116-acervo-v2">
 </head>
 <body class="landing-active min-h-screen flex flex-col font-sans antialiased selection:bg-[#D4AF37] selection:text-[#050B16]">
 <a href="#pmdf-main-content" class="pmdf-skip-link">Ir para o conteúdo principal</a>
@@ -452,7 +452,7 @@
               <div>
                 <p class="text-[11px] font-bold tracking-wider uppercase text-emerald-400">Método PMDF · Estudos e simulados</p>
                 <h2>Banco de questões interativo</h2>
-                <p class="acervo-subtitle">Resolva questões dos cadernos PDF de legislação policial, com correção pelo gabarito original, estatísticas de desempenho e acompanhamento de progresso.</p>
+                <p class="acervo-subtitle">Pratique em ordem aleatória, misturando questões de certo/errado e múltipla escolha, nos níveis fácil, médio e difícil. Selecione a matéria e o tópico e acompanhe os resultados.</p>
               </div>
               <label class="acervo-upload" id="acervo-import-label" for="acervo-file" title="Importar o pacote de questões sem modificar os enunciados">
                 <i data-lucide="file-up" class="w-4 h-4" aria-hidden="true"></i> Importar banco (.json.gz)
@@ -464,26 +464,49 @@
               <p class="acervo-subtitle mt-2">As respostas são registradas neste dispositivo. A importação não altera o enunciado, as alternativas nem o gabarito fornecidos. Revise a vigência das normas e os gabaritos antes de uso avaliativo oficial.</p>
             </div>
             <section class="acervo-block" aria-label="Filtros das questões">
-              <div class="acervo-grid">
+              <div class="acervo-grid" aria-label="Matéria, lei e tópico">
+                <label class="acervo-control" for="acervo-materia">Matéria / disciplina
+                  <select id="acervo-materia" class="acervo-select"><option value="all">Todas as matérias</option></select>
+                </label>
                 <label class="acervo-control" for="acervo-deck">Lei ou caderno
                   <select id="acervo-deck" class="acervo-select"><option value="all">Todas as normas</option></select>
                 </label>
-                <label class="acervo-control" for="acervo-format">Modalidade
+                <label class="acervo-control" for="acervo-topic">Tópico / artigo
+                  <select id="acervo-topic" class="acervo-select"><option value="all">Todos os tópicos</option></select>
+                </label>
+              </div>
+              <div class="acervo-grid acervo-grid-secondary mt-3" aria-label="Modalidade, dificuldade e situação das respostas">
+                <label class="acervo-control" for="acervo-format">Tipo de questão
                   <select id="acervo-format" class="acervo-select">
-                    <option value="all">Certo/Errado e Múltipla escolha</option>
-                    <option value="CE">Certo ou errado</option>
-                    <option value="MC">Múltipla escolha — 5 alternativas</option>
+                    <option value="all">Misturar certo/errado e múltipla escolha</option>
+                    <option value="CE">Somente certo ou errado</option>
+                    <option value="MC">Somente múltipla escolha</option>
                   </select>
                 </label>
-                <label class="acervo-control" for="acervo-difficulty">Dificuldade
+                <label class="acervo-control" for="acervo-difficulty">Nível de dificuldade
                   <select id="acervo-difficulty" class="acervo-select">
-                    <option value="all">Todas as dificuldades</option>
+                    <option value="all">Misturar fácil, médio e difícil</option>
                     <option value="Fácil">Fácil</option>
                     <option value="Médio">Médio</option>
                     <option value="Difícil">Difícil</option>
                   </select>
                 </label>
+                <label class="acervo-control" for="acervo-state">Situação
+                  <select id="acervo-state" class="acervo-select">
+                    <option value="all">Todas as questões</option>
+                    <option value="pending">Não respondidas</option>
+                    <option value="correct">Acertadas</option>
+                    <option value="wrong">Erradas</option>
+                  </select>
+                </label>
               </div>
+              <div class="acervo-search-row mt-3">
+                <label class="acervo-control" for="acervo-search">Pesquisar no banco
+                  <input id="acervo-search" class="acervo-select" type="search" autocomplete="off" placeholder="Buscar palavra, tema, artigo ou enunciado">
+                </label>
+                <button type="button" id="acervo-shuffle" class="acervo-btn" aria-label="Embaralhar questões novamente">Embaralhar novamente</button>
+              </div>
+              <p id="acervo-order-hint" class="acervo-hint mt-2">Ordem aleatória fixa nesta sessão de estudo. Respostas anteriores são preservadas.</p>
               <p id="acervo-total" class="acervo-hint mt-3">0 itens no filtro</p>
               <div class="acervo-counters" aria-label="Estatísticas do filtro selecionado">
                 <div class="acervo-counter"><strong id="acervo-hits">0</strong><span>Acertos</span></div>
@@ -799,7 +822,7 @@
         <script defer src="assets/pmdf-visual-engine.js?v=20261115-editorial-v4"></script>
     <script defer src="assets/pmdf-summary-editorial.js?v=20261116-editorial-v2"></script>
         <script defer src="assets/pmdf-app.js?v=20261116-intermediate-v2"></script>
-    <script defer src="assets/pmdf-acervo-interativo.js?v=20261116-acervo-v1"></script>
+    <script defer src="assets/pmdf-acervo-interativo.js?v=20261116-acervo-v2"></script>
 </body>
 </html>
 

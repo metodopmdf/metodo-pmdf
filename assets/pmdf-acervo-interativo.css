@@ -108,3 +108,25 @@ body[data-theme="light"] #acervo-shell .acervo-pie::after{background:#f6f8fc}
 
 /* Pizza completa, não rosca */
 #acervo-shell .acervo-pie::after{display:none!important}
+
+/* Banco misto: organização ergonômica da experiência de questões; preserva o CSS de outras ferramentas. */
+#acervo-shell .acervo-grid-secondary{margin-top:12px}
+#acervo-shell .acervo-search-row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+#acervo-shell .acervo-search-row .acervo-control{flex:1 1 340px;min-width:180px}
+#acervo-shell .acervo-search-row #acervo-shuffle{flex:0 0 auto;min-height:44px}
+#acervo-shell #acervo-order-hint{color:#c0d0e5}
+#acervo-shell .acervo-meta{display:flex;gap:7px;align-items:center;flex-wrap:wrap;line-height:1.5}
+#acervo-shell .acervo-number{color:#efcd73;margin-right:2px}
+#acervo-shell .acervo-chip{border:1px solid #506383;background:#1c2c46;color:#e5efff;padding:3px 9px;border-radius:20px;font-size:.74rem}
+#acervo-shell .acervo-chip.acervo-level{border-color:#9d834d;color:#f1cf76}
+#acervo-shell .acervo-deck-label{color:#b8cce6;font-weight:600}
+#acervo-shell #acervo-search{width:100%;min-width:0}
+body[data-theme="light"] #acervo-shell .acervo-chip{background:#e8eef7;border-color:#c2cede;color:#173451}
+body[data-theme="light"] #acervo-shell .acervo-chip.acervo-level{background:#fff5dc;border-color:#d6bf7d;color:#735518}
+body[data-theme="light"] #acervo-shell .acervo-deck-label{color:#405671}
+body[data-theme="light"] #acervo-shell #acervo-order-hint{color:#455b78}
+@media(max-width:790px){
+ #acervo-shell .acervo-search-row{align-items:stretch}
+ #acervo-shell .acervo-search-row .acervo-control{flex-basis:100%}
+ #acervo-shell .acervo-search-row #acervo-shuffle{width:100%}
+}
