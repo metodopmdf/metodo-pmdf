@@ -113,15 +113,15 @@
         // ---------- Nível do candidato ----------
         const LEVELS = {
             iniciante: { label: 'Iniciante', pomo: [25, 5], simN: 500, desc: 'Direto ao ponto: resumo simples, só o que mais cai, passo a passo. Itens secundários ficam recolhidos.',
-                road: '<b>Roteiro:</b> 1) leia o Resumo; 2) estude só a “Alta Incidência” e marque ✔; 3) treine os Flashcards; 4) faça o Simulado; 5) revise o Caderno de Erros.',
+                road: '<b>Roteiro:</b> revise conceitos de maior prioridade, compare hipóteses e exceções, pratique lacunas estratégicas e flashcards.',
                 essay: 'Iniciante: explique cada erro e cada conceito de forma didática, com exemplos curtos, e priorize os 3 ajustes de maior ganho de nota.',
                 instr: 'NÍVEL INICIANTE: use linguagem simples e frases curtas; defina cada termo jurídico na primeira vez que aparecer; use analogias do cotidiano policial; limite-se a 4 conceitos-chave; priorize apenas o essencial de alta incidência; não aprofunde jurisprudência nem controvérsias doutrinárias.' },
             intermediario: { label: 'Intermediário', pomo: [40, 8], simN: 500, desc: 'Equilíbrio entre teoria e prova: alta e média incidência, comparativos e filtro por banca.',
-                road: '<b>Meta:</b> dominar alta e média incidência; compare institutos parecidos, use o filtro de banca e deixe o Caderno de Erros dizer o que revisar.',
+                road: '<b>Roteiro:</b> revise conceitos de maior prioridade, compare hipóteses e exceções, pratique lacunas estratégicas e flashcards.',
                 essay: 'Intermediário: seja objetivo e técnico, mostrando o erro, a regra e a correção, sem rodeios.',
                 instr: 'NÍVEL INTERMEDIÁRIO: use linguagem técnica acessível; traga 5 a 6 conceitos-chave com os artigos correspondentes; inclua comparativos entre institutos parecidos e os principais prazos/penas; cite jurisprudência apenas quando sumulada.' },
             avancado: { label: 'Avançado', pomo: [50, 10], simN: 500, desc: 'Tudo aberto: exceções, jurisprudência STF/STJ e pegadinhas finas, começando pelo que a banca mais explora.',
-                road: '<b>Estratégia:</b> comece pelas pegadinhas e jurisprudência, use o Simulado para achar lacunas e feche com baixa incidência e flashcards completos.',
+                road: '<b>Roteiro:</b> revise conceitos de maior prioridade, compare hipóteses e exceções, pratique lacunas estratégicas e flashcards.',
                 essay: 'Avançado: seja sucinto e rigoroso, aponte apenas o que impede a nota máxima, com fundamento normativo preciso.',
                 instr: 'NÍVEL AVANÇADO: use terminologia técnica e densidade alta; traga 6 a 8 conceitos-chave com exceções, controvérsias doutrinárias, entendimentos do STF/STJ e as pegadinhas mais sutis da banca; assuma que o candidato já domina o básico e vá direto aos detalhes que diferenciam acertos de erros.' }
         };
@@ -1086,7 +1086,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         // O banco legado acima permanece íntegro; as quatro entradas ausentes
         // abaixo completam as 14 chaves exibidas na interface.
         // =====================================================================
-        const SUMMARY_FORMATS = ['full','bullets','table','mind','flash','visual']; // Questões e pegadinhas estruturadas pausadas na interface.
+        const SUMMARY_FORMATS = ['full','bullets','table','flash','visual','cloze']; // Um único seletor de formatos; mapas e questões pausados.
         let SOURCE_MODE = 'url';
         let SUMMARY_FORMAT = SUMMARY_FORMATS.includes(store.get('summaryFormat')) ? store.get('summaryFormat') : 'full';
         let LAW_FILE_NAME = '';
@@ -1290,7 +1290,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         }
         function clearLawText() { if ($('law-text')) $('law-text').value = ''; if ($('law-text-title')) $('law-text-title').value = ''; countLawText(); }
         function setSummaryFormat(format) {
-            if(format==='traps')format='visual'; // Migra preferência anterior sem quebrar o armazenamento.
+            if(format==='traps'||format==='mind')format='visual'; // Migra formatos ocultados para uma opção ativa.
             if (!SUMMARY_FORMATS.includes(format)) return;
             SUMMARY_FORMAT = format; store.set('summaryFormat', format);
             ['summary-format-config','summary-format-toolbar'].forEach(id => { if ($(id)) $(id).value = format; });
@@ -1746,7 +1746,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const executive=LEVEL==='iniciante'?'<ol class="list-decimal pl-5">'+[S.centralObjective,...concepts.slice(0,3)].map(x=>'<li>'+esc(firstSentences(x,260))+'</li>').join('')+'</ol>':'<p>'+esc(S.centralObjective||'')+'</p><ul>'+concepts.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
             const glossary=LEVEL==='iniciante'?glossaryHtml(g):'';
             const articleCard=(a,i)=>{const tags=bankTags(a),hl=interactive&&((eb==='cebraspe'&&tags.c)||(eb==='fgv'&&tags.f));const id=(CUR.key||'x')+'|'+String(a.article).slice(0,40),noteKey='note:'+id,note=store.get(noteKey)||'';let noteId=-1;if(interactive)noteId=NOTE_IDS.push(noteKey)-1;
-                const checkbox=interactive?'<input type="checkbox" class="no-print mr-2 accent-[#D4AF37]" data-id="'+esc(id)+'" aria-label="Marcar '+esc(a.article)+' como estudado" '+(done.includes(id)?'checked':'')+' data-pmdf-onchange="toggleStudied(this)">':'';
+                const checkbox=''; // Sem controles de progresso no corpo dos resumos.
                 return '<div class="g-card" data-incidence="'+a.incidence+'" style="'+(hl?'border-left:4px solid #D4AF37':'')+'">'+(hl?'<span class="g-tag">⭐ Afinidade temática com a banca (estimativa)</span>':'')+(tags.documented?'<span class="g-tag">📚 '+tags.documented+' referência(s) em provas importadas</span>':'')+'<p>'+checkbox+'<b>'+esc(a.article)+'</b> <span class="g-tag">'+a.incidence+' incidência</span></p><p>'+esc(a.plainExplanation)+'</p><p class="g-ex"><b>Aplicação:</b> '+esc(a.practicalExample)+'</p>'+(note?'<p class="g-ex"><b>📝 Nota:</b> '+esc(note)+'</p>':'')+(interactive?'<button class="no-print g-tag" data-pmdf-special="edit-note" data-pmdf-value="'+noteId+'">📝 Nota</button>':'')+'</div>';};
             const compareRows=rows.slice(0,8).map(a=>'<tr><td>'+esc(a.article)+'</td><td>'+esc(firstSentences(a.plainExplanation,230))+'</td><td>'+esc(uniq(a.plainExplanation.match(PRAZO)||[]).join('; ')||'Não identificado no trecho')+'</td><td>'+esc(uniq(a.plainExplanation.match(RESTR)||[]).join('; ')||'Não identificado no trecho')+'</td></tr>').join('');
             let body='';
@@ -1761,9 +1761,10 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 body=wrap('Resumo Esquematizado', '<ul><li><b>Regra geral:</b> '+esc(firstSentences(S.centralObjective,300))+'</li>'+rows.map(a=>'<li><b>'+esc(a.article)+':</b> '+esc(firstSentences(a.plainExplanation,190))+' <span class="g-tag">'+a.incidence+'</span></li>').join('')+'</ul>')+wrap('Prazos, exceções e palavras-chave',rows.map(a=>'<div class="g-card"><b>'+esc(a.article)+'</b><ul><li><b>Prazos/quantitativos:</b> '+esc(uniq(a.plainExplanation.match(PRAZO)||[]).join(', ')||'Não identificados no bloco')+'</li><li><b>Exceções/termos:</b> '+esc(uniq(a.plainExplanation.match(RESTR)||[]).join(', ')||'Conferir no texto-fonte')+'</li></ul></div>').join(''));
             }else if(SUMMARY_FORMAT==='table'){
                 body=wrap('Quadro Sinótico — Regra, prazo, sanção e exceções','<div style="overflow-x:auto"><table><thead><tr><th>Dispositivo/Tópico</th><th>Regra Central / Conduta</th><th>Prazos / Quantitativos / Sanções</th><th>Exceções e Termos Restritivos</th></tr></thead><tbody>'+rows.map(a=>'<tr><td>'+esc(a.article)+'</td><td>'+esc(firstSentences(a.plainExplanation,280))+'</td><td>'+esc([...(a.plainExplanation.match(PRAZO)||[]),...(a.plainExplanation.match(PENA)||[])].join('; ')||'—')+'</td><td>'+esc(uniq(a.plainExplanation.match(RESTR)||[]).join('; ')||'—')+'</td></tr>').join('')+'</tbody></table></div>');
-            }else if(SUMMARY_FORMAT==='mind'){
-                body=wrap('Mapa Mental Visual — Infográfico Editorial',pmdfMindHtml(g,rows)+
-                    (interactive?'<div class="pmdf-mind-actions no-print"><button type="button" data-pmdf-onclick="copyText(pmdfMindPrompt(CUR.guide))" class="'+BTN+'">📋 Copiar prompt do mapa mental</button><button type="button" data-pmdf-onclick="openMindMap()" class="'+BTN+'">Abrir mapa ampliado</button></div>':''));
+            }else if(SUMMARY_FORMAT==='cloze'){
+                body=window.PMDFClozeStrategic
+                    ?window.PMDFClozeStrategic.render(g,{level:LEVEL,interactive})
+                    :'<p>O modo de lacunas não foi carregado. Atualize a página.</p>';
             }else if(SUMMARY_FORMAT==='flash'){
                 const cards=buildStudyCards(g), cardHtml=cards.slice(0,interactive?90:150).map((c,i)=>{
                     const art=window.PMDFVisualEngine?.illustration?.([c.kind,c.front,c.article].filter(Boolean).join(' ').slice(0,340),i)||'⚖';
@@ -1776,9 +1777,8 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 const traps=safeArray(T.examTraps), questions=getCachedPool(g,boardFmt(),LEVEL).slice(0,20);
                 body=wrap('Fichamento de Pegadinhas & Questões',traps.map((t,i)=>'<div class="g-card"><b>Pegadinha '+(i+1)+'</b><p>'+esc(t)+'</p></div>').join('')+'<h3>Assertivas Certo/Errado comentadas</h3>'+questions.map((q,i)=>'<div class="g-card"><b>'+ (i+1)+'. '+esc(q.answer==='C'?'CERTO':'ERRADO')+'</b><p>'+esc(q.statement)+'</p><p class="g-ex">'+esc(q.explanation)+'</p></div>').join(''));
             }
-            const tools=interactive?'<div class="no-print flex flex-wrap gap-2 mt-3"><button data-pmdf-onclick="openFlash()" class="'+BTN+'">🃏 Revisão de flashcards</button><button data-pmdf-onclick="openErrors()" class="'+BTN+'">📕 Caderno de Erros</button><button data-pmdf-onclick="openMindMap()" class="'+BTN+'">🌳 Mapa mental</button><button data-pmdf-onclick="openPanel()" class="'+BTN+'">📊 Painel do Edital &amp; Backup</button><button data-pmdf-onclick="toggleCloze()" class="'+BTN+'">🙈 Modo Lacunas</button><input type="search" id="guide-search" data-pmdf-oninput="filterGuide(this.value)" placeholder="Buscar neste guia..." class="px-3 py-2 rounded-xl bg-[#0E1B33] border border-[#1E2E4F] text-xs text-slate-200 w-64"><button type="button" data-pmdf-onclick="clearGuideOptions()" class="'+BTN+'">↺ Limpar filtros do guia</button><button data-pmdf-onclick="searchAll()" class="'+BTN+'">🔎 Busca global</button>'+(LEVEL!=='iniciante'?'<select aria-label="Filtrar guia por banca" data-pmdf-onchange="setBank(this.value)" class="px-2 py-2 rounded-xl bg-[#0E1B33] border border-[#1E2E4F] text-xs text-slate-200"><option value="auto" '+(BANK==='auto'?'selected':'')+'>Conforme a banca</option><option value="todas" '+(BANK==='todas'?'selected':'')+'>Todas</option><option value="cebraspe" '+(BANK==='cebraspe'?'selected':'')+'>Cebraspe</option><option value="fgv" '+(BANK==='fgv'?'selected':'')+'>FGV/AOCP</option></select>':'')+'</div>':'';
-            return tools+(interactive?'<p id="g-progress" class="no-print mt-2"></p>':'')+
-                '<div class="pmdf-report pmdf-report-'+SUMMARY_FORMAT+'">'+
+            // A página de leitura contém apenas o seletor único em #summary-format-toolbar.
+            return                 '<div class="pmdf-report pmdf-report-'+SUMMARY_FORMAT+'">'+
                 (SUMMARY_FORMAT==='visual'?'':intro)+
                 body+'<footer class="pmdf-report-footer"><span>⚖ MÉTODO PMDF</span><span>Material didático · Confira a norma oficial vigente</span></footer></div>'+
                 '';
@@ -1924,6 +1924,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             $('printable-area').innerHTML=pmdfSafeHtml(guideHtml(g,true),true);
             pmdfFocusScrollableRegions($('printable-area'));
             if(SUMMARY_FORMAT==='visual')window.PMDFVisualEngine?.mount?.($('printable-area'));
+            if(SUMMARY_FORMAT==='cloze')window.PMDFClozeStrategic?.mount?.($('printable-area'));
             if (g.officialSource && typeof g.officialSource === 'string') {
                 try {
                     const ref = new URL(g.officialSource);
@@ -1941,9 +1942,10 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     }
                 } catch (e) { /* Fonte inválida não interrompe o estudo. */ }
             }
-            $('current-doc-title').textContent='Método PMDF — '+g.lawName+' · '+LEVELS[LEVEL].label+' · '+({full:'Por Extenso',bullets:'Esquematizado',table:'Quadro Sinótico',mind:'Mapa Mental',flash:'Flashcards',traps:'Pegadinhas',visual:'Visual Ilustrado'}[SUMMARY_FORMAT]);
+            $('current-doc-title').textContent='Método PMDF — '+g.lawName+' · '+LEVELS[LEVEL].label+' · '+({full:'Por Extenso',bullets:'Esquematizado',table:'Quadro Sinótico',flash:'Flashcards',traps:'Pegadinhas',visual:'Visual Ilustrado',cloze:'Lacunas Estratégicas'}[SUMMARY_FORMAT]);
             ['summary-format-config','summary-format-toolbar'].forEach(id=>{if($(id))$(id).value=SUMMARY_FORMAT;});
-            updateProgress();applyCloze();
+            // Indicadores de progresso do guia removidos da interface.
+            if(CLOZE_MODE&&SUMMARY_FORMAT!=='cloze')applyCloze();
             if(window.lucide)lucide.createIcons();
         }
         function editNote(i){const k=NOTE_IDS[i];if(!k)return;const v=prompt('Sua anotação para este dispositivo (vazio apaga):',store.get(k)||'');if(v===null)return;store.set(k,v.trim());if(!v.trim()){store.del(k)}rerenderPreservingStudyState();}
@@ -2009,7 +2011,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         }
         function showTab(t) {
             // A aba de Questões está preservada internamente, mas indisponível nesta etapa.
-            if(t==='questoes')t='leis';
+            if(t==='questoes'||t==='resultados')t='leis';
             TAB = t;
             if(APP_STARTED&&!SESSION_RESTORING)saveStudySession();if(t==='resultados')setTimeout(renderResults,0);
             ['leis', 'questoes', 'anki', 'redacao','resultados'].forEach(k => { $('tab-' + k).classList.toggle('hidden', k !== t);$('tab-btn-'+k).setAttribute('role','tab');$('tab-btn-'+k).setAttribute('aria-selected',String(k===t));
@@ -2728,12 +2730,16 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         function renderAnkiStatement(c,showAnswer){
             if(!c?.cloze)return esc(showAnswer?c.back:c.front);
             const raw=String(c.cloze),pivot=raw.indexOf(' · '),text=pivot>=0?raw.slice(pivot+3):raw;
-            const cloze=/\{\{c1::([^}:]+)(?:::[^}]+)?\}\}/.exec(text);
-            if(!cloze)return esc(showAnswer?c.back:c.front);
-            const term=showAnswer?
-                '<mark class="anki-blank-revealed">'+esc(cloze[1])+'</mark>':
-                '<span class="anki-blank-masked" aria-label="lacuna oculta">[&nbsp;…&nbsp;]</span>';
-            return esc(text.slice(0,cloze.index))+term+esc(text.slice(cloze.index+cloze[0].length));
+            // Um cartão pode exigir até três expressões compostas da mesma fonte.
+            // As lacunas c1 são reveladas juntas no verso, para preservar a lógica do Anki.
+            let idx=0,matched=false;
+            const html=text.replace(/\{\{c\d+::([\s\S]*?)(?:::[^}]*)?\}\}/g,(_,answer)=>{
+                matched=true;const number=++idx;
+                return showAnswer
+                    ?'<mark class="anki-blank-revealed">'+esc(answer)+'</mark>'
+                    :'<mark class="anki-blank-masked" aria-label="Lacuna '+number+'">['+number+' · recordar]</mark>';
+            });
+            return matched?html:esc(showAnswer?c.back:c.front);
         }
         function drawAnki(){
             const el=$('anki-panel'),s=ANKI_STATE;if(!el||!s)return;
