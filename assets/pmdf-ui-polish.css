@@ -1,0 +1,118 @@
+/* Método PMDF — refinamento visual 2026. Escopo: estrutura e controles; sem alterações de lógica. */
+body:not(.landing-active){
+ --ui-radius:16px;--ui-surface:var(--bg-card);--ui-muted:var(--text-secondary);
+}
+body:not(.landing-active) #pmdf-main-content{
+ max-width:1460px!important;min-width:0;
+ padding-top:clamp(15px,2vw,30px)!important;
+ padding-bottom:clamp(34px,5vw,72px)!important;
+}
+body:not(.landing-active) header.pmdf-app-header{
+ border-bottom:1px solid var(--border-subtle)!important;
+ box-shadow:0 5px 24px rgba(0,0,0,.08)!important;
+}
+body:not(.landing-active) nav.pmdf-app-tabs{
+ border:1px solid var(--border-subtle)!important;
+ border-radius:15px!important;gap:6px!important;padding:6px!important;
+ scrollbar-gutter:stable;scroll-padding-inline:8px;
+ box-shadow:0 5px 22px rgba(0,0,0,.04)!important;
+}
+body:not(.landing-active) nav.pmdf-app-tabs button[role="tab"]{
+ border-radius:10px!important;min-height:44px;flex-shrink:0;
+ padding-inline:clamp(12px,1.6vw,19px)!important;
+ transition:background-color .18s ease,color .18s ease,transform .18s ease!important;
+}
+body:not(.landing-active) nav.pmdf-app-tabs button[role="tab"][aria-selected="true"]{
+ box-shadow:0 2px 9px rgba(14,35,52,.14)!important;
+}
+body:not(.landing-active) #pmdf-context-bar{
+ border-radius:13px!important;
+ border:1px solid var(--border-subtle)!important;
+ background:var(--bg-card)!important;
+ box-shadow:0 4px 15px rgba(0,0,0,.025)!important;
+ padding:12px 17px!important;
+}
+body:not(.landing-active) #pmdf-context-bar strong{
+ font-weight:800!important;letter-spacing:-.01em;
+}
+body:not(.landing-active) #tab-leis>section{
+ border:1px solid var(--border-subtle)!important;
+ border-radius:20px!important;
+ box-shadow:0 8px 30px rgba(0,0,0,.035)!important;
+}
+body:not(.landing-active) #tab-leis .pmdf-law-selector{
+ gap:12px!important;
+}
+body:not(.landing-active) :is(.pmdf-parameters,.pmdf-advanced-settings){
+ border-radius:14px!important;overflow:visible;
+}
+body:not(.landing-active) :is(.pmdf-parameters,.pmdf-advanced-settings)>summary{
+ font-weight:750!important;cursor:pointer;
+}
+body:not(.landing-active) #tab-leis .source-tab{
+ min-height:43px!important;line-height:1.4!important;
+ border-radius:11px!important;white-space:normal;
+}
+body:not(.landing-active) #tab-leis :is(.source-tab,.law-shortcut-btn){
+ transition:background-color .16s ease,border-color .16s ease,transform .16s ease!important;
+}
+@media(hover:hover){
+ body:not(.landing-active) #tab-leis :is(.source-tab,.law-shortcut-btn):hover{
+  transform:translateY(-1px);
+ }
+}
+body:not(.landing-active) #tab-leis #generate-btn{
+ min-height:47px!important;letter-spacing:.015em;
+ border-radius:11px!important;
+ transition:filter .18s ease,transform .18s ease,box-shadow .18s ease!important;
+}
+body:not(.landing-active) #tab-leis #generate-btn:hover{
+ filter:brightness(1.045);box-shadow:0 7px 17px rgba(186,136,30,.2)!important;
+}
+body:not(.landing-active) #export-toolbar{
+ border:1px solid var(--border-subtle)!important;
+ border-radius:16px!important;gap:13px;
+ padding:clamp(12px,1.6vw,21px)!important;
+ box-shadow:0 4px 17px rgba(0,0,0,.04)!important;
+}
+body:not(.landing-active) #export-toolbar #current-doc-title{
+ font-weight:780!important;line-height:1.45!important;
+ font-size:clamp(13px,1.15vw,15px)!important;letter-spacing:-.015em;
+}
+body:not(.landing-active) #printable-area{
+ border-radius:17px!important;
+ padding:clamp(10px,2.4vw,36px)!important;
+}
+body:not(.landing-active) #printable-area>.pmdf-report-visual{
+ max-width:1140px!important;width:100%!important;
+ margin-inline:auto!important;
+}
+body:not(.landing-active) #printable-area .pmdf-report:not(.pmdf-report-visual){
+ line-height:1.75!important;
+}
+body:not(.landing-active) #printable-area .pmdf-report:not(.pmdf-report-visual) .g-card{
+ border-radius:12px!important;
+}
+body:not(.landing-active) :is(#export-toolbar,#tab-leis,nav.pmdf-app-tabs) button:focus-visible{
+ outline:3px solid var(--accent)!important;outline-offset:3px!important;
+}
+@media(max-width:640px){
+ body:not(.landing-active) #pmdf-main-content{padding-inline:12px!important}
+ body:not(.landing-active) nav.pmdf-app-tabs{margin-inline:-2px;gap:4px!important}
+ body:not(.landing-active) nav.pmdf-app-tabs button[role="tab"]{
+  min-height:44px!important;padding-inline:13px!important;
+ }
+ body:not(.landing-active) #tab-leis>section{border-radius:14px!important}
+ body:not(.landing-active) #export-toolbar{border-radius:13px!important}
+ body:not(.landing-active) #printable-area{padding:10px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ body:not(.landing-active) :is(.source-tab,.law-shortcut-btn,#generate-btn,nav.pmdf-app-tabs button[role="tab"]){
+  transition:none!important;transform:none!important;
+ }
+}
+@media print{
+ body #pmdf-main-content{max-width:none!important;padding:0!important}
+ body #printable-area{padding:0!important;box-shadow:none!important;border:none!important}
+ body #printable-area>.pmdf-report-visual{max-width:none!important}
+}
