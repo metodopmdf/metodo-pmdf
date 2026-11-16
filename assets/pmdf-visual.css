@@ -22,3 +22,144 @@
 .pmdf-visual-source,.pmdf-visual-footer{display:block;margin-top:15px;font-size:11px;color:#69717c}
 @media(max-width:620px){.pmdf-visual-cover{padding:18px}.pmdf-visual-cover-icon{font-size:35px}.pmdf-visual-card{padding:13px}.pmdf-visual-card-grid{grid-template-columns:1fr;gap:10px}.pmdf-visual-art svg{max-width:115px}.pmdf-visual-main p{font-size:13px}}
 @media print{@page{size:A4;margin:13mm}.pmdf-visual-report{max-width:none!important}.pmdf-visual-card{break-inside:avoid;box-shadow:none!important}.pmdf-visual-cover,.pmdf-visual-article,.pmdf-visual-facts>div,.pmdf-visual-art{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+
+/* Correção de contraste 2026-11-15.
+   O tema global usa !important em #printable-area .pmdf-report p/h3.
+   Estas regras são intencionalmente mais específicas e se aplicam SOMENTE
+   ao formato visual, independentemente do tema claro/escuro do aplicativo. */
+body #printable-area .pmdf-report-visual{
+  --ink:#243346;--paper:#fffdfa;--gold:#cfac55;
+  color-scheme:light!important;
+  background:#faf7f0!important;color:#243346!important;
+  border:1px solid #d7cdbc!important;
+}
+body #printable-area .pmdf-report-visual .pmdf-visual-report{
+  color:#243346!important;background:#faf7f0!important;
+  max-width:100%;font-size:15px;
+}
+body #printable-area .pmdf-report-visual .pmdf-visual-cover{
+  background:#24364d!important;color:#fffaf0!important;
+  border:1px solid #38506a;
+}
+body #printable-area .pmdf-report-visual .pmdf-visual-cover h2{
+  color:#ffffff!important;font-size:clamp(23px,3.5vw,34px)!important;
+  margin:8px 0 10px!important;line-height:1.24!important;
+}
+body #printable-area .pmdf-report-visual .pmdf-visual-cover p{
+  color:#f9e7bf!important;opacity:1!important;
+  font-size:14px!important;line-height:1.55!important;
+}
+body #printable-area .pmdf-report-visual .pmdf-visual-cover .pmdf-visual-kicker{
+  color:#ffe39a!important;opacity:1!important;
+}
+body #printable-area .pmdf-report-visual .pmdf-visual-disclaimer{
+  color:#48596a!important;opacity:1!important;
+  font-size:13px!important;line-height:1.6!important;
+}
+body #printable-area .pmdf-report-visual .pmdf-visual-card{
+  background:#fffdfa!important;color:#243346!important;
+  border:1px solid #d8d1c5!important;box-shadow:0 4px 17px rgba(30,40,53,.07)!important;
+}
+body #printable-area .pmdf-report-visual .pmdf-visual-article{
+  background:#5c6134!important;color:#fff!important;
+  font-size:clamp(17px,2.4vw,22px)!important;line-height:1.45!important;
+}
+body #printable-area .pmdf-report-visual .pmdf-visual-card:nth-of-type(3n) .pmdf-visual-article{
+  background:#92512e!important;color:#fff!important;
+}
+body #printable-area .pmdf-report-visual .pmdf-visual-main h3{
+  color:#172a3d!important;font-size:17px!important;
+  margin:0 0 10px!important;letter-spacing:.01em!important;
+}
+body #printable-area .pmdf-report-visual .pmdf-visual-card :is(p,li){
+  color:#273647!important;opacity:1!important;
+  font-size:15px!important;line-height:1.7!important;
+}
+body #printable-area .pmdf-report-visual .pmdf-visual-main details{
+  color:#263c4d!important;border-top:1px solid #ddd5ca;
+  padding-top:8px;line-height:1.6;
+}
+body #printable-area .pmdf-report-visual .pmdf-visual-main summary{
+  color:#294d69!important;font-weight:800!important;
+}
+body #printable-area .pmdf-report-visual .pmdf-visual-facts>div{
+  background:#e6f3eb!important;color:#204235!important;
+  border:1px solid #bedbcb!important;
+}
+body #printable-area .pmdf-report-visual .pmdf-visual-facts>div:nth-child(even){
+  background:#fff0c9!important;color:#543b18!important;border-color:#e9d394!important;
+}
+body #printable-area .pmdf-report-visual .pmdf-visual-facts b{
+  color:#204235!important;font-size:13px!important;line-height:1.5!important;
+}
+body #printable-area .pmdf-report-visual .pmdf-visual-facts>div:nth-child(even) b{
+  color:#543b18!important;
+}
+body #printable-area .pmdf-report-visual .pmdf-visual-facts p{
+  color:#263a33!important;font-size:14px!important;line-height:1.65!important;
+}
+body #printable-area .pmdf-report-visual .pmdf-visual-facts>div:nth-child(even) p{
+  color:#523b1b!important;
+}
+body #printable-area .pmdf-report-visual .pmdf-visual-source,
+body #printable-area .pmdf-report-visual .pmdf-visual-footer{
+  color:#48586b!important;opacity:1!important;
+  font-size:12px!important;line-height:1.55!important;
+}
+body #printable-area .pmdf-report-visual .g-banner{
+  color:#49371b!important;background:#fff1cb!important;
+  border-left:4px solid #b68a2e!important;
+}
+body #printable-area .pmdf-report-visual .g-banner *{
+  color:#49371b!important;
+}
+body #printable-area .pmdf-report-visual .pmdf-report-footer,
+body #printable-area .pmdf-report-visual .pmdf-report-footer span{
+  color:#43566b!important;border-color:#c9c0b1!important;
+}
+body #printable-area .pmdf-report-visual .pmdf-report-footer span:first-child{
+  color:#684800!important;
+}
+/* Mantém legível também o cabeçalho herdado do modelo de guia original. */
+body #printable-area .pmdf-report-visual .pmdf-report-heading{
+  background:#24364d!important;border-radius:13px!important;
+  padding:18px!important;border:1px solid #38506a!important;
+}
+body #printable-area .pmdf-report-visual .pmdf-report-heading h1{
+  color:#fff!important;
+}
+body #printable-area .pmdf-report-visual .pmdf-report-heading p{
+  color:#f4e7c9!important;
+}
+@media(max-width:620px){
+  body #printable-area .pmdf-report-visual{padding:13px!important}
+  body #printable-area .pmdf-report-visual .pmdf-visual-cover{padding:18px!important}
+  body #printable-area .pmdf-report-visual .pmdf-visual-card{padding:13px!important}
+  body #printable-area .pmdf-report-visual .pmdf-visual-card :is(p,li){font-size:14px!important;line-height:1.65!important}
+}
+@media print{
+  body #printable-area .pmdf-report-visual{
+    color-scheme:light!important;background:#fff!important;color:#243346!important;
+    border:0!important;padding:0!important;box-shadow:none!important;
+  }
+  body #printable-area .pmdf-report-visual .pmdf-visual-report{
+    background:#fff!important;
+  }
+  body #printable-area .pmdf-report-visual .pmdf-visual-card{
+    box-shadow:none!important;background:#fff!important;
+    break-inside:avoid-page;page-break-inside:avoid;
+  }
+  body #printable-area .pmdf-report-visual .pmdf-visual-cover{
+    background:#24364d!important;color:#fff!important;
+    -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;
+  }
+  body #printable-area .pmdf-report-visual .pmdf-visual-card :is(p,li){
+    color:#172a3d!important;
+  }
+  body #printable-area .pmdf-report-visual .pmdf-visual-main h3{
+    color:#172a3d!important;
+  }
+  body #printable-area .pmdf-report-visual .pmdf-visual-facts>div{
+    -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;
+  }
+}
