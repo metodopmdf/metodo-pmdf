@@ -1,0 +1,107 @@
+/* Método PMDF | Acervo interativo + seletor compacto de formato | 2026-11-16 */
+body:not(.landing-active) #export-toolbar.pmdf-reading-bar{
+  display:flex!important;align-items:center!important;min-height:0!important;height:auto!important;
+  padding:14px 18px!important;gap:14px!important;
+}
+body:not(.landing-active) #export-toolbar .pmdf-format-label{
+  width:auto!important;min-width:0!important;max-width:340px!important;
+  height:auto!important;max-height:56px!important;min-height:0!important;
+  display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;
+  align-items:center!important;justify-content:flex-end!important;
+  align-self:center!important;flex:0 1 340px!important;gap:9px!important;
+  padding:0!important;margin:0!important;font-size:12px!important;
+  line-height:1.35!important;white-space:nowrap!important;
+}
+body:not(.landing-active) #export-toolbar #summary-format-toolbar{
+  box-sizing:border-box!important;display:block!important;
+  flex:0 1 218px!important;width:218px!important;max-width:218px!important;
+  min-width:125px!important;min-height:42px!important;height:42px!important;
+  max-height:42px!important;padding:8px 30px 8px 12px!important;
+  margin:0!important;font-size:14px!important;line-height:22px!important;
+  border-radius:10px!important;align-self:center!important;
+}
+body:not(.landing-active) #export-toolbar > div:last-child{
+  flex:0 0 auto!important;width:auto!important;max-width:100%!important;
+  align-self:center!important;align-items:center!important;
+  min-height:0!important;height:auto!important;
+}
+body:not(.landing-active) #export-toolbar > div:first-child{flex:1 1 400px!important;min-width:0!important}
+@media (max-width:760px){
+ body:not(.landing-active) #export-toolbar.pmdf-reading-bar{align-items:stretch!important;padding:12px!important;gap:10px!important}
+ body:not(.landing-active) #export-toolbar > div:last-child{align-self:stretch!important;width:100%!important}
+ body:not(.landing-active) #export-toolbar .pmdf-format-label{max-width:100%!important;width:100%!important;justify-content:space-between!important;flex:1 1 auto!important}
+ body:not(.landing-active) #export-toolbar #summary-format-toolbar{max-width:60%!important;width:60%!important;flex:0 1 60%!important}
+}
+/* New bank module - independent of the old hidden question generator */
+#acervo-shell{--acervo-border:#2a3a56;--acervo-bg:#0d1728;--acervo-primary:#dfbd61;color:#ecf2fc}
+#acervo-shell .acervo-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:flex-start}
+#acervo-shell h2{font-size:clamp(1.25rem,2vw,1.65rem);font-weight:800;line-height:1.35;color:#f8fafc}
+#acervo-shell .acervo-subtitle{color:#afbdd5;font-size:.88rem;line-height:1.6;max-width:73ch}
+#acervo-shell .acervo-block{border:1px solid var(--acervo-border);border-radius:16px;background:var(--acervo-bg);padding:clamp(14px,2vw,22px)}
+#acervo-shell .acervo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+#acervo-shell .acervo-control{display:flex;flex-direction:column;gap:8px;font-size:.77rem;font-weight:700;color:#c9d7ed}
+#acervo-shell .acervo-select{width:100%;min-height:44px;max-width:100%;border:1px solid #41526d;border-radius:10px;background:#19273d;color:#fff;padding:9px 10px;font-size:14px}
+#acervo-shell .acervo-select:focus-visible,#acervo-shell button:focus-visible,#acervo-shell input:focus-visible{outline:3px solid #e6bc58;outline-offset:3px}
+#acervo-shell .acervo-upload{display:inline-flex;align-items:center;gap:8px;cursor:pointer;background:#263854;border:1px solid #526784;color:#fff;font-weight:750;padding:10px 16px;min-height:44px;border-radius:10px}
+#acervo-shell .acervo-upload[aria-busy="true"]{opacity:.6;pointer-events:none}
+#acervo-shell .acervo-upload input{position:absolute;width:1px;height:1px;opacity:0}
+#acervo-shell #acervo-status{font-size:.82rem;line-height:1.55;color:#a9d7c5;overflow-wrap:anywhere}
+#acervo-shell #acervo-status[data-error="true"]{color:#fecaca}
+#acervo-shell .acervo-counters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:15px 0}
+#acervo-shell .acervo-counter{background:#16243b;border:1px solid #344562;border-radius:12px;padding:13px 14px}
+#acervo-shell .acervo-counter strong{display:block;font-weight:800;font-size:clamp(1.25rem,2vw,1.65rem);font-variant-numeric:tabular-nums}
+#acervo-shell .acervo-counter span{display:block;color:#bccae0;font-size:.77rem;margin-top:3px}
+#acervo-shell #acervo-hits{color:#49d78b}
+#acervo-shell #acervo-wrong{color:#ff6b79}
+#acervo-shell #acervo-pct{color:#ead07b}
+#acervo-shell .acervo-question-card{background:#101d32;border:1px solid #334766;border-radius:14px;padding:clamp(16px,2.5vw,24px)}
+#acervo-shell .acervo-meta{font-size:.74rem;color:#d6b96b;font-weight:800;line-height:1.5}
+#acervo-shell .acervo-reference{font-size:.74rem;color:#a9b9d2;margin-top:6px}
+#acervo-shell .acervo-statement{margin:16px 0 20px;color:#f8fafc;font-weight:650;font-size:clamp(1rem,1.45vw,1.12rem);line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+#acervo-shell .acervo-choices{display:grid;gap:9px}
+#acervo-shell .acervo-choice{min-height:52px;display:block;text-align:left;width:100%;border-radius:11px;padding:13px 15px;color:#f4f7ff;background:#1c2b43;border:1px solid #41526d;font-size:.93rem;line-height:1.55;white-space:normal;overflow-wrap:anywhere;cursor:pointer;transition:border-color .15s}
+#acervo-shell .acervo-choice:hover:not(:disabled){border-color:#e6c267;background:#263a57}
+#acervo-shell .acervo-choice:disabled{cursor:default;opacity:.95}
+#acervo-shell .acervo-choice.is-correct{border-color:#27b773;background:#103d31;color:#d4ffe8}
+#acervo-shell .acervo-choice.is-wrong{border-color:#e14759;background:#491f2d;color:#ffe4e8}
+#acervo-shell .acervo-hint{font-size:.77rem;line-height:1.5;color:#aebcd1;margin-top:13px}
+#acervo-shell .acervo-feedback{border-top:1px solid #3a4a64;margin-top:18px;padding-top:16px;display:grid;gap:9px;font-size:.9rem;line-height:1.65}
+#acervo-shell .acervo-feedback p{white-space:pre-wrap;overflow-wrap:anywhere}
+#acervo-shell .acervo-good{color:#49d78b}
+#acervo-shell .acervo-bad{color:#ff8290}
+#acervo-shell .acervo-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:space-between}
+#acervo-shell button.acervo-btn{font-size:.87rem;font-weight:750;min-height:43px;border-radius:10px;padding:10px 14px;border:1px solid #536581;color:#f8fafc;background:#20324d}
+#acervo-shell button.acervo-btn:hover:not(:disabled){background:#2d4465}
+#acervo-shell button.acervo-btn:disabled{opacity:.45;cursor:not-allowed}
+#acervo-shell button.acervo-btn.acervo-primary{background:#dfbd61;color:#101828;border-color:#dfbd61}
+#acervo-shell .acervo-pie{width:168px;height:168px;flex:none;border-radius:50%;background:#475569;position:relative}
+#acervo-shell .acervo-pie::after{content:"";position:absolute;inset:28px;background:#101c31;border-radius:50%}
+#acervo-shell .acervo-chart-wrap{display:flex;align-items:center;flex-wrap:wrap;gap:24px}
+#acervo-shell .acervo-legend{font-size:.92rem;line-height:2;color:#edf4ff}
+#acervo-shell .acervo-legend .green{color:#44cf80}.acervo-legend .red{color:#f16978}
+#acervo-shell progress{display:block;appearance:none;width:100%;height:7px;border:0;border-radius:8px;overflow:hidden;background:#253653}
+#acervo-shell progress::-webkit-progress-bar{background:#253653}
+#acervo-shell progress::-webkit-progress-value{background:#d6b65b}
+#acervo-shell progress::-moz-progress-bar{background:#d6b65b}
+#acervo-shell [hidden]{display:none!important}
+@media(max-width:790px){
+ #acervo-shell .acervo-grid{grid-template-columns:1fr}
+ #acervo-shell .acervo-counters{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #acervo-shell .acervo-actions{justify-content:flex-start}
+}
+@media(max-width:400px){#acervo-shell .acervo-counters{grid-template-columns:1fr 1fr}}
+body[data-theme="light"] #acervo-shell{color:#12233c}
+body[data-theme="light"] #acervo-shell .acervo-block{background:#f6f8fc;border-color:#c6d0df}
+body[data-theme="light"] #acervo-shell h2,body[data-theme="light"] #acervo-shell .acervo-statement{color:#10213a}
+body[data-theme="light"] #acervo-shell .acervo-subtitle{color:#455976}
+body[data-theme="light"] #acervo-shell .acervo-question-card{background:#fff;border-color:#c7d3e4}
+body[data-theme="light"] #acervo-shell .acervo-meta{color:#87620a}
+body[data-theme="light"] #acervo-shell .acervo-reference{color:#526783}
+body[data-theme="light"] #acervo-shell .acervo-choice{background:#f4f7fc;color:#142744;border-color:#b0bfd4}
+body[data-theme="light"] #acervo-shell .acervo-choice.is-correct{background:#e0faec;color:#145a36;border-color:#179251}
+body[data-theme="light"] #acervo-shell .acervo-choice.is-wrong{background:#ffe8e9;color:#8c2630;border-color:#c63a4b}
+body[data-theme="light"] #acervo-shell .acervo-counter{background:#eaf0f8;border-color:#c4d1df}
+body[data-theme="light"] #acervo-shell .acervo-counter span,body[data-theme="light"] #acervo-shell .acervo-hint{color:#506480}
+body[data-theme="light"] #acervo-shell .acervo-feedback{color:#1c324e}
+body[data-theme="light"] #acervo-shell .acervo-pie::after{background:#f6f8fc}
+@media print{#tab-acervo{display:none!important}}
