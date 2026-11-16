@@ -197,6 +197,10 @@ body:not(.landing-active) :is(#tab-questoes,#tab-resultados)[hidden]{
  body:not(.landing-active) #pmdf-context-bar{
    padding:11px 13px!important;gap:8px!important;
  }
+ body:not(.landing-active) :is(#tab-leis,#tab-anki,#tab-redacao) :is(input:not([type="checkbox"]),select,textarea){
+   font-size:16px!important; /* evita zoom involuntário no iOS */
+ }
+
  body:not(.landing-active) #pmdf-context-bar .pmdf-flow-copy span{
    font-size:12.5px!important;
  }
