@@ -12,6 +12,9 @@ const mk=(text,index,value,type,score)=>{
  if(index<0||!value)return null;
  const part=clean(value),n=part.split(/\s+/).length;
  if((part.length<8&&!/^\d+(?:[.,]\d+)?\s*(?:dias?|meses?|anos?|horas?)$/i.test(part))||part.length>135||n<2||n>25||!text.startsWith(value,index))return null;
+ if(/\b(?:arts?\.?)\s*\d+[º°]?|§\s*\d+[º°]?/i.test(part))return null;
+ if((part.match(/\(/g)||[]).length!==(part.match(/\)/g)||[]).length)return null;
+ if(/(?:\b(?:de|do|da|dos|das|a|ao|em|por|que|se|ou)\s*|[(:;,])$/i.test(part))return null;
  return {start:index,end:index+value.length,text:value,type,score};
 };
 function segments(text){
@@ -39,6 +42,12 @@ function candidates(text){
  if(dt.length>=2&&dt.length<=5){
   for(const m of dt.slice(0,3))add(m.index,m[0],'Prazos e condições',102);
  }
+ // Datas normativas: recordar o conjunto de datas quando a regra as compara.
+ for(const m of text.matchAll(/\b\d{1,2}\s+de\s+(?:janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\b/gi))
+  add(m.index,m[0],'Datas legais',104);
+ // Frações de aumento ou redução de pena com marcadores jurídicos completos.
+ for(const m of text.matchAll(/\b\d+\s*\/\s*\d+\s*(?:a|até)\s*\d+\s*\/\s*\d+\b/g))
+  add(m.index,m[0],'Frações e majorantes',109);
  // Restrições: exigir saber a condição integral, não apenas 'salvo'.
  const exception=/\b(salvo|exceto|desde que|mediante|ressalvad[oa]s?|somente se|apenas quando|independentemente de)\s+([^,;.!?]{12,104})/gi;
  for(const m of text.matchAll(exception))add(m.index,m[0],'Exceções e requisitos',116);
@@ -48,7 +57,7 @@ function candidates(text){
   const i=comp.index+comp[0].indexOf(comp[3]);
   add(i,comp[3],'Sujeito competente',110);
   const a=comp[4]+' '+comp[5],p=comp.index+comp[0].lastIndexOf(a);
-  add(p,a,'Atribuição exercida',108);
+  add(p,a,'Atribuição exercida',115);
  }
  // Consequência de crime: o núcleo da sanção deve ficar oculto.
  for(const m of text.matchAll(/\b(?:reclusão|detenção|prisão|multa)\s*(?:,|de|:|-)?\s*(?:de\s+)?\d+(?:[.,]\d+)?\s*(?:a|até)\s*\d+(?:[.,]\d+)?\s*(?:meses?|anos?)/gi)){
