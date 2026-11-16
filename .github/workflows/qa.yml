@@ -46,11 +46,11 @@ jobs:
         run: |
           python3 -m http.server 8000 --bind 127.0.0.1 > /tmp/pmdf-preview.log 2>&1 &
           sleep 2
-      - name: Testar Chromium no PR ou GitHub Pages publicado
+      - name: Percorrer leis, resumos, flashcards e redação em Chromium
         env:
           PMDF_ONLINE_URL: ${{ github.event_name == 'pull_request' && 'http://127.0.0.1:8000/' || 'https://metodopmdf.github.io/metodo-pmdf/' }}
           PMDF_DEPLOY_ATTEMPTS: ${{ github.event_name == 'pull_request' && '3' || '65' }}
-        run: node tests/online-e2e.mjs
+        run: node tests/online-intermediate.mjs
       - name: Guardar relatório e capturas (inclusive falhas)
         if: always()
         uses: actions/upload-artifact@v4
