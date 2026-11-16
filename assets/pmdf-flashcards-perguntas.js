@@ -10,6 +10,7 @@ const clean=s=>String(s??'').replace(/[\u200B-\u200D\uFEFF]/g,'').replace(/\s+/g
 const fold=s=>clean(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[.!?;:,]+$/,'');
 const hash=s=>{let a=2166136261;for(const c of String(s))a=Math.imul(a^c.charCodeAt(0),16777619);return (a>>>0).toString(36);};
 const cap=s=>s?s[0].toUpperCase()+s.slice(1):'';
+const genitive=s=>/^as\s/i.test(s)?'das '+s.slice(3):/^os\s/i.test(s)?'dos '+s.slice(3):/^a\s/i.test(s)?'da '+s.slice(2):/^o\s/i.test(s)?'do '+s.slice(2):'de '+s;
 const strip=s=>clean(s).replace(/[;,.\s]+$/,'');
 const bad=/\b(?:conferir|estudar|verificar|aprofundar|consultar)\b.{0,38}\b(?:lei|dispositivo|fonte|norma)|banca pode exigir|conforme dispositivos próprios|a norma prevê regras gerais/i;
 const modal=/\b(?:salvo|exceto|somente|apenas|exclusivamente|vedad[oa]|proibid[oa]|desde que|independe)\b/i;
@@ -137,7 +138,8 @@ function processUnit(ctx,row,unit){
  if(colon&&!/^https?:\/\//.test(sentence)){
   let subject=strip(colon[1]).replace(/^Art(?:s)?\.?\s*\d+[º°]?\s*[—–-]\s*/i,'');
   const answer=strip(colon[2]);
-  if(subject.length>=6&&subject.length<=85&&!/^art\.?\s*\d+/i.test(subject)){
+  if(subject.length>=6&&subject.length<=85&&!/^art\.?\s*\d+/i.test(subject)&&
+     !/^(?:são|constituem|consideram-se)\s+(?:os\s+|as\s+)?(?:requisitos|condições|elementos)/i.test(subject)){
    add('Qual é o conceito ou a característica central de '+subject+'?',answer,'Conceito',answer,
      'Associe o instituto ao elemento que o distingue.');
   }
@@ -155,7 +157,9 @@ function processUnit(ctx,row,unit){
   const subject=strip(provides[1]),fact=strip(provides[2]+' '+provides[3]);
   const q=/\bprinc[ií]pio\b/i.test(subject)
     ?'O que representa '+subject.toLowerCase()+'?'
-    :'Qual é o alcance de '+subject.toLowerCase()+'?';
+    :/^a constitui[cç][aã]o\b/i.test(subject)
+      ?'Que direito, garantia ou regra é assegurada pela Constituição?'
+      :'Qual é o alcance '+genitive(subject.toLowerCase())+'?';
   add(q,fact,'Conceito',fact,'Retenha o efeito da regra e o limite de sua aplicação.');
  }
  // Listas declaradas no texto: não criar requisitos ausentes.
