@@ -90,7 +90,7 @@ function make(text,ref='',level='intermediario'){
  if(!terms.length)return null;
  const preferred=level==='avancado'?3:level==='intermediario'?2:1;
  let chosen=[],masked=0;
- for(const t of terms){
+ for(const t of terms.slice().sort((a,b)=>b.score-a.score||a.start-b.start)){
   if(chosen.length>=preferred)break;
   if(masked+t.text.length>Math.max(35,text.length*.60))continue;
   if(text.length-t.text.length<35)continue;
