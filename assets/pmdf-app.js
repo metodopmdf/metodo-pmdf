@@ -1794,6 +1794,15 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             return buildStudyCardsLegacy(g);
         }
         function buildStudyCardsLegacy(g){
+            // Modo clássico usa perguntas objetivas fundamentadas, sem rede neural.
+            // Mantém id estável, revisão Leitner, exportação e textos originais.
+            if(window.PMDFAnkiQuestions?.buildClassic){
+                try {
+                    const built=window.PMDFAnkiQuestions.buildClassic(g,{level:LEVEL});
+                    if(Array.isArray(built?.cards))return built.cards;
+                }catch(e){console.warn('Flashcards clássicos: indisponível o gerador de perguntas.',e);}
+            }
+            // Compatibilidade para navegação offline com script indisponível:
             // Flashcards baseados apenas em afirmações efetivamente presentes na fonte.
             // Evita perguntas vagas, "pegadinhas" sem resposta e truncamento de premissas.
             if(!g)return [];
@@ -1831,9 +1840,8 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 const dedupe=norm(art+'|'+source);
                 if(sourceSeen.has(dedupe))continue;sourceSeen.add(dedupe);
                 const topic=topicOf(art),priority=a._priority;
-                const ruleBack='Resposta segundo o material:\n'+source+'\n\nFundamento: '+art+' — '+law+'.';
-                add(art,source,'Regra principal',
-                    'Segundo '+art+', qual é a regra central sobre '+topic+'?',ruleBack,priority);
+                // Não criar o antigo cartão vago "qual é a regra central?".
+                // Se o novo módulo falhar, manter apenas lacunas literais verificáveis.
                 // Cartões de preenchimento: ocultam elemento expresso no texto, nunca inventam conclusão.
                 const targets=[];
                 const pats=[
