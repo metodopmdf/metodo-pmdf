@@ -111,7 +111,9 @@ function push(ctx,row,unit,front,back,kind,anchor,detail=''){
  if(/^(?:o que significa|como se definem|como se caracteriza)\s+já\b|^em que consiste diferente\b/i.test(front))return false;
  front=front.replace(/^Quais características são atribuídas a os\s+/i,'Quais são as características dos ')
    .replace(/^Quais características são atribuídas a as\s+/i,'Quais são as características das ')
-   .replace(/:\?$/, '?');
+   .replace(/:\?$/, '?')
+   .replace(/\b(?:df|pmdf|ipm|cpm|cppm|stf|stj|cbm|pm|cp|cpp)\b/gi,x=>x.toUpperCase());
+ if(front.includes(':'))return false;
  if(!front.endsWith('?'))front=front.replace(/[.:;, ]+$/,'')+'?';
  if(front.length<24||front.length>205||back.length<8||back.length>280)return false;
  if(/…|\.{3}|\b(?:undefined|null)\b/i.test(front+' '+back)||fold(front)===fold(back))return false;
@@ -126,8 +128,9 @@ function push(ctx,row,unit,front,back,kind,anchor,detail=''){
      !back.split('; ').every(part=>fold(evidence).includes(fold(part))))return false;
  }
  const signature=fold(row.law+'|'+row.reference+'|'+front);
- if(ctx.seen.has(signature))return false;
- ctx.seen.add(signature);
+ const answerSignature=fold(row.law+'|'+row.reference+'|'+back);
+ if(ctx.seen.has(signature)||ctx.answerSeen.has(answerSignature))return false;
+ ctx.seen.add(signature);ctx.answerSeen.add(answerSignature);
  const score=extractScore(ctx,unit);
  const priority=row.priority==='Alta'?3:row.priority==='Média'?1:0;
  const typeScore={Distinção:3,Competência:3,Exceção:3,Prazo:3,Requisito:3,Conceito:2,Classificação:2,Aplicação:1}[kind]||1;
@@ -194,7 +197,7 @@ function processUnit(ctx,row,unit){
  }
  // Atributos e características. Evita pergunta-vazia para sequências isoladas.
  const characteristic=sentence.match(/^(.{8,105}?)\s+(não possuem|possuem|não têm|têm|tem|apresentam|caracterizam-se por)\s+(.{9,205})[.!]?$/i);
- if(characteristic){
+ if(characteristic&&!sentence.includes(':')){
   const subject=strip(characteristic[1]),rest=strip(characteristic[2]+' '+characteristic[3]);
   add('Quais características são atribuídas a '+subject.toLowerCase()+'?',rest,
       'Classificação',rest,'Memorize atributos afirmados e negados.');
@@ -270,7 +273,7 @@ function processUnit(ctx,row,unit){
 function setup(guide,opts={}){
  let motor=null;if(opts.mode!=='classic')try{motor=root.PMDFNeuralQuestions?.testModel?.()||null;}catch(_){}
  return {motor,law:clean(guide?.lawName)||'Material',level:opts.level||'intermediario',
-  cards:[],seen:new Set(),unitsSeen:new Set(),covered:new Set(),skipped:0,
+  cards:[],seen:new Set(),answerSeen:new Set(),unitsSeen:new Set(),covered:new Set(),skipped:0,
   modalities:{'Pergunta estratégica (P&R)':0},style:opts.style||'questions'};
 }
 function runRow(ctx,row){
