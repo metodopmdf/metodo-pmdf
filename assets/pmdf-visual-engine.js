@@ -133,13 +133,15 @@ function mount(container){
  if(!report)return null;
  if(INSTANCES.has(report))return INSTANCES.get(report);
  const cards=Array.from(report.querySelectorAll('.pmdf-visual-card'));
+ const searchable=cards.map(card=>fold(card.textContent)); // Indexação uma única vez; evita varredura repetida em guias extensos.
  const state={page:1,size:5,mode:report.dataset.visualDefault||'all',query:''};
  const modes=Array.from(report.querySelectorAll('[data-visual-mode]'));
  const prev=report.querySelector('[data-visual-action="prev"]'),next=report.querySelector('[data-visual-action="next"]');
  const status=report.querySelector('.pmdf-visual-page-status'),counter=report.querySelector('[data-visual-count]');
  const track=report.querySelector('[data-visual-progress]'),select=report.querySelector('[data-visual-pagesize]');
  const update=()=>{
-  const matching=cards.filter(card=>(state.mode==='all'||card.dataset.visualFocus==='1')&&(!state.query||fold(card.textContent).includes(fold(state.query))));
+  const query=fold(state.query);
+  const matching=cards.filter((card,i)=>(state.mode==='all'||card.dataset.visualFocus==='1')&&(!query||searchable[i].includes(query)));
   const pages=Math.max(1,Math.ceil(matching.length/state.size));state.page=Math.min(Math.max(1,state.page),pages);
   const start=(state.page-1)*state.size,visible=new Set(matching.slice(start,start+state.size));
   cards.forEach(card=>{card.hidden=!visible.has(card);});
