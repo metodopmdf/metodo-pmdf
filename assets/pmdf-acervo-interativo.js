@@ -320,13 +320,14 @@ function nextUnseen(){
  status("Todas as questões deste filtro já foram respondidas.");
 }
 async function resetProgress(){
- if(!scope.length)return;
- if(!window.confirm("Apagar as respostas das "+scope.length+" questões no recorte atual? Isso não altera os enunciados nem os gabaritos."))return;
+ const target=filtered.filter(q=>answers.has(q.id));
+ if(!target.length){status("Nenhuma resposta registrada nas questões visíveis deste filtro.");return;}
+ if(!window.confirm("Apagar as respostas das "+target.length+" questões selecionadas? Os demais resultados, enunciados e gabaritos serão preservados."))return;
  try{
   const tx=db.transaction(["answers"],"readwrite"),store=tx.objectStore("answers"),done=transactionDone(tx);
-  for(const q of scope)store.delete(q.id);
-  await done;for(const q of scope)answers.delete(q.id);
-  applyFilters(true);status("Respostas do filtro reiniciadas. O banco de questões foi preservado.");
+  for(const q of target)store.delete(q.id);
+  await done;for(const q of target)answers.delete(q.id);
+  applyFilters(true);status("Foram reiniciadas "+target.length+" respostas do filtro. As demais foram preservadas.");
  }catch(e){status("Erro ao reiniciar respostas: "+e.message,true);}
 }
 function bind(){
