@@ -70,7 +70,12 @@ function push(ctx,row,unit,front,back,kind,anchor,detail=''){
  const evidence=clean(unit);
  if(!anchor || !fold(evidence).includes(fold(anchor)))return false;
  // A resposta deve constar da mesma unidade. Não se cria resposta por analogia.
- if(!fold(evidence).includes(fold(back)))return false;
+ if(!fold(evidence).includes(fold(back))){
+  // Em comparações, cada cláusula deve existir na fonte, embora o verso
+  // substitua 'enquanto' por ';' para facilitar memorização.
+  if(kind!=='Distinção'||!back.includes('; ')||
+     !back.split('; ').every(part=>fold(evidence).includes(fold(part))))return false;
+ }
  const signature=fold(row.law+'|'+row.reference+'|'+front);
  if(ctx.seen.has(signature))return false;
  ctx.seen.add(signature);
@@ -120,7 +125,7 @@ function processUnit(ctx,row,unit){
    if(/^os membros\b|^os integrantes\b|^as integrantes\b|^as pessoas\b/i.test(subject))
      q='Como são classificados '+subject.toLowerCase()+'?';
    else if(/consiste em/.test(verb))q='Em que consiste '+subject.toLowerCase()+'?';
-   else if(/abrange|abrangem|compreende|envolve|envolvem/.test(verb))q='O que abrange '+subject.toLowerCase()+'?';
+   else if(/abrange|abrangem|compreende|envolve|envolvem/.test(verb))q='O que está abrangido pelo conceito de '+subject.toLowerCase()+'?';
    else if(/constitui|constituem|configura|configuram|caracteriza/.test(verb))q='O que caracteriza '+subject.toLowerCase()+'?';
    else if(/sao|classifica-se/.test(verb))q='Como se definem '+subject.toLowerCase()+'?';
    else q='O que significa '+subject.toLowerCase()+'?';
