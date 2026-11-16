@@ -897,7 +897,8 @@ const CLOZE_RE = /(\d+\s*(?:dias|dia|anos|ano|meses|mês|horas|hora)|\d+\/\d+|(?
             const safeTitle=esc(name);
             const extraPrintCss=SUMMARY_FORMAT==='visual'
                 ?'assets/pmdf-visual.css?v=20261115-editorial-v3'
-                :SUMMARY_FORMAT==='cloze'?'assets/pmdf-cloze-strategic.css?v=20261116-cloze-v3':'';
+                :SUMMARY_FORMAT==='cloze'?'assets/pmdf-cloze-strategic.css?v=20261116-cloze-v3'
+                :(SUMMARY_FORMAT==='full'||SUMMARY_FORMAT==='bullets')?'assets/pmdf-summary-editorial.css?v=20261116-editorial-v1':'';
             const visualPrintStyle=extraPrintCss
                 ?'<link id="visual-print-style" rel="stylesheet" href="'+esc(new URL(extraPrintCss,document.baseURI).href)+'">'
                 :'';
@@ -1091,9 +1092,9 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         // O banco legado acima permanece íntegro; as quatro entradas ausentes
         // abaixo completam as 14 chaves exibidas na interface.
         // =====================================================================
-        const SUMMARY_FORMATS = ['full','bullets','table','flash','visual','cloze']; // Um único seletor de formatos; mapas e questões pausados.
+        const SUMMARY_FORMATS = ['full','bullets','flash','visual','cloze']; // Quadro Sinótico, mapas e questões fora do seletor.
         let SOURCE_MODE = 'url';
-        let SUMMARY_FORMAT = SUMMARY_FORMATS.includes(store.get('summaryFormat')) ? store.get('summaryFormat') : 'full';
+        let SUMMARY_FORMAT = store.get('summaryFormat')==='table'?'bullets':(SUMMARY_FORMATS.includes(store.get('summaryFormat')) ? store.get('summaryFormat') : 'full');
         let LAW_FILE_NAME = '';
         const STUDY_GLOSSARY = {
             dolo:'Vontade consciente de praticar a conduta ou assumir o risco do resultado.',
@@ -1295,7 +1296,8 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         }
         function clearLawText() { if ($('law-text')) $('law-text').value = ''; if ($('law-text-title')) $('law-text-title').value = ''; countLawText(); }
         function setSummaryFormat(format) {
-            if(format==='traps'||format==='mind')format='visual'; // Migra formatos ocultados para uma opção ativa.
+            if(format==='traps'||format==='mind')format='visual';
+            if(format==='table')format='bullets'; // Migra Quadro Sinótico sem perder a seleção salva.
             if (!SUMMARY_FORMATS.includes(format)) return;
             SUMMARY_FORMAT = format; store.set('summaryFormat', format);
             ['summary-format-config','summary-format-toolbar'].forEach(id => { if ($(id)) $(id).value = format; });
@@ -1757,6 +1759,8 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             let body='';
             if(SUMMARY_FORMAT==='visual'){
                 body=window.PMDFVisualEngine?window.PMDFVisualEngine.render(g,{interactive,board:eb}):'<p>O módulo visual não foi carregado. Atualize a página.</p>';
+            }else if((SUMMARY_FORMAT==='full'||SUMMARY_FORMAT==='bullets')&&window.PMDFStrategicSummaries){
+                body=window.PMDFStrategicSummaries.render(g,{format:SUMMARY_FORMAT,board:eb,level:LEVEL});
             }else if(SUMMARY_FORMAT==='full'){
                 const sec=(title,arr)=>safeArray(arr).length?'<h3>'+title+'</h3>'+safeArray(arr).map(x=>'<div class="g-card"><b>'+esc(x.title)+'</b><p>'+esc(x.reason)+'</p></div>').join(''):'';
                 body=wrap('1. Resumo Executivo',executive+glossary)+wrap('2. Raio-X Estrutural',sec('Prioridade Máxima',X.highPriority)+sec('Prioridade Secundária',X.secondaryPriority)+(LEVEL==='iniciante'?'':sec('Zonas de menor incidência',X.deadZones)))+wrap('3. Mapeamento de Dispositivos',rows.map(articleCard).join(''));
@@ -1784,7 +1788,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             }
             // A página de leitura contém apenas o seletor único em #summary-format-toolbar.
             return                 '<div class="pmdf-report pmdf-report-'+SUMMARY_FORMAT+'">'+
-                (SUMMARY_FORMAT==='visual'?'':intro)+
+                ((SUMMARY_FORMAT==='visual'||((SUMMARY_FORMAT==='full'||SUMMARY_FORMAT==='bullets')&&window.PMDFStrategicSummaries))?'':intro)+
                 body+'<footer class="pmdf-report-footer"><span>⚖ MÉTODO PMDF</span><span>Material didático · Confira a norma oficial vigente</span></footer></div>'+
                 '';
         }
@@ -1947,7 +1951,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     }
                 } catch (e) { /* Fonte inválida não interrompe o estudo. */ }
             }
-            $('current-doc-title').textContent='Método PMDF — '+g.lawName+' · '+LEVELS[LEVEL].label+' · '+({full:'Por Extenso',bullets:'Esquematizado',table:'Quadro Sinótico',flash:'Flashcards',traps:'Pegadinhas',visual:'Visual Ilustrado',cloze:'Lacunas Estratégicas'}[SUMMARY_FORMAT]);
+            $('current-doc-title').textContent='Método PMDF — '+g.lawName+' · '+LEVELS[LEVEL].label+' · '+({full:'Por Extenso',bullets:'Esquematizado',flash:'Flashcards',traps:'Pegadinhas',visual:'Visual Ilustrado',cloze:'Lacunas Estratégicas'}[SUMMARY_FORMAT]);
             ['summary-format-config','summary-format-toolbar'].forEach(id=>{if($(id))$(id).value=SUMMARY_FORMAT;});
             // Indicadores de progresso do guia removidos da interface.
             if(CLOZE_MODE&&SUMMARY_FORMAT!=='cloze')applyCloze();
@@ -3135,7 +3139,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const localHadNewer=Object.keys(snapshot.data).some(k=>BACKUP_KEY_RE.test(k)&&snapshot.data[k]!==remote[k]);
             applyProgressSnapshot(snapshot);
             LEVEL=LEVELS_SAFE_LEVEL(store.get('lvl'));paintLevel();
-            SUMMARY_FORMAT=SUMMARY_FORMATS.includes(store.get('summaryFormat'))?store.get('summaryFormat'):'full';setSummaryFormat(SUMMARY_FORMAT);
+            SUMMARY_FORMAT=store.get('summaryFormat')==='table'?'bullets':(SUMMARY_FORMATS.includes(store.get('summaryFormat'))?store.get('summaryFormat'):'full');setSummaryFormat(SUMMARY_FORMAT);
             restoreLastGuide();restoreEssayDraft();restoreEssayLastResult();
             const imported=jget('exam:imports',[]);
             IMPORTED_QUESTIONS.splice(0,IMPORTED_QUESTIONS.length,...(Array.isArray(imported)?imported.slice(0,500):[]));
