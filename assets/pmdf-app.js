@@ -722,6 +722,10 @@ const CLOZE_RE = /(\d+\s*(?:dias|dia|anos|ano|meses|mês|horas|hora)|\d+\/\d+|(?
             });
         }
         function filterGuide(value){
+            if(SUMMARY_FORMAT==='visual' && window.PMDFVisualEngine?.mount){
+                window.PMDFVisualEngine.mount($('printable-area'))?.filter(value);
+                return;
+            }
             const query=String(value||'').toLowerCase().trim(),nodes=[...document.querySelectorAll('#printable-area .g-card,#printable-area .study-card,#printable-area .mind-node,#printable-area tbody tr,#printable-area ul > li')];
             let visible=0;
             nodes.forEach(node=>{const match=!query||node.textContent.toLowerCase().includes(query);node.style.display=match?'':'none';if(match)visible++;});
@@ -890,15 +894,23 @@ const CLOZE_RE = /(\d+\s*(?:dias|dia|anos|ano|meses|mês|horas|hora)|\d+\/\d+|(?
                 window.print();return;
             }
             const safeTitle=esc(name);
+            const visualPrintStyle=SUMMARY_FORMAT==='visual'?'<link id="visual-print-style" rel="stylesheet" href="'+esc(new URL('assets/pmdf-visual.css?v=20261115-editorial-v3',document.baseURI).href)+'">':'';
             preview.document.open();
             preview.document.write('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">'+
                 '<meta name="viewport" content="width=device-width,initial-scale=1">'+
                 '<title>Método PMDF — '+safeTitle+'</title><style>'+css+'\n'+printFix+
-                '</style></head><body><article id="printable-area">'+content+
+                '</style>'+visualPrintStyle+'</head><body><article id="printable-area">'+content+
                 '</article></body></html>');
             preview.document.close();
-            const printNow=()=>{try{preview.focus();preview.print();}catch(e){toast('Falha ao abrir impressão: '+e.message,'error');}};
-            if(preview.document.readyState==='complete')setTimeout(printNow,250);
+            let printStarted=false;
+            const printNow=()=>{if(printStarted)return;printStarted=true;try{preview.focus();preview.print();}catch(e){toast('Falha ao abrir impressão: '+e.message,'error');}};
+            const visualLink=preview.document.getElementById('visual-print-style');
+            if(visualLink){
+                visualLink.addEventListener('load',()=>setTimeout(printNow,200),{once:true});
+                visualLink.addEventListener('error',()=>setTimeout(printNow,250),{once:true});
+                if(visualLink.sheet)setTimeout(printNow,250);
+                setTimeout(printNow,1800); // contingência se a folha local não responder.
+            }else if(preview.document.readyState==='complete')setTimeout(printNow,250);
             else preview.addEventListener('load',()=>setTimeout(printNow,250),{once:true});
         }
         // A exportação da redação é independente do guia de leis.
@@ -1737,7 +1749,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const compareRows=rows.slice(0,8).map(a=>'<tr><td>'+esc(a.article)+'</td><td>'+esc(firstSentences(a.plainExplanation,230))+'</td><td>'+esc(uniq(a.plainExplanation.match(PRAZO)||[]).join('; ')||'Não identificado no trecho')+'</td><td>'+esc(uniq(a.plainExplanation.match(RESTR)||[]).join('; ')||'Não identificado no trecho')+'</td></tr>').join('');
             let body='';
             if(SUMMARY_FORMAT==='visual'){
-                body=window.PMDFVisualEngine?window.PMDFVisualEngine.render(g):'<p>O módulo visual não foi carregado. Atualize a página.</p>';
+                body=window.PMDFVisualEngine?window.PMDFVisualEngine.render(g,{interactive,board:eb}):'<p>O módulo visual não foi carregado. Atualize a página.</p>';
             }else if(SUMMARY_FORMAT==='full'){
                 const sec=(title,arr)=>safeArray(arr).length?'<h3>'+title+'</h3>'+safeArray(arr).map(x=>'<div class="g-card"><b>'+esc(x.title)+'</b><p>'+esc(x.reason)+'</p></div>').join(''):'';
                 body=wrap('1. Resumo Executivo',executive+glossary)+wrap('2. Raio-X Estrutural',sec('Prioridade Máxima',X.highPriority)+sec('Prioridade Secundária',X.secondaryPriority)+(LEVEL==='iniciante'?'':sec('Zonas de menor incidência',X.deadZones)))+wrap('3. Mapeamento de Dispositivos',rows.map(articleCard).join(''));
@@ -1760,7 +1772,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const tools=interactive?'<div class="no-print flex flex-wrap gap-2 mt-3"><button data-pmdf-onclick="openFlash()" class="'+BTN+'">🃏 Revisão de flashcards</button><button data-pmdf-onclick="openErrors()" class="'+BTN+'">📕 Caderno de Erros</button><button data-pmdf-onclick="openMindMap()" class="'+BTN+'">🌳 Mapa mental</button><button data-pmdf-onclick="openPanel()" class="'+BTN+'">📊 Painel do Edital &amp; Backup</button><button data-pmdf-onclick="toggleCloze()" class="'+BTN+'">🙈 Modo Lacunas</button><input type="search" id="guide-search" data-pmdf-oninput="filterGuide(this.value)" placeholder="Buscar neste guia..." class="px-3 py-2 rounded-xl bg-[#0E1B33] border border-[#1E2E4F] text-xs text-slate-200 w-64"><button type="button" data-pmdf-onclick="clearGuideOptions()" class="'+BTN+'">↺ Limpar filtros do guia</button><button data-pmdf-onclick="searchAll()" class="'+BTN+'">🔎 Busca global</button>'+(LEVEL!=='iniciante'?'<select aria-label="Filtrar guia por banca" data-pmdf-onchange="setBank(this.value)" class="px-2 py-2 rounded-xl bg-[#0E1B33] border border-[#1E2E4F] text-xs text-slate-200"><option value="auto" '+(BANK==='auto'?'selected':'')+'>Conforme a banca</option><option value="todas" '+(BANK==='todas'?'selected':'')+'>Todas</option><option value="cebraspe" '+(BANK==='cebraspe'?'selected':'')+'>Cebraspe</option><option value="fgv" '+(BANK==='fgv'?'selected':'')+'>FGV/AOCP</option></select>':'')+'</div>':'';
             return tools+(interactive?'<p id="g-progress" class="no-print mt-2"></p>':'')+
                 '<div class="pmdf-report pmdf-report-'+SUMMARY_FORMAT+'">'+
-                intro+
+                (SUMMARY_FORMAT==='visual'?'':intro)+
                 body+'<footer class="pmdf-report-footer"><span>⚖ MÉTODO PMDF</span><span>Material didático · Confira a norma oficial vigente</span></footer></div>'+
                 '';
         }
@@ -1896,6 +1908,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             if(CUR.key)store.set('lastKey',CUR.key);markShortcut(CUR.key);
             $('printable-area').innerHTML=pmdfSafeHtml(guideHtml(g,true),true);
             pmdfFocusScrollableRegions($('printable-area'));
+            if(SUMMARY_FORMAT==='visual')window.PMDFVisualEngine?.mount?.($('printable-area'));
             if (g.officialSource && typeof g.officialSource === 'string') {
                 try {
                     const ref = new URL(g.officialSource);
