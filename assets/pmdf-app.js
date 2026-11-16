@@ -1085,7 +1085,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         // O banco legado acima permanece íntegro; as quatro entradas ausentes
         // abaixo completam as 14 chaves exibidas na interface.
         // =====================================================================
-        const SUMMARY_FORMATS = ['full','bullets','table','mind','flash','traps','visual'];
+        const SUMMARY_FORMATS = ['full','bullets','table','mind','flash','visual']; // Questões e pegadinhas estruturadas pausadas na interface.
         let SOURCE_MODE = 'url';
         let SUMMARY_FORMAT = SUMMARY_FORMATS.includes(store.get('summaryFormat')) ? store.get('summaryFormat') : 'full';
         let LAW_FILE_NAME = '';
@@ -1289,6 +1289,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         }
         function clearLawText() { if ($('law-text')) $('law-text').value = ''; if ($('law-text-title')) $('law-text-title').value = ''; countLawText(); }
         function setSummaryFormat(format) {
+            if(format==='traps')format='visual'; // Migra preferência anterior sem quebrar o armazenamento.
             if (!SUMMARY_FORMATS.includes(format)) return;
             SUMMARY_FORMAT = format; store.set('summaryFormat', format);
             ['summary-format-config','summary-format-toolbar'].forEach(id => { if ($(id)) $(id).value = format; });
@@ -1981,7 +1982,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         // UI: navegação acessível sem mudança nas rotinas de estudo.
         function pmdfTabKeydown(e){
             if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
-            const buttons=Array.from(document.querySelectorAll('nav.pmdf-app-tabs [role="tab"]'));
+            const buttons=Array.from(document.querySelectorAll('nav.pmdf-app-tabs [role="tab"]:not([hidden])'));
             const i=buttons.indexOf(document.activeElement);if(i<0)return;
             e.preventDefault();const n=e.key==='Home'?0:e.key==='End'?buttons.length-1:(i+(e.key==='ArrowRight'?1:-1)+buttons.length)%buttons.length;
             buttons[n].click();buttons[n].focus();
@@ -1993,6 +1994,8 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             el.focus({preventScroll:true});
         }
         function showTab(t) {
+            // A aba de Questões está preservada internamente, mas indisponível nesta etapa.
+            if(t==='questoes')t='leis';
             TAB = t;
             if(APP_STARTED&&!SESSION_RESTORING)saveStudySession();if(t==='resultados')setTimeout(renderResults,0);
             ['leis', 'questoes', 'anki', 'redacao','resultados'].forEach(k => { $('tab-' + k).classList.toggle('hidden', k !== t);$('tab-btn-'+k).setAttribute('role','tab');$('tab-btn-'+k).setAttribute('aria-selected',String(k===t));
@@ -2729,14 +2732,19 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const evaluated=Object.prototype.hasOwnProperty.call(s.ratings||{},s.index);
             const name=esc(c.kind||'Conceito essencial'),law=esc(c.law||''),article=esc(c.article||'');
             const focus=s.back?'VERSO · RESPOSTA':'FRENTE · RECUPERAÇÃO ATIVA';
+            const illustrationSource=[c.article,c.kind,c.modality,c.hint,c.source||c.extra||c.front].filter(Boolean).join(' ').slice(0,500);
+            const art=window.PMDFVisualEngine?.illustration?.(illustrationSource,s.index)||
+                '<span class="anki-visual-art-fallback" aria-hidden="true">⚖</span>';
             el.innerHTML='<div class="study-progress-meter" role="progressbar" aria-valuemin="0" aria-valuemax="'+s.cards.length+
                 '" aria-valuenow="'+s.index+'" aria-label="Progresso da revisão"><span style="width:'+percent+'%"></span></div>'+
+                '<div class="anki-visual-banner"><div class="anki-visual-banner-head"><span>✦ MÉTODO PMDF · REVISÃO ILUSTRADA</span><strong>'+esc(s.back?'RESPOSTA REVELADA':'RECUPERAÇÃO ATIVA')+'</strong></div>'+ 
                 '<div class="anki-meta"><span>Cartão '+(s.index+1)+' de '+s.cards.length+'</span>'+
                 '<span>'+esc(LEVELS[LEVEL].label)+'</span><span>Caixa Leitner '+state.box+'</span></div>'+
                 '<div class="anki-tags"><span>'+name+'</span><span>'+article+'</span>'+
                     (c.modality?'<span>'+esc(c.modality)+'</span>':'')+
                     (c.difficulty?'<span>'+esc(c.difficulty)+'</span>':'')+'</div>'+
-                '<p class="anki-law">'+law+'</p>'+
+                '<p class="anki-law">'+law+'</p></div>'+ 
+                '<div class="anki-visual-card"><aside class="anki-visual-aside"><div class="anki-visual-illustration">'+art+'</div><span class="anki-visual-art-caption">'+name+'</span><span class="anki-visual-art-subtitle">'+article+'</span></aside><div class="anki-visual-body-wrap">'+
                 '<div class="anki-study-surface"><p class="anki-kicker">'+focus+'</p>'+
                 (s.back?'<p class="anki-answer-caption">NÚCLEO DA RESPOSTA</p>':'')+
                 '<p class="anki-question '+(c.cloze?'anki-question-cloze':'')+'">'+
@@ -2757,7 +2765,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     (c.tags?'<p class="anki-source-note">Tags: '+esc(c.tags)+'</p>':'')+
                     '</details></div>':
                     '<p class="anki-hint">Recupere somente a lacuna ou o conceito essencial. Revele a resposta para conferir.</p>')+
-                '<div class="anki-study-controls"><div class="anki-actions '+(s.back&&!evaluated?'anki-grade-choices':'')+'">'+(!s.back?
+                '</div></div><div class="anki-study-controls"><div class="anki-actions '+(s.back&&!evaluated?'anki-grade-choices':'')+'">'+(!s.back?
                     '<button type="button" class="qstudio-primary" data-pmdf-onclick="revealAnki()">Revelar resposta</button>':
                     evaluated?'<span class="anki-reviewed-hint">Já avaliado como '+esc(s.ratings[s.index])+'. Voltar não altera sua nota.</span>':
                     '<button type="button" class="qstudio-secondary" data-pmdf-onclick="gradeAnki(false)">Errei <small>Rever</small></button>'+
@@ -2844,7 +2852,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 ANKI_STATE=s.anki?.cards?.length?s.anki:null;
                 if(Q_STATE){$('q-panel').classList.remove('hidden');Q_STATE.questionStart=Date.now();if(Q_STATE.engine==='neural')setQuestionEngine('neural');if(Q_STATE.items.some(q=>q.origin==='official-import')){$('q-source').value='imported';$('q-format').value=Q_STATE.items[0]?.type==='CE'?'CE':'MC';}drawQuestions();}
                 if(ANKI_STATE){$('anki-panel').classList.remove('hidden');drawAnki();}
-                restoreEssayLastResult();showTab(['leis','questoes','anki','redacao','resultados'].includes(s.tab)?s.tab:'leis');
+                restoreEssayLastResult();showTab(['leis','anki','redacao','resultados'].includes(s.tab)?s.tab:'leis');
             }else{Q_STATE=null;ANKI_STATE=null;$('q-panel')?.classList.add('hidden');$('anki-panel')?.classList.add('hidden');showTab('leis');}
             SESSION_RESTORING=false;saveStudySession();showQuestionTotals();window.scrollTo(0,0);
         }
