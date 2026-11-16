@@ -70,10 +70,18 @@ function push(ctx,row,unit,front,back,kind,anchor,detail=''){
   const label=strip(generic[1])
     .replace(/\(\s*Arts?\.?\s*[^)]*\)/gi,'').replace(/\s*[—–-]\s*Arts?\.?\s*\d+.*$/i,'').trim();
   const lc=label.toLowerCase();
-  if(/(?:peculato|concussão|corrupção|tortura|prevaricação|motim|deserção)/i.test(label)&&label.length<75)
+  if(/^(?:o\s+)?cpm\s+(?:possui|prevê)\s+\d+\s+penas?\s+principais/i.test(label))
+    front='Quais são as penas principais previstas no Código Penal Militar?';
+  else if(/^são\s+efeitos?\s+da\s+condenação/i.test(label))
+    front='Quais são os efeitos da condenação?';
+  else if(/(?:peculato|concussão|corrupção|tortura|prevaricação|motim|deserção)/i.test(label)&&label.length<75)
     front='Qual conduta caracteriza o crime de '+lc+'?';
   else if(/\bprazos?\b/i.test(label)&&label.length<85)
-    front='Quais são os prazos e condições associados a '+lc+'?';
+    front=/\bprazos?\s+(?:do|de)\s+ipm\b/i.test(label)
+      ?'Quais são os prazos do inquérito policial militar nas situações previstas?'
+      :/\bprazos?\s+(?:do|de)\s+ip\b/i.test(label)
+        ?'Quais são os prazos do inquérito policial previstos no material?'
+        :'Quais são os prazos previstos para '+lc.replace(/^prazos?\s+(?:do|de|da)\s+/i,'')+'?';
   else if(/(?:penas? principais|efeitos? da condenação)/i.test(label)&&label.length<95)
     front='Quais são '+lc+'?';
   else if(/^(?:são|é|já|para|no|na|cuidado|atenção|aumenta-se)/i.test(label)||
@@ -88,6 +96,13 @@ function push(ctx,row,unit,front,back,kind,anchor,detail=''){
     /^qual é o alcance (?:d[ao] )?arts?\.?\s*\d+/i.test(front)||
     /^qual é o alcance .*?(?:\s(?:é|são|não|mas|porém|ocorrem|possui|traz)\s|[;:])/i.test(front)||
     /^como se caracteriza .*?(?:\s(?:é|são|não|ocorrem)\s|[;:])/i.test(front))return false;
+ // Tratamento de estruturas negativas: não suprimir "não" do sujeito.
+ if(/^(?:o que significa|como se caracteriza|como se definem)\s+(?:se |para |no |na |em |aumenta-se |atenção\b)/i.test(front))return false;
+ if(/^(?:o que significa|como se caracteriza|como se definem)\s+[^?]{0,120}\s+(?:não|é|são|ocorrem)\?/i.test(front))return false;
+ if(/^qual é o alcance (?:d[ao]|das|dos) [^?]*\s(?:não|é|são|possui|traz)\?/i.test(front))return false;
+ if(/^quais são\s+o\s+|^quais são são\b/i.test(front))return false;
+ if(/(?:\s(?:não|é|são)\s|[;:])[^?]{0,115}\?/i.test(front)&&
+    /^(?:qual é o alcance|como se caracteriza)\s/i.test(front))return false;
  front=front.replace(/:\?$/, '?');
  if(!front.endsWith('?'))front=front.replace(/[.:;, ]+$/,'')+'?';
  if(front.length<24||front.length>205||back.length<8||back.length>280)return false;
