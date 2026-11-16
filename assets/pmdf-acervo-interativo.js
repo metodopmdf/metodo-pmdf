@@ -160,19 +160,27 @@ function renderDecks(){
   for(const d of visible)sel.add(new Option(d.name+" ("+d.questions.length.toLocaleString("pt-BR")+")",d.id));
   if([...sel.options].some(o=>o.value===before))sel.value=before;
 }
+function topicKey(q){return q.deckId+"||"+topicOf(q);}
 function renderTopics(){
   const sel=$("acervo-topic");if(!sel)return;
   const before=sel.value,matter=selectionOf("acervo-materia"),deck=selectionOf("acervo-deck");
-  const topics=new Map();
+  if(matter==="all"&&deck==="all"){
+    sel.replaceChildren(new Option("Escolha uma matéria ou lei primeiro","all"));
+    sel.disabled=true;return;
+  }
+  sel.disabled=false;
+  const allowed=decks.filter(d=>(matter==="all"||matterOf(d.id)===matter)&&(deck==="all"||d.id===deck));
+  const multi=allowed.length>1,topics=new Map();
   for(const q of items){
     if(matter!=="all"&&matterOf(q.deckId)!==matter)continue;
     if(deck!=="all"&&q.deckId!==deck)continue;
-    const t=topicOf(q);topics.set(t,(topics.get(t)||0)+1);
+    const key=topicKey(q),label=(multi?q.deckName+" · ":"")+topicOf(q);
+    const entry=topics.get(key)||{label,count:0};entry.count++;topics.set(key,entry);
   }
   sel.replaceChildren(new Option("Todos os tópicos / artigos ("+
-    [...topics.values()].reduce((a,b)=>a+b,0).toLocaleString("pt-BR")+")","all"));
-  for(const t of [...topics.keys()].sort((a,b)=>a.localeCompare(b,"pt-BR",{numeric:true})))
-    sel.add(new Option(t+" ("+topics.get(t)+")",t));
+    [...topics.values()].reduce((n,x)=>n+x.count,0).toLocaleString("pt-BR")+")","all"));
+  for(const [key,entry] of [...topics.entries()].sort((a,b)=>a[1].label.localeCompare(b[1].label,"pt-BR",{numeric:true})))
+    sel.add(new Option(entry.label+" ("+entry.count+")",key));
   if([...sel.options].some(o=>o.value===before))sel.value=before;
 }
 function renderFilterMenus(){renderMatters();renderDecks();renderTopics();}
@@ -213,7 +221,7 @@ function applyFilters(resetPosition=false){
   const selectedId=resetPosition?null:filtered[position]?.id;
   scope=items.filter(q=>(matter==="all"||matterOf(q.deckId)===matter)&&
     (wanted==="all"||q.deckId===wanted)&&
-    (topic==="all"||topicOf(q)===topic)&&
+    (topic==="all"||topicKey(q)===topic)&&
     (mode==="all"||q.type===mode)&&
     (level==="all"||q.difficulty===level)&&
     (!needle||normText([q.statement,q.topic,q.reference,q.deckName].join(" ")).includes(needle)));
