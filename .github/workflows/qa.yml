@@ -22,8 +22,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: 'Smoke tests: três níveis, gerador neural, questões e sincronização simulada'
-        run: node tests/markup-audit.mjs && node tests/smoke.mjs && node tests/neural-questions.test.cjs && node tests/neural-flashcards.test.cjs && node tests/catalogo-praca.test.cjs
+      - name: 'Regressão atual: resumos, flashcards, lacunas, catálogo e compatibilidade'
+        run: node tests/markup-audit.mjs && node tests/intermediate-unit.mjs && node tests/neural-questions.test.cjs && node tests/neural-flashcards.test.cjs && node tests/catalogo-praca.test.cjs
 
   online:
     name: Operação online em Chromium (desktop e celular)
