@@ -2215,6 +2215,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             stopAnkiGeneration();
             $('anki-source').value='current';$('anki-mode').value='due';
             if($('anki-generation-mode'))$('anki-generation-mode').value='advanced';
+            if($('anki-card-style'))$('anki-card-style').value='questions';
             if($('anki-batch-size'))$('anki-batch-size').value='50';
             $('anki-status').textContent='Filtros limpos.';$('anki-panel').classList.add('hidden');ANKI_STATE=null;
         }
@@ -2607,12 +2608,13 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             if(!guides.length)return toast('Selecione um guia ou envie um documento para gerar flashcards.','error');
             const token=++ANKI_GENERATION,decks=[],reports=[],button=$('anki-start'),status=$('anki-generation-status');
             button.disabled=true;$('anki-stop')?.classList.remove('hidden');
-            status.textContent='Lendo as unidades de conhecimento e gerando cartões atômicos...';
+            status.textContent='Analisando os conceitos e elaborando perguntas de revisão...';
             try{
                 for(let index=0;index<guides.length;index++){
                     if(token!==ANKI_GENERATION)return;
                     const guide=guides[index];
                     const result=await window.PMDFNeuralFlashcards.buildAsync(guide,{level:LEVEL,
+                        style:$('anki-card-style')?.value||'questions',
                         cancelled:()=>token!==ANKI_GENERATION,
                         onProgress:(done,total,count)=>{if(token===ANKI_GENERATION)
                             status.textContent='Fonte '+(index+1)+'/'+guides.length+' · '+done+'/'+total+
@@ -2632,7 +2634,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 if(!bank.length)throw Error('O material não contém unidades legíveis suficientes para cartões verificáveis.');
                 ANKI_BANK=bank;
                 const sourceUnits=reports.reduce((n,r)=>n+(r?.sourceUnits||0),0);
-                const modes={'Básico (P&R)':0,'Cloze (Lacuna)':0,'Gatilho de Banca':0};
+                const modes={'Pergunta estratégica (P&R)':0,'Básico (P&R)':0,'Cloze (Lacuna)':0,'Gatilho de Banca':0};
                 const levels={'Fácil':0,'Médio':0,'Difícil':0};
                 for(const c of bank){
                     const kind=c.modality||'Básico (P&R)';modes[kind]=(modes[kind]||0)+1;
@@ -2659,10 +2661,10 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 $('anki-status').textContent='Motor neural local · banco de '+bank.length+' cartões válidos · '+
                     cards.length+' neste lote · '+available+' elegíveis para revisão.';
                 status.textContent='Cobertura: '+uniqueTopics+' tópicos · '+sourceUnits+
-                    ' unidades processadas · '+bank.length+' cartões distintos extraídos.';
+                    ' unidades processadas · '+bank.length+' cartões de revisão elaborados.';
                 $('anki-coverage').textContent='Banco: '+bank.length+' cartões de '+uniqueTopics+
-                    ' tópicos · '+sourceUnits+' unidades de texto. Modalidades: básico '+(modes['Básico (P&R)']||0)+
-                    ', lacunas '+(modes['Cloze (Lacuna)']||0)+', julgamento '+(modes['Gatilho de Banca']||0)+
+                    ' tópicos · '+sourceUnits+' unidades de texto. Modalidades: perguntas estratégicas '+(modes['Pergunta estratégica (P&R)']||0)+
+                    ', básico '+(modes['Básico (P&R)']||0)+', lacunas '+(modes['Cloze (Lacuna)']||0)+', julgamento '+(modes['Gatilho de Banca']||0)+
                     '. Dificuldade: fácil '+levels['Fácil']+', média '+levels['Médio']+', difícil '+
                     levels['Difícil']+'. Conteúdo não legível ou sem fato verificável pode ficar de fora.';
                 if($('anki-coverage-details'))$('anki-coverage-details').open=true;
@@ -2755,7 +2757,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     (c.modality?'<span>'+esc(c.modality)+'</span>':'')+
                     (c.difficulty?'<span>'+esc(c.difficulty)+'</span>':'')+'</div>'+
                 '<p class="anki-law">'+law+'</p></div>'+ 
-                '<div class="anki-visual-card"><aside class="anki-visual-aside"><div class="anki-visual-illustration">'+art+'</div><span class="anki-visual-art-caption">'+name+'</span><span class="anki-visual-art-subtitle">'+article+'</span></aside><div class="anki-visual-body-wrap">'+
+                '<div class="anki-visual-card '+(c.family==='question'?'anki-visual-card-qa':'')+'"><aside class="anki-visual-aside"><div class="anki-visual-illustration">'+art+'</div><span class="anki-visual-art-caption">'+name+'</span><span class="anki-visual-art-subtitle">'+article+'</span></aside><div class="anki-visual-body-wrap">'+
                 '<div class="anki-study-surface"><p class="anki-kicker">'+focus+'</p>'+
                 (s.back?'<p class="anki-answer-caption">NÚCLEO DA RESPOSTA</p>':'')+
                 '<p class="anki-question '+(c.cloze?'anki-question-cloze':'')+'">'+
