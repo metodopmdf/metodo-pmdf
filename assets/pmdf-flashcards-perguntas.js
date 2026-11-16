@@ -109,10 +109,10 @@ function processUnit(ctx,row,unit){
  const compared=sentence.match(/^(.{8,145}?)\s+(?:enquanto|ao passo que)\s+(.{8,180})[.!]?$/i);
  if(compared){
   const a=strip(compared[1]),b=strip(compared[2]);
-  const nameA=a.match(/^((?:a|o|as|os)\s+[\p{L}\s-]{4,66}?)\s+(?:é|são|ocorre|tem|possui|envolve|atribui|distribui|transfere)\b/iu);
-  const nameB=b.match(/^((?:a|o|as|os)\s+[\p{L}\s-]{4,66}?)\s+(?:é|são|ocorre|tem|possui|envolve|atribui|distribui|transfere)\b/iu);
+  const nameA=a.match(/^((?:a|o|as|os)\s+[\p{L}\s-]{4,66}?)\s+(?:é|são|ocorre|tem|possui|envolve|atribui|distribui|transfere|implica|pressupõe|assume)\b/iu);
+  const nameB=b.match(/^((?:a|o|as|os)\s+[\p{L}\s-]{4,66}?)\s+(?:é|são|ocorre|tem|possui|envolve|atribui|distribui|transfere|implica|pressupõe|assume)\b/iu);
   if(nameA&&nameB&&a.length+b.length<=255)
-   add('Qual é a diferença entre '+strip(nameA[1])+' e '+strip(nameB[1])+'?',
+   add('Qual é a diferença entre '+strip(nameA[1]).replace(/^(A|O|As|Os) /,x=>x.toLowerCase())+' e '+strip(nameB[1]).replace(/^(A|O|As|Os) /,x=>x.toLowerCase())+'?',
        a+'; '+b,'Distinção',a,'Compare as duas proposições sem inverter seus efeitos.');
  }
  // Definições: deslocar o foco do enunciado para o instituto, sem copiar um caput.
@@ -148,6 +148,22 @@ function processUnit(ctx,row,unit){
   const subject=strip(characteristic[1]),rest=strip(characteristic[2]+' '+characteristic[3]);
   add('Quais características são atribuídas a '+subject.toLowerCase()+'?',rest,
       'Classificação',rest,'Memorize atributos afirmados e negados.');
+ }
+ // Finalidade e alcance de princípios, direitos e regras.
+ const provides=sentence.match(/^(.{8,105}?)\s+(permite|assegura|garante|estabelece|prevê|determina|autoriza|veda|proíbe|impõe|disciplina)\s+(.{12,255})[.!]?$/i);
+ if(provides){
+  const subject=strip(provides[1]),fact=strip(provides[2]+' '+provides[3]);
+  const q=/\bprinc[ií]pio\b/i.test(subject)
+    ?'O que representa '+subject.toLowerCase()+'?'
+    :'Qual é o alcance de '+subject.toLowerCase()+'?';
+  add(q,fact,'Conceito',fact,'Retenha o efeito da regra e o limite de sua aplicação.');
+ }
+ // Listas declaradas no texto: não criar requisitos ausentes.
+ const reqList=sentence.match(/^(?:são|constituem|consideram-se)\s+(?:os\s+|as\s+)?(?:requisitos|condi[cç][oõ]es|elementos)\s+(?:essenciais|necess[aá]rios|fundamentais)?\s*(?:para|de|do|da)\s+(.{6,85}?):\s*(.{14,230})$/i);
+ if(reqList){
+  const purpose=strip(reqList[1]),facts=strip(reqList[2]);
+  add('Quais são os requisitos essenciais para '+purpose+'?',facts,'Requisito',facts,
+      'Recorde os requisitos cumulativos exatamente como apresentados.');
  }
  // Competência explicitamente atribuída a um sujeito, sem presumir outros órgãos.
  const competence=sentence.match(/^(?:compete|incumbe|cabe)\s+(à|ao|aos|às|a)\s+(.{5,83}?)\s+(apurar|julgar|fiscalizar|exercer|instaurar|promover|realizar|lavrar|autorizar|investigar|processar|executar|decidir|conduzir)\s+(.{7,210})[.!]?$/i);
