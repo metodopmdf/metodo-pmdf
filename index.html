@@ -48,6 +48,7 @@
     <link rel="stylesheet" href="assets/pmdf-components.css?v=20261104-arch-v8">
     <link rel="stylesheet" href="assets/pmdf-visual.css?v=20261115-editorial-v3">
     <link rel="stylesheet" href="assets/pmdf-ui-polish.css?v=20261115-ui-v1">
+    <link rel="stylesheet" href="assets/pmdf-flashcards-visual.css?v=20261115-flash-v1">
 </head>
 <body class="landing-active min-h-screen flex flex-col font-sans antialiased selection:bg-[#D4AF37] selection:text-[#050B16]">
 <a href="#pmdf-main-content" class="pmdf-skip-link">Ir para o conteúdo principal</a>
@@ -187,7 +188,7 @@
 
         <nav class="pmdf-app-tabs no-print flex gap-1 sm:gap-2 border-b border-[#172642] overflow-x-auto whitespace-nowrap" role="tablist" aria-label="Ferramentas de estudo" data-pmdf-onkeydown="pmdfTabKeydown(event)">
             <button id="tab-btn-leis" role="tab" aria-controls="tab-leis" aria-selected="true" tabindex="0" data-pmdf-onclick="showTab('leis')" class="px-3 sm:px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="scale" class="w-4 h-4"></i><span class="hidden sm:inline">Mapeador de Leis</span><span class="sm:hidden">Leis</span></button>
-            <button type="button" id="tab-btn-questoes" role="tab" aria-controls="tab-questoes" aria-selected="false" tabindex="-1" data-pmdf-onclick="showTab('questoes')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="list-checks" class="w-4 h-4"></i>Questões</button>
+            <button type="button" id="tab-btn-questoes" hidden inert aria-hidden="true" role="tab" aria-controls="tab-questoes" aria-selected="false" tabindex="-1" data-pmdf-onclick="showTab('questoes')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="list-checks" class="w-4 h-4"></i>Questões</button>
             <button type="button" id="tab-btn-anki" role="tab" aria-controls="tab-anki" aria-selected="false" tabindex="-1" data-pmdf-onclick="showTab('anki')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="layers" class="w-4 h-4"></i>Flashcards</button>
             <button type="button" id="tab-btn-resultados" role="tab" aria-controls="tab-resultados" aria-selected="false" tabindex="-1" data-pmdf-onclick="showTab('resultados');renderResults()" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="chart-column" class="w-4 h-4"></i>Resultados</button>
             <button id="tab-btn-redacao" role="tab" aria-controls="tab-redacao" aria-selected="false" tabindex="-1" data-pmdf-onclick="showTab('redacao')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="pen-line" class="w-4 h-4"></i><span class="sm:hidden">Redação</span><span class="hidden sm:inline">Corretor de Redação (Cebraspe)</span></button>
@@ -370,7 +371,7 @@
                 <div class="pmdf-param-summary md:col-span-12">
                     <label for="summary-format-config" class="block text-xs font-semibold uppercase tracking-wider text-[#E5C158] mb-1.5">Modelo de Resumo</label>
                     <select id="summary-format-config" data-pmdf-onchange="setSummaryFormat(this.value)" class="w-full px-3.5 py-2.5 bg-[#040912] border border-[#1E2E4F] rounded-xl text-sm text-white focus:outline-none focus:border-[#D4AF37]">
-                        <option value="full">📖 Por Extenso (Guia Completo)</option><option value="bullets">⚡ Resumo Esquematizado (Direto ao Ponto)</option><option value="table">📊 Quadro Sinótico (Tabela Comparativa)</option><option value="mind">🌳 Mapa Mental Estruturado</option><option value="flash">🃏 Flashcards de Estudo Ativo</option><option value="traps">🎯 Fichamento de Pegadinhas &amp; Questões</option><option value="visual">🎨 Resumo Visual Ilustrado (local)</option>
+                        <option value="full">📖 Por Extenso (Guia Completo)</option><option value="bullets">⚡ Resumo Esquematizado (Direto ao Ponto)</option><option value="table">📊 Quadro Sinótico (Tabela Comparativa)</option><option value="mind">🌳 Mapa Mental Estruturado</option><option value="flash">🃏 Flashcards de Estudo Ativo</option><option value="visual">🎨 Resumo Visual Ilustrado (local)</option>
                     </select>
                 </div>
 
@@ -429,7 +430,7 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
-                <label class="text-xs text-slate-300 flex items-center gap-2">Formato de resumo <select id="summary-format-toolbar" data-pmdf-onchange="setSummaryFormat(this.value)" class="max-w-[230px] px-2.5 py-2 rounded-xl bg-[#040912] border border-[#1E2E4F] text-xs text-white"><option value="full">📖 Por Extenso</option><option value="bullets">⚡ Esquematizado</option><option value="table">📊 Quadro Sinótico</option><option value="mind">🌳 Mapa Mental</option><option value="flash">🃏 Flashcards</option><option value="traps">🎯 Pegadinhas &amp; Questões</option><option value="visual">🎨 Visual Ilustrado</option></select></label>
+                <label class="text-xs text-slate-300 flex items-center gap-2">Formato de resumo <select id="summary-format-toolbar" data-pmdf-onchange="setSummaryFormat(this.value)" class="max-w-[230px] px-2.5 py-2 rounded-xl bg-[#040912] border border-[#1E2E4F] text-xs text-white"><option value="full">📖 Por Extenso</option><option value="bullets">⚡ Esquematizado</option><option value="table">📊 Quadro Sinótico</option><option value="mind">🌳 Mapa Mental</option><option value="flash">🃏 Flashcards</option><option value="visual">🎨 Visual Ilustrado</option></select></label>
             </div>
         </div>
 
@@ -441,7 +442,7 @@
         </div><!-- /tab-leis -->
 
 
-        <section id="tab-questoes" role="tabpanel" aria-labelledby="tab-btn-questoes" class="hidden space-y-5" aria-label="Elaborador de questões">
+        <section id="tab-questoes" hidden inert aria-hidden="true" role="tabpanel" aria-labelledby="tab-btn-questoes" class="hidden space-y-5" aria-label="Elaborador de questões">
             <div class="qstudio rounded-2xl p-5 sm:p-6 space-y-5 shadow-xl">
                 <div class="flex items-start gap-3">
                     <div class="qstudio-brand" aria-hidden="true"><i data-lucide="brain-circuit"></i></div>
@@ -574,9 +575,8 @@
             <div id="q-panel" class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 hidden" aria-live="polite"></div>
         </section>
         <section id="tab-anki" role="tabpanel" aria-labelledby="tab-btn-anki" class="hidden space-y-5" aria-label="Flashcards com repetição espaçada">
-            <div class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
-                <div><h2 class="font-bold text-lg text-white">🃏 Flashcards — revisão estilo Anki</h2>
-                    <p class="text-sm text-slate-400">Revisão ativa para concursos de alto nível: textos curtos com lacunas estratégicas, conceitos essenciais e contrastes Cebraspe. Revele o núcleo da resposta; consulte o fundamento somente quando necessário.</p></div>
+            <div class="anki-visual-config bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
+                <header class="anki-visual-intro"><div class="anki-visual-intro-content"><span class="anki-visual-intro-kicker">✦ MÉTODO PMDF · MEMORIZAÇÃO ESTRATÉGICA</span><h2>Flashcards <em>Ilustrados</em></h2><p>Aprendizagem ativa com ilustrações temáticas, lacunas, conceitos e distinções. Revele a resposta, consulte o fundamento e avalie sua lembrança pela repetição espaçada.</p><div class="anki-visual-intro-pills"><span>Visual editorial</span><span>Revisão Leitner</span><span>100% local</span></div></div><div class="anki-visual-intro-mark" aria-hidden="true">✦</div></header>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <label class="text-xs text-[#E5C158] font-semibold">Elaboração dos cartões
                         <select id="anki-generation-mode" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]">
@@ -609,7 +609,7 @@
                 </details>
                 <p id="anki-status" class="text-sm text-slate-400" role="status" aria-live="polite"></p>
             </div>
-            <div id="anki-panel" class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 hidden" aria-live="polite"></div>
+            <div id="anki-panel" class="anki-illustrated-panel bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 hidden" aria-live="polite"></div>
         </section>
         <section id="tab-resultados" role="tabpanel" aria-labelledby="tab-btn-resultados" class="hidden space-y-5" aria-label="Resultados de estudos">
           <div class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 space-y-4">
@@ -699,7 +699,7 @@
     <script defer src="assets/pmdf-neural-questions.js?v=20261110-banco-v1"></script>
     <script defer src="assets/pmdf-neural-flashcards.js?v=20261104-anki-quality-v4"></script>
         <script defer src="assets/pmdf-visual-engine.js?v=20261115-editorial-v4"></script>
-        <script defer src="assets/pmdf-app.js?v=20261115-editorial-v3"></script>
+        <script defer src="assets/pmdf-app.js?v=20261115-flash-v1"></script>
 </body>
 </html>
 
