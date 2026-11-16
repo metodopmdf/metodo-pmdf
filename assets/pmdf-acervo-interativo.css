@@ -105,3 +105,6 @@ body[data-theme="light"] #acervo-shell .acervo-counter span,body[data-theme="lig
 body[data-theme="light"] #acervo-shell .acervo-feedback{color:#1c324e}
 body[data-theme="light"] #acervo-shell .acervo-pie::after{background:#f6f8fc}
 @media print{#tab-acervo{display:none!important}}
+
+/* Pizza completa, não rosca */
+#acervo-shell .acervo-pie::after{display:none!important}
