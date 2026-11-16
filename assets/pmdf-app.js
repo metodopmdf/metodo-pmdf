@@ -2680,8 +2680,15 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                             status.textContent='Fonte '+(index+1)+'/'+guides.length+' · '+done+'/'+total+
                             ' trechos · '+count+' cartões elaborados';}});
                     if(token!==ANKI_GENERATION||result.cancelled)return;
-                    let deck=result.cards;
-                    // Não ressuscitar cartões genéricos quando a fonte não contém fato testável.
+                    let deck=Array.isArray(result.cards)?result.cards:[];
+                    // Fallback conservador apenas para perguntas: evita baralho vazio
+                    // quando a frase exige interpretação além dos padrões semânticos.
+                    // Lacunas solicitadas explicitamente continuam exclusivamente lacunas.
+                    if(!deck.length&&$('anki-card-style')?.value!=='cloze'){
+                        deck=buildStudyCardsLegacy(guide);
+                        if(deck.length)status.textContent='Fonte '+(index+1)+'/'+guides.length+
+                            ' · utilizando perguntas fundamentadas do modo de compatibilidade';
+                    }
                     decks.push(deck.map(card=>({...card,law:guide.lawName})));
                     reports.push(result.report);
                     if(index%4===3)await new Promise(resolve=>setTimeout(resolve,0));
