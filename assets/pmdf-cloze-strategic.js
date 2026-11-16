@@ -15,6 +15,13 @@ const mk=(text,index,value,type,score)=>{
  if(/\b(?:arts?\.?)\s*\d+[º°]?|§\s*\d+[º°]?/i.test(part))return null;
  if((part.match(/\(/g)||[]).length!==(part.match(/\)/g)||[]).length)return null;
  if(/(?:\b(?:de|do|da|dos|das|a|ao|em|por|que|se|ou)\s*|[(:;,])$/i.test(part))return null;
+ // Não ocultar prefixos de palavras ou remissões legais cortadas.
+ const after=text[index+value.length]||'';
+ const before=text[index-1]||'';
+ if(/[\p{L}]/u.test(part[part.length-1])&&/[\p{L}]/u.test(after))return null;
+ if(/[\p{L}]/u.test(part[0])&&/[\p{L}]/u.test(before))return null;
+ if(/\b(?:arts?|inc|nº|ele|ela|aquele|aquela|este|esta|nos|sido|sejam|suas)\s*$/i.test(part))return null;
+ if(/[;:]|\u2026|\.\.\./.test(part))return null;
  return {start:index,end:index+value.length,text:value,type,score};
 };
 function segments(text){
@@ -48,6 +55,9 @@ function candidates(text){
  // Frações de aumento ou redução de pena com marcadores jurídicos completos.
  for(const m of text.matchAll(/\b\d+\s*\/\s*\d+\s*(?:a|até)\s*\d+\s*\/\s*\d+\b/g))
   add(m.index,m[0],'Frações e majorantes',109);
+ // Fração isolada em hipóteses de aumento, preservando a faixa legal.
+ for(const m of text.matchAll(/\b\d+\s*\/\s*\d+\s*\((?:um|dois|três|quatro|cinco|seis|sete|oito|nove|dez)\s+\w+\)/gi))
+  add(m.index,m[0],'Frações legais',111);
  // Restrições: exigir saber a condição integral, não apenas 'salvo'.
  const exception=/\b(salvo|exceto|desde que|mediante|ressalvad[oa]s?|somente se|apenas quando|independentemente de)\s+([^,;.!?]{12,104})/gi;
  for(const m of text.matchAll(exception))add(m.index,m[0],'Exceções e requisitos',116);
