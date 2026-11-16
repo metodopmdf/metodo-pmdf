@@ -21,8 +21,8 @@ for(const id of ['pmdf-context-bar','pmdf-primary-jump','pmdf-advanced-law','q-e
 }
 assert(code.includes('function pmdfTabKeydown(e)'),'Navegação por teclado ausente');
 for(const [k,panel] of Object.entries({leis:'tab-leis',questoes:'tab-questoes',anki:'tab-anki',resultados:'tab-resultados',redacao:'tab-redacao'})){
-  assert(html.includes('id="tab-btn-'+k+'" role="tab" aria-controls="'+panel+'"'),'ARIA: aba '+k);
-  assert(html.includes('id="'+panel+'" role="tabpanel"'),'ARIA: painel '+k);
+  assert(new RegExp('id="tab-btn-'+k+'"[^>]*role="tab"[^>]*aria-controls="'+panel+'"').test(html),'ARIA: aba '+k);
+  assert(new RegExp('id="'+panel+'"[^>]*role="tabpanel"').test(html),'ARIA: painel '+k);
 }
 
 
@@ -217,8 +217,12 @@ assert(!staticMarkup.includes('id="q-count"'),'Controle antigo de quantidade vol
 assert(!staticMarkup.includes('id="anki-count"'),'Limite manual antigo de flashcards voltou');
 assert(!staticMarkup.includes('id="q-year"'),'Filtro de ano removido reapareceu');
 
-// Resumos: todas as 26 leis devem renderizar nos seis formatos, em três níveis.
-const summaryFormats=['full','bullets','table','mind','flash','traps'];
+// Resumos: 26 leis, cinco formatos ativos e três níveis; modos pausados não são reexpostos.
+const summaryFormats=['full','bullets','flash','visual','cloze'];
+const editorialCode=readFileSync(new URL('../assets/pmdf-summary-editorial.js',import.meta.url),'utf8');
+const visualCode=readFileSync(new URL('../assets/pmdf-visual-engine.js',import.meta.url),'utf8');
+const clozeCode=readFileSync(new URL('../assets/pmdf-cloze-strategic.js',import.meta.url),'utf8');
+for(const engine of [editorialCode,visualCode,clozeCode])new Function('window',engine)(primary.win);
 let renderedSummaries=0;
 for(const level of ['iniciante','intermediario','avancado']){
   for(const [key,g] of Object.entries(app.BUILTIN_PMDF_GUIDES)){
@@ -233,7 +237,7 @@ for(const level of ['iniciante','intermediario','avancado']){
     }
   }
 }
-assert.equal(renderedSummaries,468,'Cobertura de resumos incompleta');
+assert.equal(renderedSummaries,26*3*summaryFormats.length,'Cobertura de resumos incompleta');
 
 // Regressão real da aba Questões: cada lei e nível deve iniciar MC
 // sem ser descartada pelo validador de enunciados.
