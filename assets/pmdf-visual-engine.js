@@ -77,16 +77,16 @@ function renderCard(row,i){
  const label=clean(row.article||row.title||('Tópico '+(i+1)));
  const source=clean(row.sourceText||row.plainExplanation||'');
  const explanation=clean(row.plainExplanation||row.sourceText||'');
- const summary=shorten(explanation,570);
+ const summary=explanation; // Texto integral: sem truncamento de caracteres ou frases.
  const levels={alta:'Prioridade sugerida',moderada:'Revisão recomendada',complementar:'Aprofundamento'};
  const indicators=[...times(source),...sanction(source)];
- const hasFullSource=source&&(source!==explanation||source.length>570);
+ const hasFullSource=source&&source!==explanation;
  const detail=hasFullSource?'<details class="pmdf-visual-original"><summary>Conferir trecho de origem</summary><p>'+esc(source)+'</p></details>':'';
  return '<section class="pmdf-visual-card" data-priority="'+esc(row.priority)+'" data-visual-focus="'+(row._focus?'1':'0')+'" data-card-index="'+i+'">'+
   '<div class="pmdf-visual-card-head"><div class="pmdf-visual-article">'+esc(label)+'</div>'+
   '<span class="pmdf-visual-priority pmdf-visual-priority-'+esc(row.priority)+'">'+esc(levels[row.priority])+'</span></div>'+
   '<div class="pmdf-visual-card-grid"><div class="pmdf-visual-art">'+illustration(label+' '+source,i)+'</div>'+
-  '<div class="pmdf-visual-main"><span class="pmdf-visual-eyebrow">REGRA DE PROVA</span><p class="pmdf-visual-body">'+markText(summary)+'</p>'+detail+'</div></div>'+
+  '<div class="pmdf-visual-main"><span class="pmdf-visual-eyebrow">REGRA DE PROVA · EXPLICAÇÃO INTEGRAL</span><p class="pmdf-visual-body">'+markText(summary)+'</p>'+detail+(clean(row.practicalExample)?'<div class="pmdf-visual-application"><strong>Aplicação e contexto</strong><p>'+esc(clean(row.practicalExample))+'</p></div>':'')+'</div></div>'+
   '<div class="pmdf-visual-bottom"><div class="pmdf-visual-tip"><b>🎯 Atenção no estilo Cebraspe</b><p>'+esc(point(row))+'</p></div>'+
    (indicators.length?'<div class="pmdf-visual-evidence"><b>📌 Elementos do texto</b><p>'+esc(indicators.slice(0,5).join(' · '))+'</p></div>':'')+'</div>'+
   '<p class="pmdf-visual-citation">Base: '+esc(label)+' · '+(source?'Trecho do guia exibido acima':'Confira o material original')+'</p></section>';
@@ -98,20 +98,25 @@ function render(guide,options={}){
  const focusSize=Math.min(rows.length,Math.max(3,Math.min(10,Math.ceil(rows.length*.35))));
  rows.forEach((row,i)=>{row._focus=i<focusSize;});
  const board=fold(options.board||'cebraspe');
- const focused=board==='cebraspe'||board==='auto';
+ const focused=false; // Mostrar todas as fichas por padrão, já em ordem de prioridade editorial.
  const interactive=options.interactive!==false;
  const count=rows.length;
  const header='<header class="pmdf-visual-cover"><div class="pmdf-visual-cover-content">'+
   '<div class="pmdf-visual-overline"><span class="pmdf-visual-icon">✦</span> MATERIAL DE REVISÃO · MÉTODO PMDF</div>'+
   '<h2>'+esc(title)+'</h2>'+
   '<p>Fichas de revisão contextualizada, criadas no navegador a partir do guia.</p>'+
-  '<div class="pmdf-visual-hero-chips"><span>'+count+' tópicos</span><span>'+focusSize+' em destaque</span><span>Ilustrações locais</span></div>'+
+  '<div class="pmdf-visual-hero-chips"><span>'+count+' tópicos completos</span><span>'+focusSize+' em destaque</span><span>Sem cortes de texto</span></div>'+
   '</div><div class="pmdf-visual-hero-ornament" aria-hidden="true">§</div></header>';
  const note='<p class="pmdf-visual-disclaimer"><strong>Como a prioridade é definida:</strong> afinidade com o programa, literalidade, requisitos, competências, prazos, sanções e exceções. <strong>É uma estimativa editorial, não uma estatística de frequência da banca.</strong> Confira a norma oficial atualizada e o texto original.</p>';
  const controls=interactive&&count?'<div class="pmdf-visual-toolbar no-print" role="group" aria-label="Modo de leitura das fichas">'+
   '<div class="pmdf-visual-tabs"><button type="button" data-visual-mode="focus" aria-pressed="'+focused+'">Revisão prioritária <span>'+focusSize+'</span></button>'+
   '<button type="button" data-visual-mode="all" aria-pressed="'+(!focused)+'">Todos os tópicos <span>'+count+'</span></button></div>'+
   '<label class="pmdf-visual-pagesize-label" for="pmdf-visual-pagesize">Por página <select id="pmdf-visual-pagesize" data-visual-pagesize><option value="3">3</option><option value="5" selected>5</option><option value="8">8</option></select></label></div>':'';
+ const extraConcepts=Array.isArray(guide.executiveSummary?.keyConcepts)?guide.executiveSummary.keyConcepts.filter(x=>clean(x)):[];
+ const traps=Array.isArray(guide.trapsAndJurisprudence?.examTraps)?guide.trapsAndJurisprudence.examTraps.filter(x=>clean(x)):[];
+ const annex=extraConcepts.length||traps.length?'<section class="pmdf-visual-annex"><div class="pmdf-visual-annex-header"><span class="pmdf-visual-overline">APROFUNDAMENTO OBJETIVO</span><h3>Conceitos essenciais e armadilhas de prova</h3><p>Complemento extraído do guia existente, sem gerar teses ou jurisprudência fictícias.</p></div>'+
+ (extraConcepts.length?'<div class="pmdf-visual-annex-group"><h4>Conceitos e distinções ('+extraConcepts.length+')</h4><ol>'+extraConcepts.map(x=>'<li>'+markText(clean(x))+'</li>').join('')+'</ol></div>':'')+
+ (traps.length?'<div class="pmdf-visual-annex-group"><h4>Pegadinhas e pontos de atenção ('+traps.length+')</h4><ol>'+traps.map(x=>'<li>'+markText(clean(x))+'</li>').join('')+'</ol></div>':'')+'</section>':'';
  const pager=interactive&&count?'<nav class="pmdf-visual-pager no-print" aria-label="Paginação dos resumos ilustrados">'+
   '<button type="button" data-visual-action="prev" aria-label="Página anterior">← Anterior</button>'+
   '<span class="pmdf-visual-page-status" role="status" aria-live="polite">Página 1</span>'+
@@ -119,7 +124,7 @@ function render(guide,options={}){
  const cards=rows.map(renderCard).join('');
  return '<div class="pmdf-visual-report" data-visual-default="'+(focused?'focus':'all')+'">'+header+note+
  controls+(interactive?'<div class="pmdf-visual-reading-status no-print"><span data-visual-count></span><span class="pmdf-visual-track"><span data-visual-progress></span></span></div>':'')+
- '<div class="pmdf-visual-card-list">'+(cards||'<p>Não há blocos de conteúdo para ilustrar.</p>')+'</div>'+pager+
+ '<div class="pmdf-visual-card-list">'+(cards||'<p>Não há blocos de conteúdo para ilustrar.</p>')+'</div>'+pager+annex+
  '<footer class="pmdf-visual-footer">Método PMDF · Revisão orientada por conteúdo · Não substitui o texto oficial</footer></div>';
 }
 const INSTANCES=new WeakMap();
