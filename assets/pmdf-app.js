@@ -1812,7 +1812,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         function buildStudyCards(g){
             const engine=window.PMDFNeuralFlashcards;
             if(engine?.build){
-                try{return engine.build(g,{level:LEVEL}).cards;}
+                try{const result=engine.build(g,{level:LEVEL,style:'questions'});if(result?.cards?.length)return result.cards;}
                 catch(e){console.warn('Flashcards: usando compatibilidade clássica após erro do motor.',e);}
             }
             return buildStudyCardsLegacy(g);
@@ -1823,7 +1823,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             if(window.PMDFAnkiQuestions?.buildClassic){
                 try {
                     const built=window.PMDFAnkiQuestions.buildClassic(g,{level:LEVEL});
-                    if(Array.isArray(built?.cards))return built.cards;
+                    if(Array.isArray(built?.cards)&&built.cards.length)return built.cards;
                 }catch(e){console.warn('Flashcards clássicos: indisponível o gerador de perguntas.',e);}
             }
             // Compatibilidade para navegação offline com script indisponível:
@@ -1863,7 +1863,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 if(!art||source.length<45||source.length>1500||source.includes('…')||weak.test(source))continue;
                 const dedupe=norm(art+'|'+source);
                 if(sourceSeen.has(dedupe))continue;sourceSeen.add(dedupe);
-                const topic=topicOf(art),priority=a._priority;
+                const topic=topicOf(art),priority=a._priority,previousCount=cards.length;
                 // Não criar o antigo cartão vago "qual é a regra central?".
                 // Se o novo módulo falhar, manter apenas lacunas literais verificáveis.
                 // Cartões de preenchimento: ocultam elemento expresso no texto, nunca inventam conclusão.
@@ -1896,6 +1896,25 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     add(art,source,'Aplicação contextual',
                         'Considere o contexto: '+example+'\nQual regra de '+art+' deve ser consultada para analisar a situação?',
                         'Regra expressa no material:\n'+source+'\n\nO exemplo é apenas ilustrativo; confira os requisitos legais no texto oficial.',priority);
+                }
+                // Se a fonte não contém prazo ou palavra restritiva, ainda é possível
+                // gerar pergunta factual específica, desde que a resposta já exista na fonte.
+                // Evita baralho vazio em leis como Genocídio, sem inventar hipóteses.
+                if(cards.length===previousCount){
+                    const req=source.match(/^(.{6,95}?)\s+(exige|requer|pressupõe|depende de|consiste em)\s+(.{27,440})[.!]?$/i);
+                    let question='',answer='';
+                    if(req&&req[1].split(/\s+/).length<=14){
+                        const noun=clean(req[1]).replace(/[.;:,]+$/,'');
+                        question='Qual requisito ou elemento essencial é exigido para '+noun.toLowerCase()+'?';
+                        answer=clean(req[2]+' '+req[3]);
+                    }else if(/^(?:matar|causar|submeter|impedir|transferir|adotar|promover|praticar|associar-se|incitar)\b/i.test(source)){
+                        question='Qual conduta ou hipótese é expressamente prevista em '+art+'?';
+                        answer=source;
+                    }else if(topic!=='o conteúdo do dispositivo'&&topic.length>=10&&topic.length<=96){
+                        question='Quais elementos jurídicos o material descreve em '+topic+'?';
+                        answer=source;
+                    }
+                    if(question&&answer)add(art,source,'Conceito e requisito',question,answer,priority);
                 }
                 if(cards.length>=2200)break;
             }
