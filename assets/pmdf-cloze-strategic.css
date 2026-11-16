@@ -1,0 +1,131 @@
+/* Método PMDF — modo Lacunas Estratégicas 2.0 (guia + documentos). */
+body #printable-area .pmdf-report-cloze{
+ background:#f3f6f8!important;color:#183148!important;border:1px solid #d3e0e8!important;
+ border-radius:18px!important;padding:clamp(12px,2vw,26px)!important;
+ color-scheme:light!important;
+}
+body #printable-area .pmdf-report-cloze .pmdf-report-heading{
+ background:#172c46!important;border-radius:15px!important;
+ padding:23px!important;border-color:#36546f!important;
+}
+body #printable-area .pmdf-report-cloze .pmdf-report-heading :is(h1,p,span){
+ color:#fff!important;
+}
+body #printable-area .pmdf-report-cloze .g-banner{
+ color:#324e60!important;background:#e7eef4!important;border-left:4px solid #268077!important;
+ padding:13px 17px!important;border-radius:9px!important;
+}
+body #printable-area .pmdf-report-cloze .pmdf-cloze-report{max-width:1100px;margin:0 auto;color:#263b4b!important}
+body #printable-area .pmdf-report-cloze .pmdf-cloze-hero{
+ position:relative;padding:clamp(24px,3.4vw,38px);border-radius:16px;overflow:hidden;
+ color:#fff!important;background:linear-gradient(118deg,#172c48,#25506a 75%,#1b6d65);
+}
+body #printable-area .pmdf-report-cloze .pmdf-cloze-overline{
+ font-weight:850!important;font-size:11px!important;letter-spacing:.10em;color:#ffe1a6!important;
+}
+body #printable-area .pmdf-report-cloze .pmdf-cloze-hero h2{
+ color:#fff!important;font-size:clamp(24px,3vw,36px)!important;
+ margin:9px 0!important;line-height:1.25!important;border:0!important;
+}
+body #printable-area .pmdf-report-cloze .pmdf-cloze-hero h2::before{content:none!important;display:none!important}
+body #printable-area .pmdf-report-cloze .pmdf-cloze-hero p{
+ color:#eff6f9!important;font-size:14px!important;line-height:1.6!important;
+ margin:0 0 15px!important;max-width:100%;
+}
+body #printable-area .pmdf-report-cloze .pmdf-cloze-hero span{
+ display:inline-block;color:#e7f5f5!important;font-weight:750!important;
+ font-size:12px!important;padding:6px 10px;border:1px solid #aacacf;
+ background:rgba(255,255,255,.07);border-radius:8px;
+}
+body #printable-area .pmdf-report-cloze .pmdf-cloze-note{
+ background:#e5f0f2!important;border-left:4px solid #18786c!important;color:#254957!important;
+ font-size:13px!important;line-height:1.65!important;border-radius:10px;
+ padding:12px 15px!important;margin:17px 0!important;
+}
+body #printable-area .pmdf-report-cloze .pmdf-cloze-empty{
+ border:1px dashed #bdcfd8;padding:17px;border-radius:11px;color:#345368!important;
+ background:#fff!important;
+}
+body #printable-area .pmdf-report-cloze .pmdf-cloze-card{
+ background:#fffdfa!important;color:#21394b!important;border:1px solid #d7e2ea!important;
+ border-radius:15px!important;padding:clamp(17px,2.7vw,29px)!important;
+ margin:0 0 17px!important;box-shadow:0 4px 16px rgba(20,48,67,.055)!important;
+ break-inside:avoid-page;
+}
+body #printable-area .pmdf-report-cloze .pmdf-cloze-card-top{
+ display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;
+ align-items:center;border-bottom:1px solid #e6edf1;padding-bottom:11px;margin-bottom:16px;
+}
+body #printable-area .pmdf-report-cloze .pmdf-cloze-card-top strong{
+ font-size:12px!important;color:#1e5f5a!important;font-weight:850;
+}
+body #printable-area .pmdf-report-cloze .pmdf-cloze-card-top span{
+ font-size:11px!important;font-weight:750!important;color:#694c15!important;
+ background:#fff0cf;border-radius:30px;padding:6px 9px;
+}
+body #printable-area .pmdf-report-cloze .pmdf-cloze-prompt{
+ color:#1b324c!important;font-size:clamp(16px,2vw,21px)!important;
+ line-height:2.12!important;font-weight:560!important;letter-spacing:-.007em;
+ overflow-wrap:anywhere;margin:3px 0 19px!important;
+}
+body #printable-area .pmdf-report-cloze button.pmdf-cloze-gap{
+ display:inline!important;width:auto!important;max-width:100%!important;min-width:105px!important;
+ border:1px dashed #bd8e36!important;border-radius:8px!important;vertical-align:baseline!important;
+ background:#fff0be!important;color:#765216!important;box-shadow:none!important;
+ padding:6px 10px!important;margin:3px 2px!important;line-height:1.45!important;
+ font:750 clamp(13px,1.5vw,16px)/1.45 inherit!important;text-align:center!important;
+ cursor:pointer;overflow-wrap:anywhere;white-space:normal!important;
+ transition:background .15s ease,border-color .15s ease!important;
+}
+body #printable-area .pmdf-report-cloze button.pmdf-cloze-gap[aria-pressed="true"]{
+ background:#dcf2e7!important;border-color:#2e866e!important;color:#145b42!important;
+}
+body #printable-area .pmdf-report-cloze button.pmdf-cloze-gap:hover{border-style:solid!important}
+body #printable-area .pmdf-report-cloze button.pmdf-cloze-gap:focus-visible{
+ outline:3px solid #2e766f!important;outline-offset:3px!important;
+}
+body #printable-area .pmdf-report-cloze .pmdf-cloze-proof{
+ background:#f2f6f8!important;border:1px solid #d9e5ea!important;
+ padding:12px 16px!important;border-radius:11px;margin-top:13px!important;
+ color:#21394b!important;
+}
+body #printable-area .pmdf-report-cloze .pmdf-cloze-proof summary{
+ font-size:13px!important;font-weight:800!important;color:#195b6b!important;cursor:pointer;
+}
+body #printable-area .pmdf-report-cloze .pmdf-cloze-proof ol{
+ margin-top:12px!important;padding-left:21px;color:#234b3f!important;
+}
+body #printable-area .pmdf-report-cloze .pmdf-cloze-proof li{
+ color:#234b3f!important;font-size:14px!important;
+ margin:6px 0!important;line-height:1.6!important;
+}
+body #printable-area .pmdf-report-cloze .pmdf-cloze-proof p{
+ font-size:13px!important;color:#334e61!important;line-height:1.75!important;
+ overflow-wrap:anywhere;margin:11px 0 0!important;
+}
+body #printable-area .pmdf-report-cloze .pmdf-cloze-card small{
+ display:block;margin-top:13px!important;color:#51677b!important;font-size:11px!important;
+}
+body #printable-area .pmdf-report-cloze .pmdf-report-footer{
+ color:#465c6f!important;border-color:#d5e3ed!important;
+}
+@media(max-width:600px){
+ body #printable-area .pmdf-report-cloze{padding:11px!important}
+ body #printable-area .pmdf-report-cloze .pmdf-cloze-hero{padding:20px!important}
+ body #printable-area .pmdf-report-cloze .pmdf-cloze-card{padding:14px!important}
+ body #printable-area .pmdf-report-cloze .pmdf-cloze-prompt{line-height:1.9!important}
+ body #printable-area .pmdf-report-cloze button.pmdf-cloze-gap{min-width:72px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ body #printable-area .pmdf-report-cloze *{transition:none!important;animation:none!important}
+}
+@media print{
+ @page{size:A4;margin:13mm}
+ body #printable-area .pmdf-report-cloze{padding:0!important;border:0!important;background:#fff!important}
+ body #printable-area .pmdf-report-cloze .pmdf-cloze-card{box-shadow:none!important;break-inside:auto!important}
+ body #printable-area .pmdf-report-cloze .pmdf-cloze-hero{background:#e8f1f5!important}
+ body #printable-area .pmdf-report-cloze .pmdf-cloze-hero :is(h2,p,span){color:#17344c!important}
+ body #printable-area .pmdf-report-cloze .pmdf-cloze-proof,
+ body #printable-area .pmdf-report-cloze .pmdf-cloze-proof:not([open]){display:block!important}
+ body #printable-area .pmdf-report-cloze .pmdf-cloze-proof>*{display:block!important}
+}
