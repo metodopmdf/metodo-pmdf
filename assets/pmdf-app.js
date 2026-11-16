@@ -2739,8 +2739,13 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             const name=esc(c.kind||'Conceito essencial'),law=esc(c.law||''),article=esc(c.article||'');
             const focus=s.back?'VERSO · RESPOSTA':'FRENTE · RECUPERAÇÃO ATIVA';
             const illustrationSource=[c.article,c.kind,c.modality,c.hint,c.source||c.extra||c.front].filter(Boolean).join(' ').slice(0,500);
-            const art=window.PMDFVisualEngine?.illustration?.(illustrationSource,s.index)||
+            // SVG com dimensões intrínsecas: impede a ilustração de ocupar toda a tela
+            // mesmo quando a folha CSS externa está ausente ou permanece em cache.
+            const rawArt=window.PMDFVisualEngine?.illustration?.(illustrationSource,s.index)||
                 '<span class="anki-visual-art-fallback" aria-hidden="true">⚖</span>';
+            const art=rawArt.startsWith('<svg ')
+                ?rawArt.replace('<svg ','<svg width="124" height="132" style="display:block;width:124px;max-width:100%;height:auto;" ')
+                :rawArt;
             el.innerHTML='<div class="study-progress-meter" role="progressbar" aria-valuemin="0" aria-valuemax="'+s.cards.length+
                 '" aria-valuenow="'+s.index+'" aria-label="Progresso da revisão"><span style="width:'+percent+'%"></span></div>'+
                 '<div class="anki-visual-banner"><div class="anki-visual-banner-head"><span>✦ MÉTODO PMDF · REVISÃO ILUSTRADA</span><strong>'+esc(s.back?'RESPOSTA REVELADA':'RECUPERAÇÃO ATIVA')+'</strong></div>'+ 
