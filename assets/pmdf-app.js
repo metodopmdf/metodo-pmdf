@@ -1746,6 +1746,13 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             return out;
         }
         function formatGuideHtml(g, interactive) {
+            // Resumos integrais: evitar o filtro de nível aplicado ao motor legado.
+            // Todos os dispositivos do documento permanecem disponíveis.
+            if((SUMMARY_FORMAT==='full'||SUMMARY_FORMAT==='bullets')&&window.PMDFStrategicSummaries){
+                const content=window.PMDFStrategicSummaries.render(g,{format:SUMMARY_FORMAT,level:LEVEL,board:effBank()});
+                return '<div class="pmdf-report pmdf-report-'+SUMMARY_FORMAT+'">'+content+
+                  '<footer class="pmdf-report-footer"><span>⚖ MÉTODO PMDF</span><span>Material didático · Confira a norma oficial vigente</span></footer></div>';
+            }
             const S=g.executiveSummary||{}, X=g.structuralXRay||{}, A=g.articlesMapping||{}, T=g.trapsAndJurisprudence||{}, E=safeArray(g.essayRepertoire), rows=getVisibleArticleRows(g), done=studied(), eb=effBank();
             const wrap=(title,body)=>'<h2>'+title+'</h2>'+body;
             const concepts=safeArray(S.keyConcepts).slice(0,LEVEL==='iniciante'?4:99);
