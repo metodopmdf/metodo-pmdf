@@ -332,27 +332,27 @@
             <button id="tab-btn-redacao" role="tab" aria-controls="tab-redacao" aria-selected="false" tabindex="-1" data-pmdf-onclick="showTab('redacao')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="pen-line" class="w-4 h-4"></i><span class="sm:hidden">Redação</span><span class="hidden sm:inline">Corretor de Redação (Cebraspe)</span></button>
         </nav>
         <div id="pmdf-context-bar" class="pmdf-flow no-print" aria-label="Orientações para uso das ferramentas">
-          <div id="pmdf-context-leis" class="pmdf-flow-copy"><strong>Como começar</strong><span>1 · Escolha a lei ou material · 2 · Personalize se desejar · 3 · Gere e estude</span></div>
+          <div id="pmdf-context-leis" class="pmdf-flow-copy"><strong>Como começar</strong><span>1 · Selecione uma lei ou arquivo · 2 · Ajuste as opções · 3 · Leia e revise</span></div>
           <div id="pmdf-context-questoes" class="pmdf-flow-copy hidden"><strong>Como começar</strong><span>1 · Escolha a fonte · 2 · Configure o simulado · 3 · Gere e responda</span></div>
-          <div id="pmdf-context-anki" class="pmdf-flow-copy hidden"><strong>Como começar</strong><span>1 · Selecione a matéria · 2 · Inicie a revisão · 3 · Revele e avalie</span></div>
+          <div id="pmdf-context-anki" class="pmdf-flow-copy hidden"><strong>Como começar</strong><span>1 · Escolha a fonte · 2 · Gere os cartões · 3 · Revele e avalie</span></div>
           <div id="pmdf-context-resultados" class="pmdf-flow-copy hidden"><strong>Como começar</strong><span>Selecione um tema e acompanhe acertos, erros e tempo de estudo.</span></div>
           <div id="pmdf-context-redacao" class="pmdf-flow-copy hidden"><strong>Como começar</strong><span>1 · Informe o tema · 2 · Cole a redação · 3 · Corrija e leia o relatório</span></div>
           <button id="pmdf-primary-jump" type="button" data-pmdf-onclick="pmdfFocusPrimary()">Ir para a ação ↓</button>
         </div>
         <div id="tab-leis" role="tabpanel" aria-labelledby="tab-btn-leis" class="space-y-6">
         <!-- Painel de Configuração e Entrada da Lei -->
-        <section class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 shadow-xl no-print">
+        <section class="pmdf-study-setup bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 shadow-xl no-print">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-4 mb-5 border-b border-[#172642]">
                 <div>
                     <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
                         <i data-lucide="radar" class="w-5 h-5 text-[#E5C158]"></i>
-                        Parâmetros da Varredura Legislativa
+                        Biblioteca e análise de legislação
                     </h2>
-                    <p class="text-xs sm:text-sm text-slate-400">Clique em uma das leis abaixo para carregar o guia instantaneamente ou insira qualquer link/norma para análise completa.</p>
+                    <p class="text-xs sm:text-sm text-slate-400">Escolha uma lei do catálogo para começar ou envie um documento para criar seu próprio material de estudo.</p>
                 </div>
                 <!-- Atalhos Rápidos PMDF (Carregam Instantaneamente sem Erro) -->
                 <div class="pmdf-law-selector"><div class="pmdf-core-laws">
-                    <span class="text-xs text-slate-400 mr-1 font-medium">Atalhos PMDF:</span>
+                    <span class="text-xs text-slate-400 mr-1 font-medium">Leis em destaque:</span>
                     <button id="btn-law-cf88" data-pmdf-onclick="selectAndLoadLaw('cf88', 'https://www.planalto.gov.br/ccivil_03/constituicao/constituicaocompilado.htm')" class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]">
                         CF/88 (Constituição)
                     </button>
@@ -425,8 +425,8 @@
             <div class="pmdf-parameter-grid grid grid-cols-1 md:grid-cols-12 gap-4">
                 <!-- Seletor de fonte de dados: apenas um painel fica ativo -->
                 <div class="md:col-span-12">
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-[#E5C158] mb-2">Fonte de dados da análise</label>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2" role="tablist" aria-label="Fonte de dados">
+                    <p id="pmdf-source-picker-label" class="block text-xs font-semibold uppercase tracking-wider text-[#E5C158] mb-2">Fonte de dados da análise</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2" role="tablist" aria-labelledby="pmdf-source-picker-label">
                         <button type="button" id="source-tab-url" role="tab" aria-controls="source-url-panel" aria-selected="true" tabindex="0" data-pmdf-onclick="setSourceMode('url')" class="source-tab px-3 py-2.5 rounded-xl border text-xs sm:text-sm font-bold transition">🔗 Colar Link (URL)</button>
                         <button type="button" id="source-tab-text" role="tab" aria-controls="source-text-panel" aria-selected="false" tabindex="-1" data-pmdf-onclick="setSourceMode('text')" class="source-tab px-3 py-2.5 rounded-xl border text-xs sm:text-sm font-bold transition">📋 Colar Texto Extraído</button>
                         <button type="button" id="source-tab-file" role="tab" aria-controls="source-file-panel" aria-selected="false" tabindex="-1" data-pmdf-onclick="setSourceMode('file')" class="source-tab px-3 py-2.5 rounded-xl border text-xs sm:text-sm font-bold transition">📎 Enviar Arquivo (PDF / DOCX / TXT)</button>
@@ -547,7 +547,7 @@
         </div>
 
         <!-- Barra de navegação e seleção dos formatos de estudo -->
-        <div id="export-toolbar" class="bg-[#0A1426]/95 border border-[#1E2E4F]/80 rounded-2xl p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 shadow-lg no-print">
+        <div id="export-toolbar" class="pmdf-reading-bar bg-[#0A1426]/95 border border-[#1E2E4F]/80 rounded-2xl p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 shadow-lg no-print">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
                     <i data-lucide="file-text" class="w-5 h-5"></i>
@@ -561,7 +561,7 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
-                <label class="text-xs text-slate-300 flex items-center gap-2">Formato de resumo <select id="summary-format-toolbar" data-pmdf-onchange="setSummaryFormat(this.value)" class="max-w-[230px] px-2.5 py-2 rounded-xl bg-[#040912] border border-[#1E2E4F] text-xs text-white"><option value="full">📖 Por Extenso</option><option value="bullets">⚡ Esquematizado</option><option value="flash">🃏 Flashcards</option><option value="visual">🎨 Visual Ilustrado</option><option value="cloze">🧩 Lacunas Estratégicas</option></select></label>
+                <label class="pmdf-format-label text-xs text-slate-300 flex items-center gap-2">Formato de resumo <select id="summary-format-toolbar" data-pmdf-onchange="setSummaryFormat(this.value)" class="max-w-[230px] px-2.5 py-2 rounded-xl bg-[#040912] border border-[#1E2E4F] text-xs text-white"><option value="full">📖 Por Extenso</option><option value="bullets">⚡ Esquematizado</option><option value="flash">🃏 Flashcards</option><option value="visual">🎨 Visual Ilustrado</option><option value="cloze">🧩 Lacunas Estratégicas</option></select></label>
             </div>
         </div>
 
@@ -708,7 +708,7 @@
         <section id="tab-anki" role="tabpanel" aria-labelledby="tab-btn-anki" class="hidden space-y-5" aria-label="Flashcards com repetição espaçada">
             <div class="anki-visual-config bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
                 <header class="anki-visual-intro"><div class="anki-visual-intro-content"><span class="anki-visual-intro-kicker">✦ MÉTODO PMDF · MEMORIZAÇÃO ESTRATÉGICA</span><h2>Flashcards <em>Ilustrados</em></h2><p>Perguntas de revisão sobre conceitos, diferenças, competências, requisitos e exceções, criadas a partir das leis e materiais escolhidos. Revele a resposta, consulte o fundamento e avalie sua lembrança pela repetição espaçada.</p><div class="anki-visual-intro-pills"><span>Visual editorial</span><span>Revisão Leitner</span><span>100% local</span></div></div><div class="anki-visual-intro-mark" aria-hidden="true">✦</div></header>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div class="pmdf-anki-fields grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <label class="text-xs text-[#E5C158] font-semibold">Elaboração dos cartões
                         <select id="anki-generation-mode" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]">
                           <option value="advanced" selected>Motor local · perguntas estratégicas</option>
@@ -730,16 +730,23 @@
                     <label class="text-xs text-[#E5C158] font-semibold">Cartões por sessão
                         <select id="anki-batch-size" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="25">25</option><option value="50" selected>50</option><option value="100">100</option><option value="200">200</option><option value="all">Todos (pode ser longo)</option></select></label>
                 </div>
-                <div class="flex gap-2 flex-wrap items-center">
+                <div class="pmdf-anki-primary-actions flex gap-2 flex-wrap items-center">
                     <button type="button" id="anki-start" data-pmdf-onclick="startAnki()" class="px-5 py-2.5 rounded-xl bg-[#D4AF37] text-[#050B16] font-extrabold">Gerar e iniciar revisão</button>
                     <button type="button" id="anki-stop" data-pmdf-onclick="stopAnkiGeneration()" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs hidden">Interromper geração</button>
                     <button type="button" data-pmdf-onclick="clearAnkiFilters()" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">↺ Limpar filtros</button>
-                    <button type="button" id="anki-export-csv" data-pmdf-onclick="exportAnkiCards('csv')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Exportar CSV (Anki)</button>
+                </div>
+                <details class="pmdf-anki-export-details">
+                    <summary>Exportar baralho para Anki <span aria-hidden="true">⌄</span></summary>
+                    <div class="pmdf-anki-export-options"><button type="button" id="anki-export-csv" data-pmdf-onclick="exportAnkiCards('csv')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Exportar CSV (Anki)</button>
                     <button type="button" id="anki-export-tsv" data-pmdf-onclick="exportAnkiCards('tsv')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Exportar TSV</button>
                     <button type="button" id="anki-export-cloze" data-pmdf-onclick="exportAnkiDeck('cloze')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Anki · Lacunas (.txt, se houver)</button>
                     <button type="button" id="anki-export-basic" data-pmdf-onclick="exportAnkiDeck('basic')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Anki · Conceitos/Contrastes (.txt)</button>
-                </div>
-                <p class="text-xs text-slate-400">Revisão com perguntas e respostas rastreáveis. A rede neural local ajuda a classificar a dificuldade; a elaboração utiliza regras semânticas, sem modelo generativo de linguagem. Também é possível estudar por lacunas. O tamanho da sessão não limita o banco. Revisão Leitner adaptada (não FSRS). Confira a norma vigente.</p>
+                
+                    </div>
+                </details>
+                <details class="pmdf-anki-method-help"><summary>Como funcionam os flashcards e a repetição espaçada</summary>
+                  <p>Revisão com perguntas e respostas rastreáveis. A rede neural local ajuda a classificar a dificuldade; a elaboração utiliza regras semânticas, sem modelo generativo de linguagem. Também é possível estudar por lacunas. O tamanho da sessão não limita o banco. Revisão Leitner adaptada (não FSRS). Confira a norma vigente.</p>
+                </details>
                 <p id="anki-generation-status" class="text-xs text-[#E5C158]" role="status" aria-live="polite"></p>
                 <details id="anki-coverage-details" class="rounded-xl border border-[#334155] p-3">
                    <summary class="text-xs font-bold text-[#E5C158] cursor-pointer">Relatório de cobertura e modalidades</summary>
@@ -747,7 +754,7 @@
                 </details>
                 <p id="anki-status" class="text-sm text-slate-400" role="status" aria-live="polite"></p>
             </div>
-            <div id="anki-panel" class="anki-illustrated-panel bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 hidden" aria-live="polite"></div>
+            <div id="anki-panel" class="anki-illustrated-panel bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 hidden" aria-live="off"></div>
         </section>
         <section id="tab-resultados" hidden inert aria-hidden="true" role="tabpanel" aria-labelledby="tab-btn-resultados" class="hidden space-y-5" aria-label="Resultados de estudos">
           <div class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 space-y-4">
@@ -825,7 +832,7 @@
     <!-- Rodapé -->
     <footer class="border-t border-[#172642]/80 bg-[#040912] py-5 mt-12 no-print">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
-            <p>Mapeador Estratégico de Legislação Policial — Foco CFO / CFP PMDF</p>
+            <p>Método PMDF · Plataforma gratuita de estudos para carreiras policiais</p>
             <p>Dica: Ao baixar o arquivo <strong>.doc</strong>, basta arrastá-lo para o seu Google Drive para editá-lo no Google Docs.</p>
         </div>
     </footer>
