@@ -128,7 +128,7 @@ function push(ctx,row,unit,front,back,kind,anchor,detail=''){
      !back.split('; ').every(part=>fold(evidence).includes(fold(part))))return false;
  }
  const signature=fold(row.law+'|'+row.reference+'|'+front);
- const answerSignature=fold(row.law+'|'+row.reference+'|'+back);
+ const answerSignature=fold(row.law+'|'+row.reference+'|'+back.replace(/^(?:ocorre\s+quando|quando)\s+/i,''));
  if(ctx.seen.has(signature)||ctx.answerSeen.has(answerSignature))return false;
  ctx.seen.add(signature);ctx.answerSeen.add(answerSignature);
  const score=extractScore(ctx,unit);
