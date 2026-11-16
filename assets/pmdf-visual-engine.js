@@ -81,12 +81,12 @@ function renderCard(row,i){
  const levels={alta:'Prioridade sugerida',moderada:'Revisão recomendada',complementar:'Aprofundamento'};
  const indicators=[...times(source),...sanction(source)];
  const hasFullSource=source&&source!==explanation;
- const detail=hasFullSource?'<details class="pmdf-visual-original"><summary>Conferir trecho de origem</summary><p>'+esc(source)+'</p></details>':'';
+ const detail=hasFullSource?'<div class="pmdf-visual-original"><strong>Trecho integral do material (sem cortes)</strong><p>'+esc(source)+'</p></div>':'';
  return '<section class="pmdf-visual-card" data-priority="'+esc(row.priority)+'" data-visual-focus="'+(row._focus?'1':'0')+'" data-card-index="'+i+'">'+
   '<div class="pmdf-visual-card-head"><div class="pmdf-visual-article">'+esc(label)+'</div>'+
   '<span class="pmdf-visual-priority pmdf-visual-priority-'+esc(row.priority)+'">'+esc(levels[row.priority])+'</span></div>'+
   '<div class="pmdf-visual-card-grid"><div class="pmdf-visual-art">'+illustration(label+' '+source,i)+'</div>'+
-  '<div class="pmdf-visual-main"><span class="pmdf-visual-eyebrow">REGRA DE PROVA · EXPLICAÇÃO INTEGRAL</span><p class="pmdf-visual-body">'+markText(summary)+'</p>'+detail+(clean(row.practicalExample)?'<div class="pmdf-visual-application"><strong>Aplicação e contexto</strong><p>'+esc(clean(row.practicalExample))+'</p></div>':'')+'</div></div>'+
+  '<div class="pmdf-visual-main"><span class="pmdf-visual-eyebrow">REGRA DE PROVA · EXPLICAÇÃO CONTEXTUALIZADA</span><p class="pmdf-visual-body">'+markText(summary)+'</p>'+detail+(clean(row.practicalExample)?'<div class="pmdf-visual-application"><strong>Aplicação e contexto</strong><p>'+esc(clean(row.practicalExample))+'</p></div>':'')+'</div></div>'+
   '<div class="pmdf-visual-bottom"><div class="pmdf-visual-tip"><b>🎯 Atenção no estilo Cebraspe</b><p>'+esc(point(row))+'</p></div>'+
    (indicators.length?'<div class="pmdf-visual-evidence"><b>📌 Elementos do texto</b><p>'+esc(indicators.slice(0,5).join(' · '))+'</p></div>':'')+'</div>'+
   '<p class="pmdf-visual-citation">Base: '+esc(label)+' · '+(source?'Trecho do guia exibido acima':'Confira o material original')+'</p></section>';
