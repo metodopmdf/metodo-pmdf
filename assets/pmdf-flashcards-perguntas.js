@@ -64,6 +64,31 @@ function extractScore(ctx,text){
 }
 function push(ctx,row,unit,front,back,kind,anchor,detail=''){
  front=clean(front);back=strip(back);anchor=clean(anchor);
+ // Converte rótulos de resumos em perguntas recuperáveis e elimina fórmulas vagas.
+ const generic=front.match(/^Qual é o conceito ou a característica central de (.+)\?$/i);
+ if(generic){
+  const label=strip(generic[1])
+    .replace(/\(\s*Arts?\.?\s*[^)]*\)/gi,'').replace(/\s*[—–-]\s*Arts?\.?\s*\d+.*$/i,'').trim();
+  const lc=label.toLowerCase();
+  if(/(?:peculato|concussão|corrupção|tortura|prevaricação|motim|deserção)/i.test(label)&&label.length<75)
+    front='Qual conduta caracteriza o crime de '+lc+'?';
+  else if(/\bprazos?\b/i.test(label)&&label.length<85)
+    front='Quais são os prazos e condições associados a '+lc+'?';
+  else if(/(?:penas? principais|efeitos? da condenação)/i.test(label)&&label.length<95)
+    front='Quais são '+lc+'?';
+  else if(/^(?:são|é|já|para|no|na|cuidado|atenção|aumenta-se)/i.test(label)||
+      /[;:]|\s(?:é|são|não|ocorre|ocorrem|possui|traz|prevê)\s/i.test(label))return false;
+  else if(/\b(?:princípio|teoria)\b/i.test(label)&&label.length<80)
+    front='Em que consiste '+lc+'?';
+  else if(label.length>=6&&label.length<68&&!/\barts?\.?\s*\d+/i.test(label))
+    front='Como se caracteriza '+lc+'?';
+  else return false;
+ }
+ if(/^qual (?:é a )?regra central\b/i.test(front)||
+    /^qual é o alcance (?:d[ao] )?arts?\.?\s*\d+/i.test(front)||
+    /^qual é o alcance .*?(?:\s(?:é|são|não|mas|porém|ocorrem|possui|traz)\s|[;:])/i.test(front)||
+    /^como se caracteriza .*?(?:\s(?:é|são|não|ocorrem)\s|[;:])/i.test(front))return false;
+ front=front.replace(/:\?$/, '?');
  if(!front.endsWith('?'))front=front.replace(/[.:;, ]+$/,'')+'?';
  if(front.length<24||front.length>205||back.length<8||back.length>280)return false;
  if(/…|\.{3}|\b(?:undefined|null)\b/i.test(front+' '+back)||fold(front)===fold(back))return false;
@@ -216,18 +241,11 @@ function processUnit(ctx,row,unit){
   add('O que '+t+' estabelece ou disciplina?',answer,'Conceito',answer,
       'Identifique a previsão normativa e as condições de aplicação.');
  }
- // Último recurso limitado a títulos claros e texto curto. Não gera perguntas
- // sobre artigos numerados sem contexto temático específico.
- if(!added&&t.length>=10&&sentence.length>=40&&sentence.length<=230&&
-    /(?:\b(?:compete|deverá|poderá|constitui|caracteriza|assegura|abrange|proíbe|permite|estabelece)\b|\b(?:são|é|consiste em)\b)/i.test(sentence)){
-   const answer=strip(sentence);
-   add('Qual regra central deve ser lembrada sobre '+t+'?',answer,'Conceito',answer,
-       'Relembre a regra completa e procure seus elementos condicionantes.');
- }
+ // Sem sujeito e consequência verificáveis, não se fabrica cartão genérico.
  if(!added)ctx.skipped++;
 }
 function setup(guide,opts={}){
- let motor=null;try{motor=root.PMDFNeuralQuestions?.testModel?.()||null;}catch(_){}
+ let motor=null;if(opts.mode!=='classic')try{motor=root.PMDFNeuralQuestions?.testModel?.()||null;}catch(_){}
  return {motor,law:clean(guide?.lawName)||'Material',level:opts.level||'intermediario',
   cards:[],seen:new Set(),unitsSeen:new Set(),covered:new Set(),skipped:0,
   modalities:{'Pergunta estratégica (P&R)':0},style:opts.style||'questions'};
@@ -278,6 +296,13 @@ async function buildAsync(guide,options={}){
  if(options.cancelled?.())return {cards:[],cancelled:true,report:null};
  return finish(ctx,rows,options,guide);
 }
-root.PMDFNeuralFlashcards=Object.freeze({...original,build,buildAsync,version:'20261116-qa-v1',questionBuilder:'heuristic-neural-local'});
-root.PMDFAnkiQuestions=Object.freeze({rowsFor,segment,version:'20261116-qa-v1'});
+root.PMDFNeuralFlashcards=Object.freeze({...original,build,buildAsync,version:'20261116-qa-v3',questionBuilder:'heuristic-neural-local'});
+function buildClassic(guide,options={}){
+ const rows=rowsFor(guide),ctx=setup(guide,{...options,mode:'classic',style:'questions'});
+ for(const row of rows)runRow(ctx,row);
+ const result=finish(ctx,rows,{...options,style:'questions'},guide);
+ result.report.engine='Perguntas objetivas clássicas, elaboradas por regras locais';
+ return result;
+}
+root.PMDFAnkiQuestions=Object.freeze({rowsFor,segment,buildClassic,version:'20261116-qa-v3'});
 })(window);
