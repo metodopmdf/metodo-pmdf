@@ -105,10 +105,13 @@ async function testViewport(browser,{name,width,height}){
  assert.equal(await page.locator('#tab-btn-anki').getAttribute('aria-selected'),'true');
  assert.equal(await page.locator('.pmdf-anki-fields > label > select').count(),5);
  await page.locator('#anki-source').selectOption('cfo-gst');
- assert(await page.locator('#anki-cfo-controls').isVisible(),'Filtros do acervo CFO/GST devem aparecer');
- assert(await page.locator('#anki-cfo-import').count()===1,'Upload de acervo convertido ausente');
+ assert(await page.locator('#anki-cfo-controls').isVisible(),'Filtros do acervo ANKI devem aparecer');
+ assert.equal((await page.locator('#anki-source option[value="cfo-gst"]').textContent()).trim(),'📚 ANKI');
+ assert.equal(await page.locator('#anki-cfo-import').count(),0,'Não deve existir campo para envio de arquivos');
+ await page.waitForFunction(()=>document.querySelector('#anki-cfo-status')?.textContent?.includes('2.624'),null,{timeout:45000});
+ assert.equal(await page.locator('#anki-cfo-disciplina option').count(),23,'O banco deve carregar 22 disciplinas automaticamente');
  await page.locator('#anki-source').selectOption('current');
- assert(!await page.locator('#anki-cfo-controls').isVisible(),'Filtros do CFO devem recolher');
+ assert(!await page.locator('#anki-cfo-controls').isVisible(),'Filtros ANKI devem recolher');
  const exports=page.locator('.pmdf-anki-export-details');
  assert(!await page.locator('#anki-export-csv').isVisible(),'Exportações devem iniciar recolhidas');
  await exports.locator('summary').click();
