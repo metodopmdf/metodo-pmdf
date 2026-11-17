@@ -2681,14 +2681,14 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
 
         async function startAnkiImported(){
             const loader=window.PMDFAnkiCFO,button=$('anki-start'),status=$('anki-generation-status');
-            if(!loader){toast('Módulo CFO/GST indisponível. Atualize a página.','error');return;}
+            if(!loader){toast('Módulo ANKI indisponível. Atualize a página.','error');return;}
             button.disabled=true;
-            status.textContent='Carregando banco ANKI CFO GST e preparando a sessão...';
+            status.textContent='Carregando banco ANKI integrado e preparando a sessão...';
             try{
                 const raw=await loader.filtered();
                 if(!raw.length){
-                    status.textContent='Nenhum cartão disponível. Importe o arquivo .json.gz ou ajuste os filtros.';
-                    toast('Importe o banco ANKI CFO GST convertido para começar.','error');
+                    status.textContent='Não há cartões para a seleção atual. Ajuste os filtros de disciplina e assunto.';
+                    toast('Não há cartões para os filtros selecionados no acervo ANKI.','error');
                     return;
                 }
                 const bank=raw.map(c=>{
@@ -2697,9 +2697,9 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     if(c.flags?.includes('imagem_do_original_nao_embutida'))warning.push('Imagem referenciada no Anki original não foi incluída na versão textual.');
                     if(c.reviewed_source)warning.push('Correção conferida com fonte: '+c.reviewed_source);
                     return {id:c.id,front:c.front,back:c.back,law:c.disciplina,article:c.assunto,reference:c.assunto,
-                        kind:'Certo / Errado comentado',modality:'Acervo ANKI CFO GST',family:'question',tags:c.tags||'CFO GST',
-                        scope:'Enunciado do pacote ANKI CFO GST; revisão normativa individual não garantida',
-                        source:'Acervo enviado pelo usuário · '+c.disciplina+' / '+c.assunto,
+                        kind:'Certo / Errado comentado',modality:'Acervo ANKI',family:'question',tags:c.tags||'ANKI',
+                        scope:'Acervo ANKI integrado; revisão normativa individual não garantida',
+                        source:'Banco ANKI integrado · '+c.disciplina+' / '+c.assunto,
                         warning:warning.join(' ')};
                 });
                 ANKI_BANK=bank;
@@ -2723,10 +2723,10 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 saveStudySession();$('anki-panel').classList.remove('hidden');
                 const subjects=new Set(bank.map(c=>c.law)).size,topics=new Set(bank.map(c=>c.law+'|'+c.article)).size;
                 const reviewed=raw.filter(c=>Boolean(c.reviewed_source)).length;
-                $('anki-status').textContent='Acervo ANKI CFO GST · '+bank.length+' cartões filtrados · '+
+                $('anki-status').textContent='ANKI · '+bank.length+' cartões filtrados · '+
                     eligible+' disponíveis · '+candidates.length+' nesta sessão.';
                 status.textContent=subjects+' disciplinas · '+topics+' assuntos · '+reviewed+' gabaritos com correção documentada.';
-                if($('anki-coverage'))$('anki-coverage').textContent='Fonte: ANKI CFO GST.zip · '+
+                if($('anki-coverage'))$('anki-coverage').textContent='Fonte: ANKI integrado ao Método PMDF · '+
                     bank.length+' cartões filtrados · '+subjects+' disciplinas · '+topics+
                     ' assuntos. Demais registros preservados da fonte, sem verificação jurídica individual.';
                 if($('anki-coverage-details'))$('anki-coverage-details').open=true;
@@ -2734,7 +2734,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     $('anki-panel').innerHTML='<div class="g-card"><h3>Sem cartões vencidos</h3><p>Escolha “Todos (treino livre)” para estudar novamente.</p></div>';
                 else drawAnki();
             }catch(error){
-                status.textContent='Erro ao preparar banco CFO/GST: '+String(error?.message||error);
+                status.textContent='Erro ao preparar banco ANKI: '+String(error?.message||error);
                 toast('Falha ao abrir banco Anki: '+String(error?.message||error),'error');
             }finally{button.disabled=false;}
         }
