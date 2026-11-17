@@ -2289,6 +2289,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             if($('anki-generation-mode'))$('anki-generation-mode').value='advanced';
             if($('anki-card-style'))$('anki-card-style').value='questions';
             if($('anki-batch-size'))$('anki-batch-size').value='50';
+            window.PMDFAnkiCFO?.reset?.();
             $('anki-status').textContent='Filtros limpos.';$('anki-panel').classList.add('hidden');ANKI_STATE=null;
         }
         function questionIsComplete(q){
@@ -2671,10 +2672,71 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             toast(cards.length+' notas '+(cloze?'Cloze':'Basic')+' prontas para importar no Anki.','ok');
         }
         function startAnki(){
+            if($('anki-source')?.value==='cfo-gst')return startAnkiImported();
             const guides=pickStudyGuides('anki');
             if($('anki-generation-mode')?.value!=='classic'&&window.PMDFNeuralFlashcards?.buildAsync)
                 return startAnkiAdvanced(guides);
             return startAnkiLegacy();
+        }
+
+        async function startAnkiImported(){
+            const loader=window.PMDFAnkiCFO,button=$('anki-start'),status=$('anki-generation-status');
+            if(!loader){toast('Módulo CFO/GST indisponível. Atualize a página.','error');return;}
+            button.disabled=true;
+            status.textContent='Carregando banco ANKI CFO GST e preparando a sessão...';
+            try{
+                const raw=await loader.filtered();
+                if(!raw.length){
+                    status.textContent='Nenhum cartão disponível. Importe o arquivo .json.gz ou ajuste os filtros.';
+                    toast('Importe o banco ANKI CFO GST convertido para começar.','error');
+                    return;
+                }
+                const bank=raw.map(c=>{
+                    const warning=[];
+                    if(c.flags?.includes('verificar_vigencia_juridica'))warning.push('Texto com dispositivo, prazo ou referência jurídica: confira a norma ou jurisprudência vigente.');
+                    if(c.flags?.includes('imagem_do_original_nao_embutida'))warning.push('Imagem referenciada no Anki original não foi incluída na versão textual.');
+                    if(c.reviewed_source)warning.push('Correção conferida com fonte: '+c.reviewed_source);
+                    return {id:c.id,front:c.front,back:c.back,law:c.disciplina,article:c.assunto,reference:c.assunto,
+                        kind:'Certo / Errado comentado',modality:'Acervo ANKI CFO GST',family:'question',tags:c.tags||'CFO GST',
+                        scope:'Enunciado do pacote ANKI CFO GST; revisão normativa individual não garantida',
+                        source:'Acervo enviado pelo usuário · '+c.disciplina+' / '+c.assunto,
+                        warning:warning.join(' ')};
+                });
+                ANKI_BANK=bank;
+                let candidates=bank.slice(),mode=$('anki-mode')?.value||'due';
+                if(mode==='due'){
+                    candidates=candidates.filter(c=>{const st=getCardBox(c.id);return !st.due||Date.now()>=st.due;});
+                    candidates.sort((a,b)=>getCardBox(a.id).due-getCardBox(b.id).due);
+                }
+                const eligible=candidates.length,requested=$('anki-batch-size')?.value||'50',
+                      limit=requested==='all'?eligible:Math.max(1,Number(requested)||50);
+                if(mode==='all'&&candidates.length){
+                    const discipline=$('anki-cfo-disciplina')?.value||'*',topic=$('anki-cfo-assunto')?.value||'*';
+                    const key='anki:batch:cfo-gst:v1:'+String(hash(discipline+'|'+topic+'|'+bank.length));
+                    let index=Math.max(0,Number(store.get(key))||0);
+                    if(index>=candidates.length)index=0;
+                    const selected=candidates.slice(index,index+limit);
+                    store.set(key,String(index+selected.length));
+                    candidates=selected;
+                }else candidates=candidates.slice(0,limit);
+                ANKI_STATE={cards:candidates,index:0,seen:0,back:false,graded:null,correct:0,wrong:0,ratings:{}};
+                saveStudySession();$('anki-panel').classList.remove('hidden');
+                const subjects=new Set(bank.map(c=>c.law)).size,topics=new Set(bank.map(c=>c.law+'|'+c.article)).size;
+                const reviewed=raw.filter(c=>Boolean(c.reviewed_source)).length;
+                $('anki-status').textContent='Acervo ANKI CFO GST · '+bank.length+' cartões filtrados · '+
+                    eligible+' disponíveis · '+candidates.length+' nesta sessão.';
+                status.textContent=subjects+' disciplinas · '+topics+' assuntos · '+reviewed+' gabaritos com correção documentada.';
+                if($('anki-coverage'))$('anki-coverage').textContent='Fonte: ANKI CFO GST.zip · '+
+                    bank.length+' cartões filtrados · '+subjects+' disciplinas · '+topics+
+                    ' assuntos. Demais registros preservados da fonte, sem verificação jurídica individual.';
+                if($('anki-coverage-details'))$('anki-coverage-details').open=true;
+                if(!candidates.length)
+                    $('anki-panel').innerHTML='<div class="g-card"><h3>Sem cartões vencidos</h3><p>Escolha “Todos (treino livre)” para estudar novamente.</p></div>';
+                else drawAnki();
+            }catch(error){
+                status.textContent='Erro ao preparar banco CFO/GST: '+String(error?.message||error);
+                toast('Falha ao abrir banco Anki: '+String(error?.message||error),'error');
+            }finally{button.disabled=false;}
         }
         async function startAnkiAdvanced(guides){
             if(!guides.length)return toast('Selecione um guia ou envie um documento para gerar flashcards.','error');
