@@ -84,3 +84,101 @@
  .pmdf-info-flow-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
  .pmdf-info-annex{max-width:none!important;margin:0!important;break-before:page;page-break-before:always;break-inside:auto!important;box-shadow:none!important}
 }
+
+/* Correção de contraste v2 — exclusivamente no Infográfico Estratégico.
+   A página principal usa texto claro em fundos escuros; este caderno usa papel claro.
+   Seletores com #printable-area prevalecem sobre regras genéricas herdadas. */
+body #printable-area .pmdf-report-infographic .pmdf-info-report{
+  color:#1f2937!important;
+}
+body #printable-area .pmdf-report-infographic .pmdf-info-sheet,
+body #printable-area .pmdf-report-infographic .pmdf-info-annex{
+  background:#fffdf9!important;
+  color:#1f2937!important;
+}
+body #printable-area .pmdf-report-infographic .pmdf-info-rule,
+body #printable-area .pmdf-report-infographic .pmdf-info-flow-item{
+  background:#ffffff!important;
+}
+body #printable-area .pmdf-report-infographic .pmdf-info-rule p,
+body #printable-area .pmdf-report-infographic .pmdf-info-flow-item p,
+body #printable-area .pmdf-report-infographic .pmdf-info-original p,
+body #printable-area .pmdf-report-infographic .pmdf-info-alert p,
+body #printable-area .pmdf-report-infographic .pmdf-info-annex li,
+body #printable-area .pmdf-report-infographic .pmdf-info-empty{
+  color:#1f2937!important;
+  -webkit-text-fill-color:#1f2937!important;
+  opacity:1!important;
+}
+body #printable-area .pmdf-report-infographic .pmdf-info-rule p{
+  font-weight:500!important;
+}
+body #printable-area .pmdf-report-infographic .pmdf-info-flow-item p{
+  line-height:1.75!important;
+}
+body #printable-area .pmdf-report-infographic .pmdf-info-sheet>h3,
+body #printable-area .pmdf-report-infographic .pmdf-info-annex>h3,
+body #printable-area .pmdf-report-infographic .pmdf-info-flow-item>b{
+  color:#111827!important;
+  -webkit-text-fill-color:#111827!important;
+}
+body #printable-area .pmdf-report-infographic .pmdf-info-rule>span,
+body #printable-area .pmdf-report-infographic .pmdf-info-alert strong,
+body #printable-area .pmdf-report-infographic .pmdf-info-signals strong{
+  color:#871d24!important;
+  -webkit-text-fill-color:#871d24!important;
+}
+body #printable-area .pmdf-report-infographic .pmdf-info-flow h4,
+body #printable-area .pmdf-report-infographic .pmdf-info-annex h4{
+  background:#1e293b!important;
+  color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
+}
+body #printable-area .pmdf-report-infographic .pmdf-info-step,
+body #printable-area .pmdf-report-infographic .pmdf-info-alert>span,
+body #printable-area .pmdf-report-infographic .pmdf-info-facts span{
+  background:#991e23!important;
+  color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
+}
+body #printable-area .pmdf-report-infographic .pmdf-info-alert{
+  background:#fff1ed!important;
+  border-color:#dfbeb6!important;
+}
+body #printable-area .pmdf-report-infographic .pmdf-info-signals{
+  background:#fff7e9!important;
+}
+body #printable-area .pmdf-report-infographic .pmdf-info-original p{
+  background:#f8fafc!important;
+  border-left-color:#94a3b8!important;
+}
+body #printable-area .pmdf-report-infographic .pmdf-info-note{
+  color:#4b3926!important;
+  -webkit-text-fill-color:#4b3926!important;
+}
+body #printable-area .pmdf-report-infographic .pmdf-info-cover,
+body #printable-area .pmdf-report-infographic .pmdf-info-cover h2,
+body #printable-area .pmdf-report-infographic .pmdf-info-cover h3,
+body #printable-area .pmdf-report-infographic .pmdf-info-cover p{
+  color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
+}
+body #printable-area .pmdf-report-infographic .pmdf-info-cover h2 em{
+  color:#ff7773!important;
+  -webkit-text-fill-color:#ff7773!important;
+}
+body #printable-area .pmdf-report-infographic .pmdf-info-navigation input{
+  background:#ffffff!important;
+  color:#192434!important;
+  -webkit-text-fill-color:#192434!important;
+}
+body #printable-area .pmdf-report-infographic .pmdf-info-navigation input::placeholder{
+  color:#526171!important;
+  -webkit-text-fill-color:#526171!important;
+}
+/* Mantém a ficha inteira visível na impressão, inclusive fora da página atual. */
+@media print{
+  body #printable-area .pmdf-report-infographic .pmdf-info-sheet:not(.pmdf-info-active){
+    display:block!important;
+  }
+}
