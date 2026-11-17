@@ -1,0 +1,39 @@
+/* Método PMDF · importação de flashcards CFO GST (escopo restrito) */
+#tab-anki #anki-cfo-controls[hidden]{display:none!important}
+#tab-anki .pmdf-cfo-import-panel{
+ grid-column:1/-1;display:block;border:1px solid #44627e;border-radius:14px;
+ padding:16px;background:#122338;color:#edf4ff;min-width:0
+}
+#tab-anki .pmdf-cfo-import-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-bottom:14px}
+#tab-anki .pmdf-cfo-import-head strong{color:#f3d483;font-size:15px;font-weight:850}
+#tab-anki .pmdf-cfo-import-head span{color:#d6e2f2;font-size:12px}
+#tab-anki .pmdf-cfo-import-grid{
+ display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px;
+}
+#tab-anki .pmdf-cfo-import-grid label{font-size:12px;font-weight:800;color:#e5c980;line-height:1.45}
+#tab-anki .pmdf-cfo-import-grid select,
+#tab-anki .pmdf-cfo-import-grid input[type=file]{
+ display:block;margin-top:7px;min-height:44px;width:100%;min-width:0;border:1px solid #5d7696;
+ border-radius:9px;padding:10px;background:#1d324d;color:#fff;font-size:13px
+}
+#tab-anki .pmdf-cfo-import-grid select:focus-visible,
+#tab-anki .pmdf-cfo-import-grid input:focus-visible{outline:3px solid #e6c367;outline-offset:2px}
+#tab-anki #anki-cfo-status{color:#bff7d7;font-size:12px;line-height:1.65;margin:12px 0 5px;overflow-wrap:anywhere}
+#tab-anki #anki-cfo-status[data-error="true"]{color:#ffe2b3}
+#tab-anki .pmdf-cfo-import-note{font-size:12px;line-height:1.65;color:#d6dfe9;margin:6px 0 0}
+#tab-anki #anki-panel .anki-question{white-space:pre-line!important}
+#tab-anki #anki-panel .anki-short-answer{display:block;white-space:pre-line!important;font-weight:650!important}
+#tab-anki #anki-panel .anki-evidence-text{white-space:pre-line!important;overflow-wrap:anywhere}
+body[data-theme="light"] #tab-anki .pmdf-cfo-import-panel{background:#f5f8fc!important;border-color:#b9c9d8!important;color:#182b41!important}
+body[data-theme="light"] #tab-anki .pmdf-cfo-import-head strong{color:#7b5510!important}
+body[data-theme="light"] #tab-anki .pmdf-cfo-import-head span,
+body[data-theme="light"] #tab-anki .pmdf-cfo-import-note{color:#344962!important}
+body[data-theme="light"] #tab-anki .pmdf-cfo-import-grid label{color:#654a18!important}
+body[data-theme="light"] #tab-anki .pmdf-cfo-import-grid select,
+body[data-theme="light"] #tab-anki .pmdf-cfo-import-grid input{background:#fff!important;color:#16263b!important;border-color:#a4b8cb!important}
+body[data-theme="light"] #tab-anki #anki-cfo-status{color:#19543e!important}
+body[data-theme="light"] #tab-anki #anki-cfo-status[data-error="true"]{color:#873116!important}
+@media(max-width:660px){
+ #tab-anki .pmdf-cfo-import-panel{padding:12px}
+ #tab-anki .pmdf-cfo-import-grid{grid-template-columns:1fr}
+}
