@@ -57,10 +57,11 @@ async function testViewport(browser,{name,width,height}){
    window.showTab('leis');
  });
  const tabs=page.locator('nav.pmdf-app-tabs [role="tab"]:visible');
- assert.equal(await tabs.count(),3,'Devem existir três módulos públicos');
+ assert.equal(await tabs.count(),4,'Devem existir quatro módulos públicos, incluindo banco de questões');
  assert(!await page.locator('#tab-btn-questoes').isVisible(),'Questões deveriam estar pausadas');
  assert(!await page.locator('#tab-btn-resultados').isVisible(),'Resultados deveriam estar pausados');
- log(name,'três módulos públicos e recursos pausados');
+ assert(await page.locator('#tab-btn-acervo').isVisible(),'Banco de questões deve estar disponível');
+ log(name,'quatro módulos públicos e recursos pausados');
  await page.locator('#btn-law-cppm').click();
  assert((await page.locator('#current-doc-title').innerText()).includes('CPPM')||
         (await page.locator('#current-doc-title').innerText()).includes('Militar'),
@@ -69,7 +70,7 @@ async function testViewport(browser,{name,width,height}){
  const select=page.locator('#summary-format-toolbar');
  for(const [mode,marker]of [
    ['full','.pmdf-editorial-full'],['bullets','.pmdf-editorial-bullets'],
-   ['visual','.pmdf-visual-card'],['cloze','.pmdf-cloze-report'],
+   ['visual','.pmdf-visual-card'],['infographic','.pmdf-info-report'],['cloze','.pmdf-cloze-report'],
    ['flash','.pmdf-flash-batch']
  ]){
   await select.selectOption(mode);
@@ -102,7 +103,12 @@ async function testViewport(browser,{name,width,height}){
  assert.notEqual(after,before,'Alternância de tema falhou');
  await page.locator('#tab-btn-anki').click();
  assert.equal(await page.locator('#tab-btn-anki').getAttribute('aria-selected'),'true');
- assert.equal(await page.locator('.pmdf-anki-fields select').count(),5);
+ assert.equal(await page.locator('.pmdf-anki-fields > label > select').count(),5);
+ await page.locator('#anki-source').selectOption('cfo-gst');
+ assert(await page.locator('#anki-cfo-controls').isVisible(),'Filtros do acervo CFO/GST devem aparecer');
+ assert(await page.locator('#anki-cfo-import').count()===1,'Upload de acervo convertido ausente');
+ await page.locator('#anki-source').selectOption('current');
+ assert(!await page.locator('#anki-cfo-controls').isVisible(),'Filtros do CFO devem recolher');
  const exports=page.locator('.pmdf-anki-export-details');
  assert(!await page.locator('#anki-export-csv').isVisible(),'Exportações devem iniciar recolhidas');
  await exports.locator('summary').click();
