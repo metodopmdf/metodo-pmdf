@@ -51,7 +51,7 @@
     <link rel="stylesheet" href="assets/pmdf-flashcards-visual.css?v=20261115-flash-v3">
     <!-- Estilos essenciais de segurança: independentes do carregamento do CSS adicional. -->
     <link rel="stylesheet" href="assets/pmdf-anki-visual-failsafe.css?v=20261116-v4">
-    <link rel="stylesheet" href="assets/pmdf-anki-cfo-gst.css?v=20261117-cfo-v1">
+    <link rel="stylesheet" href="assets/pmdf-anki-cfo-gst.css?v=20261117-anki-embedded-v1">
     <link rel="stylesheet" href="assets/pmdf-flashcards-questions.css?v=20261116-qa-v1">
     <link rel="stylesheet" href="assets/pmdf-cloze-strategic.css?v=20261116-cloze-v3">
     <link rel="stylesheet" href="assets/pmdf-ux-audit-20261116.css?v=20261116-contrast-v3">
@@ -700,23 +700,20 @@
                         </select>
                     </label>
                     <label class="text-xs text-[#E5C158] font-semibold">Material / lei
-                        <select id="anki-source" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="current">Conteúdo selecionado / enviado</option><option value="all">Todas as leis cadastradas</option><option value="cfo-gst">📚 Acervo ANKI CFO GST (importado)</option></select></label>
+                        <select id="anki-source" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="current">Conteúdo selecionado / enviado</option><option value="all">Todas as leis cadastradas</option><option value="cfo-gst">📚 ANKI</option></select></label>
                     
-                <div id="anki-cfo-controls" hidden class="pmdf-cfo-import-panel" aria-label="Acervo de flashcards CFO GST">
-                  <div class="pmdf-cfo-import-head"><strong>Banco ANKI CFO GST</strong><span>Certo/Errado comentado · Conteúdo por disciplina e assunto</span></div>
+                <div id="anki-cfo-controls" hidden class="pmdf-cfo-import-panel" aria-label="Acervo de flashcards ANKI">
+                  <div class="pmdf-cfo-import-head"><strong>ANKI</strong><span>2.624 cartões integrados · Certo/Errado comentado por disciplina e assunto</span></div>
                   <div class="pmdf-cfo-import-grid">
-                    <label class="pmdf-cfo-import-file">Importar acervo convertido (.json.gz ou .json)
-                      <input id="anki-cfo-import" type="file" accept=".json,.gz,.json.gz,application/json,application/gzip" aria-label="Carregar banco de flashcards ANKI CFO GST">
-                    </label>
                     <label>Disciplina
-                      <select id="anki-cfo-disciplina" aria-label="Filtrar disciplina CFO"><option value="">Todas as disciplinas</option></select>
+                      <select id="anki-cfo-disciplina" aria-label="Filtrar disciplina ANKI"><option value="">Todas as disciplinas</option></select>
                     </label>
                     <label>Assunto
-                      <select id="anki-cfo-assunto" aria-label="Filtrar assunto CFO"><option value="">Todos os assuntos</option></select>
+                      <select id="anki-cfo-assunto" aria-label="Filtrar assunto ANKI"><option value="">Todos os assuntos</option></select>
                     </label>
                   </div>
-                  <p id="anki-cfo-status" role="status" aria-live="polite">Selecione o acervo convertido para começar.</p>
-                  <p class="pmdf-cfo-import-note">Os cartões mantêm os enunciados e comentários do arquivo Anki, exceto as correções verificadas no pacote revisado. A maioria não foi revalidada individualmente; confira a legislação e a jurisprudência atuais. O progresso Leitner é salvo neste navegador.</p>
+                  <p id="anki-cfo-status" role="status" aria-live="polite">Carregando o banco ANKI integrado...</p>
+                  <p class="pmdf-cfo-import-note">Os 2.624 cartões estão disponíveis automaticamente, sem envio de arquivos. Enunciados e comentários foram preservados, exceto correções documentadas. A maioria não foi revalidada individualmente: confira a legislação e a jurisprudência atuais. O progresso Leitner é salvo neste navegador.</p>
                 </div>
                     <label class="text-xs text-[#E5C158] font-semibold">Tipo de revisão
                         <select id="anki-mode" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="due">Vencidos e novos</option><option value="all">Todos (treino livre)</option></select></label>
@@ -841,8 +838,8 @@
         <script defer src="assets/pmdf-visual-engine.js?v=20261115-editorial-v4"></script>
     <script defer src="assets/pmdf-summary-editorial.js?v=20261116-editorial-v2"></script>
     <script defer src="assets/pmdf-infographic.js?v=20261117-info-v1"></script>
-        <script defer src="assets/pmdf-anki-cfo-gst.js?v=20261117-cfo-v1"></script>
-    <script defer src="assets/pmdf-app.js?v=20261117-cfo-v1"></script>
+        <script defer src="assets/pmdf-anki-cfo-gst.js?v=20261117-anki-embedded-v1"></script>
+    <script defer src="assets/pmdf-app.js?v=20261117-anki-embedded-v1"></script>
     <script defer src="assets/pmdf-acervo-interativo.js?v=20261116-acervo-v2"></script>
 </body>
 </html>
