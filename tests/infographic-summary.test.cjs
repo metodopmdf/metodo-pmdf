@@ -27,6 +27,16 @@ assert(app.includes('PMDFInfographicSummaries.render'));
 assert(app.includes('PMDFInfographicSummaries?.mount'));
 assert(app.includes('assets/pmdf-infographic.css?v='));
 assert.match(css,/@media print/);
+// Regressão da falha de baixo contraste: textos das fichas devem sobrepor
+// a tipografia branca herdada do tema escuro, com escopo só neste formato.
+assert.match(css,/body #printable-area \.pmdf-report-infographic \.pmdf-info-rule p,/);
+assert.match(css,/body #printable-area \.pmdf-report-infographic \.pmdf-info-flow-item p,/);
+assert.match(css,/color:#1f2937!important/);
+assert.match(css,/-webkit-text-fill-color:#1f2937!important/);
+assert.match(css,/\.pmdf-info-flow h4,[\s\S]*?color:#ffffff!important/);
+const styles=[...html.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map(x=>x[1]);
+assert.match(styles.at(-1),/pmdf-infographic\.css\?v=20261117-info-contrast-v2/,'O CSS do infográfico precisa ser o último');
+
 assert.match(css,/pmdf-info-sheet:not\(\.pmdf-info-active\)\{display:block!important\}/);
 const g={
  lawName:'Documento de teste',
