@@ -2696,10 +2696,12 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     if(c.flags?.includes('verificar_vigencia_juridica'))warning.push('Texto com dispositivo, prazo ou referência jurídica: confira a norma ou jurisprudência vigente.');
                     if(c.flags?.includes('imagem_do_original_nao_embutida'))warning.push('Imagem referenciada no Anki original não foi incluída na versão textual.');
                     if(c.reviewed_source)warning.push('Correção conferida com fonte: '+c.reviewed_source);
+                    if(c.flags?.includes('texto_incompleto_na_fonte'))warning.push('Trecho incompleto no Anki original: confira o enunciado ou comentário.');
                     return {id:c.id,front:c.front,back:c.back,law:c.disciplina,article:c.assunto,reference:c.assunto,
                         kind:'Certo / Errado comentado',modality:'Acervo ANKI',family:'question',tags:c.tags||'ANKI',
                         scope:'Acervo ANKI integrado; revisão normativa individual não garantida',
                         source:'Banco ANKI integrado · '+c.disciplina+' / '+c.assunto,
+                        answer:c.answer,editorialFlags:Array.isArray(c.flags)?c.flags:[],
                         warning:warning.join(' ')};
                 });
                 ANKI_BANK=bank;
@@ -2872,6 +2874,32 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             });
             return matched?html:esc(showAnswer?c.back:c.front);
         }
+        // Acervo ANKI: blocos de leitura separados, sem modificar o texto original.
+        function renderAnkiImportedCard(c,revealed){
+            const lines=String(c.front||'').split(/\r?\n/);
+            const marker=lines.findIndex(line=>/^JULGUE\s+CERTO\s+OU\s+ERRADO\s*$/i.test(line.trim()));
+            const title=marker>0?lines.slice(0,marker).join(' ').trim():'Revisão do assunto';
+            const statement=marker>=0?lines.slice(marker+1).join('\n').trim():String(c.front||'').trim();
+            const warning=Array.isArray(c.editorialFlags)&&c.editorialFlags.includes('texto_incompleto_na_fonte')
+                ?'<p class="anki-imported-warning" role="note">Trecho incompleto no material original. Confira a fonte antes de estudar.</p>':'';
+            if(!revealed)return '<section class="anki-imported-editorial"><h3 class="anki-imported-title">'+esc(title)+'</h3>'+
+                '<span class="anki-imported-command">JULGUE CERTO OU ERRADO</span>'+
+                '<p class="anki-imported-statement">'+esc(statement)+'</p>'+warning+'</section>';
+            const verdict=String(c.answer||'').trim().toUpperCase();
+            const answer=String(c.back||'');
+            const prefix=/^(?:✅\s*CERTO|❌\s*ERRADO|CERTO|ERRADO)\s*(?:[—–:\-]\s*)?/u.exec(answer);
+            const comment=prefix?answer.slice(prefix[0].length).trim():answer.trim();
+            const label=verdict==='CERTO'?'CERTO':verdict==='ERRADO'?'ERRADO':'GABARITO';
+            const status=verdict==='CERTO'?'right':verdict==='ERRADO'?'wrong':'neutral';
+            return '<section class="anki-imported-editorial anki-imported-editorial-answer">'+
+                '<h3 class="anki-imported-title">'+esc(title)+'</h3>'+
+                '<div class="anki-imported-verdict" data-verdict="'+status+'"><span aria-label="Gabarito">'+
+                esc(label)+'</span><small>Gabarito do acervo</small></div>'+
+                '<div class="anki-imported-commentary"><h4>Comentário e fundamentação</h4><p>'+
+                esc(comment)+'</p></div>'+
+                '<details class="anki-imported-recap"><summary>Rever a assertiva</summary><p>'+
+                esc(statement)+'</p></details>'+warning+'</section>';
+        }
         function drawAnki(){
             const el=$('anki-panel'),s=ANKI_STATE;if(!el||!s)return;
             if(s.index>=s.cards.length){
@@ -2882,6 +2910,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 return;
             }
             const c=s.cards[s.index],state=getCardBox(c.id),percent=Math.round(s.index/Math.max(1,s.cards.length)*100);
+            const isImported=typeof c.id==='string'&&c.id.startsWith('cfo-gst-');
             const evaluated=Object.prototype.hasOwnProperty.call(s.ratings||{},s.index);
             const name=esc(c.kind||'Conceito essencial'),law=esc(c.law||''),article=esc(c.article||'');
             const focus=s.back?'VERSO · RESPOSTA':'FRENTE · RECUPERAÇÃO ATIVA';
@@ -2902,12 +2931,14 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     (c.modality?'<span>'+esc(c.modality)+'</span>':'')+
                     (c.difficulty?'<span>'+esc(c.difficulty)+'</span>':'')+'</div>'+
                 '<p class="anki-law">'+law+'</p></div>'+ 
-                '<div class="anki-visual-card '+(c.family==='question'?'anki-visual-card-qa':'')+(s.back?' anki-visual-is-answer':'')+'"><aside class="anki-visual-aside"><div class="anki-visual-illustration">'+art+'</div><span class="anki-visual-art-caption">'+name+'</span><span class="anki-visual-art-subtitle">'+article+'</span></aside><div class="anki-visual-body-wrap">'+
+                '<div class="anki-visual-card '+(c.family==='question'?'anki-visual-card-qa':'')+(isImported?' anki-visual-card-imported':'')+(s.back?' anki-visual-is-answer':'')+'"><aside class="anki-visual-aside"><div class="anki-visual-illustration">'+art+'</div><span class="anki-visual-art-caption">'+name+'</span><span class="anki-visual-art-subtitle">'+article+'</span></aside><div class="anki-visual-body-wrap">'+
                 '<div class="anki-study-surface"><p class="anki-kicker">'+focus+'</p>'+
-                (s.back?'<p class="anki-answer-caption">NÚCLEO DA RESPOSTA</p>':'')+
-                '<p class="anki-question '+(c.cloze?'anki-question-cloze':'')+'">'+
-                    (s.back?'<strong class="anki-short-answer">'+esc(c.back)+'</strong>':
-                        renderAnkiStatement(c,false))+'</p>'+
+                (s.back&&!isImported?'<p class="anki-answer-caption">NÚCLEO DA RESPOSTA</p>':'')+
+                '<'+(isImported?'div':'p')+' class="anki-question '+(c.cloze?'anki-question-cloze':'')+'">'+
+                    (isImported?renderAnkiImportedCard(c,s.back):
+                      s.back?'<strong class="anki-short-answer">'+esc(c.back)+'</strong>':
+                      renderAnkiStatement(c,false))+
+                '</'+(isImported?'div':'p')+'>'+
                 (s.back&&c.cloze?'<p class="anki-restored">'+renderAnkiStatement(c,true)+'</p>':'')+
                 (!s.back&&c.hint?'<p class="anki-card-hint">Pista: '+esc(c.hint)+'</p>':'')+
                 '</div>'+
@@ -2922,7 +2953,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     (c.warning?'<p class="anki-source-note"><strong>Alerta:</strong> '+esc(c.warning)+'</p>':'')+
                     (c.tags?'<p class="anki-source-note">Tags: '+esc(c.tags)+'</p>':'')+
                     '</details></div>':
-                    '<p class="anki-hint">Recupere somente a lacuna ou o conceito essencial. Revele a resposta para conferir.</p>')+
+                    '<p class="anki-hint">'+(isImported?'Julgue a assertiva antes de revelar o gabarito.':'Recupere somente a lacuna ou o conceito essencial. Revele a resposta para conferir.')+'</p>')+
                 '</div></div><div class="anki-study-controls"><div class="anki-actions '+(s.back&&!evaluated?'anki-grade-choices':'')+'">'+(!s.back?
                     '<button type="button" class="qstudio-primary" data-pmdf-onclick="revealAnki()">Revelar resposta</button>':
                     evaluated?'<span class="anki-reviewed-hint">Já avaliado como '+esc(s.ratings[s.index])+'. Voltar não altera sua nota.</span>':
