@@ -723,6 +723,11 @@ const CLOZE_RE = /(\d+\s*(?:dias|dia|anos|ano|meses|mês|horas|hora)|\d+\/\d+|(?
             });
         }
         function filterGuide(value){
+            if(SUMMARY_FORMAT==='infographic' && window.PMDFInfographicSummaries?.mount){
+                const field=$('printable-area')?.querySelector('[data-info-search]');
+                if(field){field.value=String(value||'');field.dispatchEvent(new Event('input',{bubbles:true}));}
+                return;
+            }
             if(SUMMARY_FORMAT==='visual' && window.PMDFVisualEngine?.mount){
                 window.PMDFVisualEngine.mount($('printable-area'))?.filter(value);
                 return;
@@ -895,7 +900,9 @@ const CLOZE_RE = /(\d+\s*(?:dias|dia|anos|ano|meses|mês|horas|hora)|\d+\/\d+|(?
                 window.print();return;
             }
             const safeTitle=esc(name);
-            const extraPrintCss=SUMMARY_FORMAT==='visual'
+            const extraPrintCss=SUMMARY_FORMAT==='infographic'
+                ?'assets/pmdf-infographic.css?v=20261117-info-v1'
+                :SUMMARY_FORMAT==='visual'
                 ?'assets/pmdf-visual.css?v=20261115-editorial-v3'
                 :SUMMARY_FORMAT==='cloze'?'assets/pmdf-cloze-strategic.css?v=20261116-cloze-v3'
                 :(SUMMARY_FORMAT==='full'||SUMMARY_FORMAT==='bullets'||SUMMARY_FORMAT==='flash')?'assets/pmdf-summary-editorial.css?v=20261116-editorial-v2':'';
@@ -964,7 +971,7 @@ const CLOZE_RE = /(\d+\s*(?:dias|dia|anos|ano|meses|mês|horas|hora)|\d+\/\d+|(?
                 try { document.execCommand('copy'); toast('Copiado!', 'ok'); } catch (_) { toast('Não foi possível copiar.', 'error'); } s.removeAllRanges(); d.remove(); }
         }
         function copyFormattedGuide() { if (!CUR.guide) return toast('Carregue um guia primeiro.', 'error'); const h = guideHtml(CUR.guide, false); const d = document.createElement('div'); d.innerHTML = pmdfSafeHtml(h); copyHtml(d.innerHTML, d.innerText || d.textContent); }
-        function currentPrompt() { return TAB === 'redacao' ? essayPrompt() : lawPrompt(false); }
+        function currentPrompt() { return TAB === 'redacao' ? essayPrompt() : lawPrompt(false) + (SUMMARY_FORMAT==='infographic'?'\n\n'+(window.PMDFInfographicSummaries?.promptInstructions?.()||''):''); }
         function openPromptModal() { $('prompt-modal-text').textContent = currentPrompt(); ensurePromptSwitch(); pmdfOpenDialog('prompt-modal'); }
         function ensurePromptSwitch() {
             if ($('ps-btns')) return; const p = $('prompt-modal-text'), d = document.createElement('div'); d.id = 'ps-btns'; d.className = 'flex flex-wrap gap-2 mb-2';
@@ -1092,7 +1099,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         // O banco legado acima permanece íntegro; as quatro entradas ausentes
         // abaixo completam as 14 chaves exibidas na interface.
         // =====================================================================
-        const SUMMARY_FORMATS = ['full','bullets','flash','visual','cloze']; // Quadro Sinótico, mapas e questões fora do seletor.
+        const SUMMARY_FORMATS = ['full','bullets','flash','visual','infographic','cloze']; // Quadro Sinótico, mapas e questões fora do seletor.
         let SOURCE_MODE = 'url';
         let SUMMARY_FORMAT = store.get('summaryFormat')==='table'?'bullets':(SUMMARY_FORMATS.includes(store.get('summaryFormat')) ? store.get('summaryFormat') : 'full');
         let LAW_FILE_NAME = '';
@@ -1764,7 +1771,11 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 return '<div class="g-card" data-incidence="'+a.incidence+'" style="'+(hl?'border-left:4px solid #D4AF37':'')+'">'+(hl?'<span class="g-tag">⭐ Afinidade temática com a banca (estimativa)</span>':'')+(tags.documented?'<span class="g-tag">📚 '+tags.documented+' referência(s) em provas importadas</span>':'')+'<p>'+checkbox+'<b>'+esc(a.article)+'</b> <span class="g-tag">'+a.incidence+' incidência</span></p><p>'+esc(a.plainExplanation)+'</p><p class="g-ex"><b>Aplicação:</b> '+esc(a.practicalExample)+'</p>'+(note?'<p class="g-ex"><b>📝 Nota:</b> '+esc(note)+'</p>':'')+(interactive?'<button class="no-print g-tag" data-pmdf-special="edit-note" data-pmdf-value="'+noteId+'">📝 Nota</button>':'')+'</div>';};
             const compareRows=rows.slice(0,8).map(a=>'<tr><td>'+esc(a.article)+'</td><td>'+esc(firstSentences(a.plainExplanation,230))+'</td><td>'+esc(uniq(a.plainExplanation.match(PRAZO)||[]).join('; ')||'Não identificado no trecho')+'</td><td>'+esc(uniq(a.plainExplanation.match(RESTR)||[]).join('; ')||'Não identificado no trecho')+'</td></tr>').join('');
             let body='';
-            if(SUMMARY_FORMAT==='visual'){
+            if(SUMMARY_FORMAT==='infographic'){
+                body=window.PMDFInfographicSummaries?.render
+                    ?window.PMDFInfographicSummaries.render(g,{interactive,board:eb,level:LEVEL})
+                    :'<p>O módulo de infográficos não foi carregado. Atualize a página.</p>';
+            }else if(SUMMARY_FORMAT==='visual'){
                 body=window.PMDFVisualEngine?window.PMDFVisualEngine.render(g,{interactive,board:eb}):'<p>O módulo visual não foi carregado. Atualize a página.</p>';
             }else if((SUMMARY_FORMAT==='full'||SUMMARY_FORMAT==='bullets')&&window.PMDFStrategicSummaries){
                 body=window.PMDFStrategicSummaries.render(g,{format:SUMMARY_FORMAT,board:eb,level:LEVEL});
@@ -1803,7 +1814,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             }
             // A página de leitura contém apenas o seletor único em #summary-format-toolbar.
             return                 '<div class="pmdf-report pmdf-report-'+SUMMARY_FORMAT+'">'+
-                ((SUMMARY_FORMAT==='visual'||((SUMMARY_FORMAT==='full'||SUMMARY_FORMAT==='bullets')&&window.PMDFStrategicSummaries))?'':intro)+
+                ((SUMMARY_FORMAT==='visual'||SUMMARY_FORMAT==='infographic'||((SUMMARY_FORMAT==='full'||SUMMARY_FORMAT==='bullets')&&window.PMDFStrategicSummaries))?'':intro)+
                 body+'<footer class="pmdf-report-footer"><span>⚖ MÉTODO PMDF</span><span>Material didático · Confira a norma oficial vigente</span></footer></div>'+
                 '';
         }
@@ -1967,6 +1978,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
             $('printable-area').innerHTML=pmdfSafeHtml(guideHtml(g,true),true);
             pmdfFocusScrollableRegions($('printable-area'));
             if(SUMMARY_FORMAT==='visual')window.PMDFVisualEngine?.mount?.($('printable-area'));
+            if(SUMMARY_FORMAT==='infographic')window.PMDFInfographicSummaries?.mount?.($('printable-area'));
             if(SUMMARY_FORMAT==='cloze')window.PMDFClozeStrategic?.mount?.($('printable-area'));
             if (g.officialSource && typeof g.officialSource === 'string') {
                 try {
@@ -1985,7 +1997,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                     }
                 } catch (e) { /* Fonte inválida não interrompe o estudo. */ }
             }
-            $('current-doc-title').textContent='Método PMDF — '+g.lawName+' · '+LEVELS[LEVEL].label+' · '+({full:'Por Extenso',bullets:'Esquematizado',flash:'Flashcards',traps:'Pegadinhas',visual:'Visual Ilustrado',cloze:'Lacunas Estratégicas'}[SUMMARY_FORMAT]);
+            $('current-doc-title').textContent='Método PMDF — '+g.lawName+' · '+LEVELS[LEVEL].label+' · '+({full:'Por Extenso',bullets:'Esquematizado',flash:'Flashcards',traps:'Pegadinhas',visual:'Visual Ilustrado',infographic:'Infográfico Estratégico',cloze:'Lacunas Estratégicas'}[SUMMARY_FORMAT]);
             ['summary-format-config','summary-format-toolbar'].forEach(id=>{if($(id))$(id).value=SUMMARY_FORMAT;});
             // Indicadores de progresso do guia removidos da interface.
             if(CLOZE_MODE&&SUMMARY_FORMAT!=='cloze')applyCloze();
