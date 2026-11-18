@@ -2942,7 +2942,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
                 (s.back&&c.cloze?'<p class="anki-restored">'+renderAnkiStatement(c,true)+'</p>':'')+
                 (!s.back&&c.hint?'<p class="anki-card-hint">Pista: '+esc(c.hint)+'</p>':'')+
                 '</div>'+
-                (s.back?'<div class="anki-proof"><b>Fundamento rastreável / Extra</b>'+
+                (s.back?'<div class="anki-proof"><b>'+(isImported?'Origem e observações':'Fundamento rastreável / Extra')+'</b>'+
                     '<p class="anki-source-note">Fonte: '+law+' · '+article+
                     '. '+esc(c.scope||'Conteúdo do material selecionado')+'.</p>'+
                     (c.tip?'<div class="anki-learn-aid"><strong>💡 Dica para a prova</strong><p>'+esc(c.tip)+'</p></div>':'')+
