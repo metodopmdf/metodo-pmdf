@@ -117,6 +117,21 @@ async function testViewport(browser,{name,width,height}){
  await exports.locator('summary').click();
  assert(await page.locator('#anki-export-csv').isVisible(),'Exportações não abriram');
  assert.equal(await page.locator('.pmdf-anki-export-options button').count(),4);
+ // Revisão do banco ANKI fixo: layout compacto, assertiva legível e gabarito comentado.
+ await page.locator('#anki-source').selectOption('cfo-gst');
+ await page.locator('#anki-mode').selectOption('all');
+ await page.locator('#anki-batch-size').selectOption('25');
+ await page.locator('#anki-start').click();
+ await page.locator('#anki-panel .anki-visual-card-imported .anki-imported-statement').waitFor({state:'visible',timeout:60000});
+ const importedSize=await page.locator('#anki-panel .anki-imported-statement').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
+ assert(importedSize>=13&&importedSize<=16,'Fonte da assertiva ANKI fora do tamanho de leitura compacto: '+importedSize);
+ assert(await page.locator('#anki-panel .anki-imported-command').isVisible());
+ await page.locator('#anki-panel button[data-pmdf-onclick="revealAnki()"]').click();
+ assert(await page.locator('#anki-panel .anki-imported-verdict').isVisible(),'Gabarito ANKI sem destaque');
+ assert(await page.locator('#anki-panel .anki-imported-commentary p').isVisible(),'Comentário ANKI indisponível');
+ const commentSize=await page.locator('#anki-panel .anki-imported-commentary p').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
+ assert(commentSize>=13&&commentSize<=15,'Fonte do comentário ANKI grande demais: '+commentSize);
+ log(name,'flashcards ANKI: fonte '+importedSize+'px, comentário '+commentSize+'px e layout editorial');
  log(name,'configuração e exportações de flashcards');
  await page.locator('#anki-source').selectOption('current');
  await page.locator('#anki-card-style').selectOption('questions');
