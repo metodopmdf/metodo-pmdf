@@ -62,11 +62,40 @@ async function testViewport(browser,{name,width,height}){
  assert(!await page.locator('#tab-btn-resultados').isVisible(),'Resultados deveriam estar pausados');
  assert(await page.locator('#tab-btn-acervo').isVisible(),'Banco de questões deve estar disponível');
  log(name,'quatro módulos públicos e recursos pausados');
+
+ // Distribuição responsiva das quatro ferramentas e ausência de aba órfã.
+ const navGeometry=await page.locator('nav.pmdf-app-tabs').evaluate(nav=>{
+   const controls=[...nav.querySelectorAll('button[role="tab"]')].filter(b=>!b.hidden&&getComputedStyle(b).display!=='none');
+   const columns=getComputedStyle(nav).gridTemplateColumns.split(' ').filter(Boolean).length;
+   return {columns,controls:controls.map(b=>({width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height}))};
+ });
+ assert.equal(navGeometry.controls.length,4,'Quantidade incorreta de ferramentas públicas');
+ assert.equal(navGeometry.columns,width>960?4:2,'Abas com distribuição desigual: '+JSON.stringify(navGeometry));
+ assert(navGeometry.controls.every(x=>x.width>100&&x.height>=44),'Área de toque insuficiente: '+JSON.stringify(navGeometry));
+ log(name,'navegação responsiva: '+navGeometry.columns+' colunas sem aba órfã');
+ // Passagem pelo acervo também verifica acessibilidade dos contadores do tema.
+ await page.locator('#tab-btn-acervo').click();
+ assert.equal(await page.locator('#tab-btn-acervo').getAttribute('aria-selected'),'true');
+ assert.equal(await page.locator('#acervo-shell .acervo-counter').count(),4);
+ await page.locator('#tab-btn-leis').click();
+ assert.equal(await page.locator('#tab-btn-leis').getAttribute('aria-selected'),'true');
+
  await page.locator('#btn-law-cppm').click();
  assert((await page.locator('#current-doc-title').innerText()).includes('CPPM')||
         (await page.locator('#current-doc-title').innerText()).includes('Militar'),
         'Seleção do CPPM não carregou o guia');
  log(name,'seleção de lei');
+
+ const summaryGeometry=await page.locator('#summary-format-toolbar').evaluate(select=>{
+  const r=select.getBoundingClientRect(),bar=document.querySelector('#export-toolbar').getBoundingClientRect();
+  return {width:r.width,height:r.height,barWidth:bar.width,display:getComputedStyle(document.querySelector('#export-toolbar')).display};
+ });
+ assert.equal(summaryGeometry.display,'grid','Seletor de formato ainda está em flex por colisão CSS');
+ assert(summaryGeometry.width>=200&&summaryGeometry.width<=summaryGeometry.barWidth+1,
+  'Seletor de resumo truncado: '+JSON.stringify(summaryGeometry));
+ assert(summaryGeometry.height>=44,'Área de toque pequena no seletor de resumo');
+ log(name,'seletor de resumos sem largura fixa conflitante');
+
  const select=page.locator('#summary-format-toolbar');
  for(const [mode,marker]of [
    ['full','.pmdf-editorial-full'],['bullets','.pmdf-editorial-bullets'],
@@ -101,6 +130,11 @@ async function testViewport(browser,{name,width,height}){
  await page.evaluate(()=>window.toggleTheme());
  const after=await page.evaluate(()=>document.body.dataset.theme);
  assert.notEqual(after,before,'Alternância de tema falhou');
+
+ const bankLightContrast=await page.locator('#acervo-hits').evaluate(el=>getComputedStyle(el).color);
+ if(after==='light')assert.equal(bankLightContrast,'rgb(22, 101, 52)','Verde pouco contrastante no tema claro');
+ log(name,'indicadores do acervo legíveis no tema claro');
+
  await page.locator('#tab-btn-anki').click();
  assert.equal(await page.locator('#tab-btn-anki').getAttribute('aria-selected'),'true');
  assert.equal(await page.locator('.pmdf-anki-fields > label > select').count(),5);
