@@ -4,7 +4,7 @@
    IDs originais preservados para manter o histórico de revisão Leitner. */
 (function(root){
 'use strict';
-const ASSET='assets/bancos/anki.json?v=20261117-anki-embedded-v1';
+const ASSET='assets/bancos/anki.json?v=20261117-anki-editorial-v3';
 let memory=null,opening=null;
 const $=id=>document.getElementById(id);
 const norm=s=>String(s??'').trim();
