@@ -25,6 +25,33 @@ assert.match(css,/#anki-cfo-controls\[hidden\]\{display:none!important\}/);
 assert.equal(data.format,'PMDF-ANKI-IMPORT-v1');
 assert.equal(data.source,'ANKI');
 assert.equal(data.cards.length,2624,'Todos os cartões devem estar publicados');
+
+assert.equal(data.revision,'2026-11-17-anki-editorial-v3');
+assert.equal(data.stats.editorial.corrected_cards,116);
+assert.equal(data.stats.editorial.incomplete_source_cards,3);
+assert.equal(data.stats.editorial.semantic_answers_changed,0);
+const incomplete=data.cards.filter(c=>c.flags?.includes('texto_incompleto_na_fonte'));
+assert.equal(incomplete.length,3,'Os trechos sem conclusão segura devem ser sinalizados');
+for(const field of ['front','back']){
+ const missing=data.cards.filter(c=>/[\p{L}\p{N}]$/u.test(c[field]));
+ assert(missing.every(c=>incomplete.some(x=>x.id===c.id)),'Restou pontuação ausente fora dos trechos truncados');
+ for(const card of data.cards){
+  assert(!/\bex:(?=\s|\))/i.test(card[field]),'Abreviação inadequada: '+card.id);
+  assert(!/§\d/.test(card[field]),'Espaçamento da referência jurídica inadequado: '+card.id);
+ }
+}
+assert.match(app,/function renderAnkiImportedCard\(c,revealed\)/);
+assert.match(app,/anki-imported-verdict/);
+assert.match(app,/anki-imported-statement/);
+assert.match(app,/anki-imported-commentary/);
+assert.match(app,/anki-visual-card-imported/);
+assert.match(css,/\.anki-imported-statement\{[\s\S]*?font:470 15px\/1\.72/);
+assert.match(css,/\.anki-imported-commentary p\{[\s\S]*?font:450 14px\/1\.75/);
+assert.match(css,/@media\(max-width:760px\)/);
+const styleLinks=[...html.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map(x=>x[1]);
+assert.match(styleLinks.at(-1),/pmdf-anki-cfo-gst\.css\?v=20261117-anki-editorial-v3/);
+assert.match(code,/anki\.json\?v=20261117-anki-editorial-v3/);
+
 assert.equal(new Set(data.cards.map(c=>c.id)).size,2624,'IDs não devem ser alterados nem duplicados');
 assert.equal(new Set(data.cards.map(c=>c.disciplina)).size,22);
 assert.equal(new Set(data.cards.map(c=>c.disciplina+'|'+c.assunto)).size,130);
@@ -86,6 +113,6 @@ async function run(){
  assert.equal(controls['anki-cfo-controls'].hidden,false);
  assert.equal(controls['anki-generation-mode'].disabled,true);
  assert.match(controls['anki-cfo-status'].textContent,/2\.624 cartões disponíveis/);
- console.log('ANKI INTEGRADO QA PASS: 2624 cartões, 22 disciplinas, 130 tópicos, fonte local publicada, sem upload, filtros e Leitner.');
+ console.log('ANKI EDITORIAL QA PASS: 2624 cartões, 116 correções, 3 fontes truncadas, contraste, fontes compactas, filtros e Leitner.');
 }
 run().catch(e=>{console.error(e);process.exitCode=1;});
