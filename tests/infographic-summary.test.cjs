@@ -35,10 +35,10 @@ assert.match(css,/color:#1f2937!important/);
 assert.match(css,/-webkit-text-fill-color:#1f2937!important/);
 assert.match(css,/\.pmdf-info-flow h4,[\s\S]*?color:#ffffff!important/);
 const styles=[...html.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map(x=>x[1]);
-const infographicIndex=styles.findIndex(x=>/pmdf-infographic\\.css\\?v=20261117-info-contrast-v2/.test(x));
-const globalIndex=styles.findIndex(x=>/pmdf-acervo-interativo\\.css/.test(x));
+const infographicIndex=styles.findIndex(x=>x.includes('pmdf-infographic.css?v=20261117-info-contrast-v2'));
+const globalIndex=styles.findIndex(x=>x.includes('pmdf-acervo-interativo.css'));
 assert(infographicIndex>globalIndex,'O CSS do infográfico deve vir depois dos estilos gerais');
-assert(styles.slice(infographicIndex+1).every(x=>/pmdf-anki-cfo-gst\\.css/.test(x)),
+assert(styles.slice(infographicIndex+1).every(x=>x.includes('pmdf-anki-cfo-gst.css')),
   'Depois do infográfico só são admitidas folhas específicas e isoladas de outros módulos');
 
 assert.match(css,/pmdf-info-sheet:not\(\.pmdf-info-active\)\{display:block!important\}/);
