@@ -2,6 +2,16 @@
 
 **Situação deste pacote:** código pronto para revisão e integração; NÃO implica conta de pagamentos criada, checkout aprovado, migração executada nem webhook implantado. Os três produtos são inseridos com `status='draft'` e não podem receber compras até habilitação explícita. Preserve a plataforma gratuita e os arquivos existentes.
 
+## Registro de implantação em 23/11/2026
+
+- **Projeto Supabase confirmado:** `wskuhkvgipqwykbnuspk` (Metodo PMDF).
+- **Migração aplicada no banco de produção:** `comercio_hotmart_20261123`. As seis tabelas comerciais existem e estão com RLS habilitada. Nenhum produto foi ativado, nenhum gateway foi cadastrado e nenhum pedido foi gerado.
+- **Funções implantadas:** `pmdf-checkout` (v1) e `pmdf-hotmart-webhook` (v1), ambas `ACTIVE`. Elas realizam autenticação própria por usuário ou token Hottok e devem permanecer fechadas enquanto as variáveis de configuração estiverem ausentes.
+- **Verificações de autorização:** `anon` e `authenticated` sem execução da reconciliação privilegiada; `anon` sem permissão de inserir pedidos; `authenticated` sem permissão de atualizar entitlements; a função `rls_auto_enable` deixou de ser executável por visitantes.
+- **Pendências externas obrigatórias:** cadastro e validação do produtor, checkout/ID real da oferta, envio de arquivo licenciado, `HOTMART_HOTTOK`, `PMDF_COMMERCE_ALLOWED_ORIGINS`, URL da hospedagem comercial e teste real de compra/aprovação/reembolso.
+- **Aviso do Security Advisor:** proteção contra senhas vazadas desativada no Auth; avaliar a opção na configuração do projeto. Duas tabelas de servidor (`pmdf_store_gateways` e `pmdf_store_webhook_events`) aparecem como RLS sem políticas por desenho, pois não devem ser acessíveis por clientes externos.
+- **Status:** infraestrutura implantada, comercialização ainda desativada. Não declarar o sistema 100% operacional sem os passos pendentes e homologação ponta a ponta.
+
 ## Arquitetura e arquivos
 
 - `comercial.html`: vitrine independente Navy & Gold; integra somente vendas confirmadas.
