@@ -1,6 +1,14 @@
 # Método PMDF — ativação comercial com Hotmart e Supabase
 
-**Situação deste pacote:** código pronto para revisão e integração; NÃO implica conta de pagamentos criada, checkout aprovado, migração executada nem webhook implantado. Os três produtos são inseridos com `status='draft'` e não podem receber compras até habilitação explícita. Preserve a plataforma gratuita e os arquivos existentes.
+**Situação deste pacote (atualizada em 23/11/2026):** a migração comercial foi executada no projeto Supabase `wskuhkvgipqwykbnuspk`, e as Edge Functions `pmdf-checkout` e `pmdf-hotmart-webhook` estão ativas e correspondem ao código da branch `main`. Isso ainda NÃO implica conta de pagamentos criada, checkout aprovado ou oferta aberta. Os três produtos permanecem com `status='draft'`, sem gateway cadastrado e sem pedidos, e não podem receber compras até habilitação explícita. Preserve a plataforma gratuita e os arquivos existentes.
+
+### Verificação da implantação
+
+- RLS está ativa em todas as seis tabelas comerciais; `anon` e `authenticated` não executam a função de reconciliação.
+- O checkout responde `403` quando a origem não está autorizada.
+- O webhook responde `503 not_configured` enquanto `HOTMART_HOTTOK` não estiver configurado.
+- Ainda faltam `HOTMART_HOTTOK`, `PMDF_COMMERCE_ALLOWED_ORIGINS`, produto e checkout reais, hospedagem comercial e homologação de compra/reembolso.
+- O painel de segurança do Supabase ainda recomenda habilitar proteção contra senhas vazadas em Auth.
 
 ## Registro de implantação em 23/11/2026
 
@@ -32,7 +40,7 @@
 
 ## Configuração no Supabase
 
-1. No projeto já utilizado pela aplicação (mesma URL em `assets/pmdf-app.js`), faça backup e rode `supabase/migrations/20261123_comercio_hotmart.sql` no SQL Editor. NÃO rode no Supabase de outro aplicativo.
+1. A migração `supabase/migrations/20261123_comercio_hotmart.sql` já foi aplicada ao projeto utilizado pela aplicação, seguida da migração de índices `20261123_comercio_hotmart_indexes.sql`. Em outro ambiente, faça backup e aplique essas migrações na ordem; NÃO rode no Supabase de outro aplicativo.
 2. Verifique RLS: usuário anônimo vê apenas produtos ativos; usuário A não acessa intents, pedidos ou entitlements do usuário B; `anon` e `authenticated` não inserem nem alteram nenhuma dessas tabelas; tabela `pmdf_store_gateways` e eventos privados não são legíveis pelo cliente.
 3. Na Hotmart, cadastre o produto real, configure preço e entrega, copie o **ID real do produto** e o **link oficial de checkout** (`https://pay.hotmart.com/...`). Não substitua por URL fictícia.
 4. No SQL Editor, registre o gateway como `postgres`/admin e ative SOMENTE o produto publicado:
