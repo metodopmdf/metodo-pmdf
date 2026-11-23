@@ -251,34 +251,29 @@ async function generate(page,format){
 }
 async function checkFlashcards(page){
   await page.locator('#tab-btn-anki').click();
-  await page.locator('#anki-source').selectOption('all');
-  await page.locator('#anki-generation-mode').selectOption('advanced');
+  assert.equal(await page.locator('#anki-generation-mode').count(),0);
+  assert.equal(await page.locator('#anki-card-style').count(),0);
+  assert(await page.locator('#anki-source').isHidden(),'Não deve haver seleção de modelos');
+  assert(await page.locator('#anki-cfo-controls').isVisible(),'Acervo ANKI não foi exibido');
+  await page.waitForFunction(()=>document.querySelector('#anki-cfo-status')?.textContent?.includes('2.624'),null,{timeout:45000});
   await page.locator('#anki-mode').selectOption('all');
   await page.locator('#anki-batch-size').selectOption('50');
   await page.locator('button[data-pmdf-onclick="startAnki()"]').click();
-  await page.waitForFunction(()=>document.querySelector('#anki-panel .anki-question')?.textContent?.length>35,
-    null,{timeout:20000});
-  assert((await page.evaluate(()=>window.eval('ANKI_STATE.cards.length')))<=50,
-    'Quantidade de flashcards por sessão ultrapassou o limite');
-  const cards=await page.evaluate(()=>window.eval('ANKI_BANK.map(c=>({law:c.law,kind:c.modality,source:c.source,front:c.front,reference:c.reference,tip:c.tip,pitfall:c.pitfall,application:c.application,cardKind:c.kind}))'));
-  assert(cards.length>=50,'Novo banco de flashcards insuficiente');
-  assert(cards.some(c=>c.kind==='Básico (P&R)'),'Sem perguntas diretas');
-  assert(cards.some(c=>c.kind==='Cloze (Lacuna)'),'Sem lacunas');
-  assert(cards.some(c=>c.kind==='Gatilho de Banca'),'Sem julgamento de banca');
-  assert(cards.every(c=>c.source?.length>20),'Cartão sem fonte');
-  assert(cards.every(c=>c.cardKind!=='Síntese expressa'),'Modelo de cartão sem pergunta voltou');
-  assert(cards.every(c=>c.front?.trim()!==c.reference?.trim()),'Card só com título legal');
-  assert(cards.every(c=>c.tip?.length>=12),'Flashcard sem dica de estudo');
-  assert(cards.some(c=>c.pitfall?.length>15),'Faltam pegadinhas de concurso');
-  assert.equal(new Set(cards.slice(0,26).map(c=>c.law)).size,26,'Distribuição das 26 leis insuficiente');
-  assert.match(await page.locator('#anki-coverage').innerText(),/Modalidades:/,'Relatório de cobertura ausente');
+  await page.waitForFunction(()=>document.querySelector('#anki-panel .anki-imported-statement')?.textContent?.length>35,
+    null,{timeout:45000});
+  assert.equal(await page.evaluate(()=>window.eval('ANKI_STATE.cards.length')),50,'Lote ANKI deve ter 50 cartões');
+  const cards=await page.evaluate(()=>window.eval('ANKI_BANK.map(c=>({id:c.id,law:c.law,source:c.source,front:c.front,kind:c.kind}))'));
+  assert.equal(cards.length,2624,'Banco integrado ANKI incompleto');
+  assert(cards.every(c=>c.id.startsWith('cfo-gst-')),'Modelos antigos voltaram ao baralho');
+  assert(cards.every(c=>c.source?.includes('ANKI integrado')),'Referência do acervo ANKI ausente');
+  assert.match(await page.locator('#anki-coverage').innerText(),/Fonte: ANKI integrado/,'Inventário ANKI ausente');
   const first=await page.locator('#anki-panel .anki-question').innerText();
   assert(first.length>35,'Flashcard sem pergunta substantiva');
   assert(!first.includes('Identifique o instituto, seu requisito principal'),
     'Flashcard genérico antigo reapareceu');
   await page.locator('button[data-pmdf-onclick="revealAnki()"]').click();
   assert(await page.locator('#anki-panel .anki-proof').isVisible(),'Fundamento do verso ausente');
-  assert(await page.locator('#anki-panel .anki-learn-aid').count()>=1,'Verso sem orientação prática');
+  assert(await page.locator('#anki-panel .anki-imported-commentary').isVisible(),'Comentário ANKI ausente');
   assert(await page.locator('#anki-nav-next').isVisible(),'Botão próximo ausente no flashcard');
   assert(await page.locator('#anki-nav-prev').isDisabled(),'Retornar antes do primeiro cartão não foi bloqueado');
   assert((await page.locator('#anki-panel .anki-proof').innerText()).length>45,'Fundamento incompleto');
@@ -320,6 +315,7 @@ async function checkFlashcards(page){
   assert.equal(await page.evaluate(()=>window.eval('ANKI_STATE.seen')),rated,'Pular cartão alterou contagem');
   await page.locator('#anki-nav-prev').click();
   assert.equal(await page.evaluate(()=>window.eval('ANKI_STATE.index')),beforeSkip,'Anterior após pulo falhou');
+  await page.locator('.pmdf-anki-export-details summary').click();
   const csvWait=page.waitForEvent('download',{timeout:15000});
   await page.locator('#anki-export-csv').click();
   const csv=await csvWait;
@@ -328,11 +324,6 @@ async function checkFlashcards(page){
   await page.locator('#anki-export-tsv').click();
   const tsv=await tsvWait;
   assert.match(tsv.suggestedFilename(),/\.tsv$/,'Exportação TSV incompatível');
-  const clozeWait=page.waitForEvent('download',{timeout:15000});
-  await page.locator('#anki-export-cloze').click();
-  const clozeFile=await clozeWait,clozeText=readFileSync(await clozeFile.path(),'utf8');
-  assert.match(clozeText,/#notetype:Cloze/);
-  assert.match(clozeText,/\{\{c1::/);
   const basicWait=page.waitForEvent('download',{timeout:15000});
   await page.locator('#anki-export-basic').click();
   const basicFile=await basicWait,basicText=readFileSync(await basicFile.path(),'utf8');
@@ -367,16 +358,15 @@ async function longSource(page){
   assert(second.every(x=>!first.includes(x)),'Lote seguinte repetiu questões antes da cobertura');
   assert(first.length+second.length>=120,'Documento com 90 regras gerou poucas questões verificáveis');
   await page.locator('#tab-btn-anki').click();
-  await page.locator('#anki-source').selectOption('current');
-  await page.locator('#anki-generation-mode').selectOption('advanced');
+  assert(await page.locator('#anki-cfo-controls').isVisible(),
+    'O banco ANKI deve continuar disponível mesmo ao enviar outro documento.');
   await page.locator('#anki-mode').selectOption('all');
   await page.locator('#anki-batch-size').selectOption('100');
   await page.locator('#anki-start').click();
-  await page.waitForFunction(()=>window.eval('ANKI_STATE')?.cards?.length>=90,
-    null,{timeout:45000});
+  await page.waitForFunction(()=>window.eval('ANKI_STATE')?.cards?.length===100,null,{timeout:45000});
   const flash=await page.evaluate(()=>window.eval('ANKI_BANK.length'));
-  assert(flash>90,'Documento com 90 dispositivos produziu poucos flashcards');
-  assert.match(await page.locator('#anki-generation-status').innerText(),/Cobertura:/);
+  assert.equal(flash,2624,'O ANKI integrado não deve ser substituído por um documento externo');
+  assert.match(await page.locator('#anki-generation-status').innerText(),/disciplinas/);
   return {first:first.length,second:second.length,flashcards:flash};
 }
 async function verifyCsp(browser){

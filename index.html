@@ -210,7 +210,7 @@
           <div id="pmdf-context-leis" class="pmdf-flow-copy"><strong>Como começar</strong><span>1 · Selecione uma lei ou arquivo · 2 · Ajuste as opções · 3 · Leia e revise</span></div>
           <div id="pmdf-context-questoes" class="pmdf-flow-copy hidden"><strong>Como começar</strong><span>1 · Escolha a fonte · 2 · Configure o simulado · 3 · Gere e responda</span></div>
           <div id="pmdf-context-acervo" class="pmdf-flow-copy hidden"><strong>Banco de questões</strong><span>1 · Importe ou carregue o acervo · 2 · Responda · 3 · Veja o gráfico e a porcentagem</span></div>
-          <div id="pmdf-context-anki" class="pmdf-flow-copy hidden"><strong>Como começar</strong><span>1 · Escolha a fonte · 2 · Gere os cartões · 3 · Revele e avalie</span></div>
+          <div id="pmdf-context-anki" class="pmdf-flow-copy hidden"><strong>Como começar</strong><span>1 · Filtre o acervo ANKI · 2 · Inicie a revisão · 3 · Revele e avalie</span></div>
           <div id="pmdf-context-resultados" class="pmdf-flow-copy hidden"><strong>Como começar</strong><span>Selecione um tema e acompanhe acertos, erros e tempo de estudo.</span></div>
           <div id="pmdf-context-redacao" class="pmdf-flow-copy hidden"><strong>Como começar</strong><span>1 · Informe o tema · 2 · Cole a redação · 3 · Corrija e leia o relatório</span></div>
           <button id="pmdf-primary-jump" type="button" data-pmdf-onclick="pmdfFocusPrimary()">Ir para a ação ↓</button>
@@ -687,44 +687,32 @@
         </section>
         <section id="tab-anki" role="tabpanel" aria-labelledby="tab-btn-anki" class="hidden space-y-5" aria-label="Flashcards com repetição espaçada">
             <div class="anki-visual-config bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
-                <header class="anki-visual-intro"><div class="anki-visual-intro-content"><span class="anki-visual-intro-kicker">✦ MÉTODO PMDF · MEMORIZAÇÃO ESTRATÉGICA</span><h2>Flashcards <em>Ilustrados</em></h2><p>Perguntas de revisão sobre conceitos, diferenças, competências, requisitos e exceções, criadas a partir das leis e materiais escolhidos. Revele a resposta, consulte o fundamento e avalie sua lembrança pela repetição espaçada.</p><div class="anki-visual-intro-pills"><span>Visual editorial</span><span>Revisão Leitner</span><span>100% local</span></div></div><div class="anki-visual-intro-mark" aria-hidden="true">✦</div></header>
-                <div class="pmdf-anki-fields grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <label class="text-xs text-[#E5C158] font-semibold">Elaboração dos cartões
-                        <select id="anki-generation-mode" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]">
-                          <option value="advanced" selected>Motor local · perguntas estratégicas</option>
-                          <option value="classic">Clássico · perguntas objetivas (sem rede neural)</option>
-                        </select>
-                    </label>
-                    <label class="text-xs text-[#E5C158] font-semibold">Formato dos flashcards
-                        <select id="anki-card-style" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]">
-                            <option value="questions" selected>Perguntas elaboradas · padrão</option>
-                            <option value="mixed">Misto · perguntas + lacunas</option>
-                            <option value="cloze">Lacunas contextualizadas</option>
-                        </select>
-                    </label>
-                    <label class="text-xs text-[#E5C158] font-semibold">Material / lei
-                        <select id="anki-source" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="current">Conteúdo selecionado / enviado</option><option value="all">Todas as leis cadastradas</option><option value="cfo-gst">📚 ANKI</option></select></label>
-                    
-                <div id="anki-cfo-controls" hidden class="pmdf-cfo-import-panel" aria-label="Acervo de flashcards ANKI">
-                  <div class="pmdf-cfo-import-head"><strong>ANKI</strong><span>2.624 cartões integrados · Certo/Errado comentado por disciplina e assunto</span></div>
-                  <div class="pmdf-cfo-import-grid">
-                    <label>Disciplina
-                      <select id="anki-cfo-disciplina" aria-label="Filtrar disciplina ANKI"><option value="">Todas as disciplinas</option></select>
-                    </label>
-                    <label>Assunto
-                      <select id="anki-cfo-assunto" aria-label="Filtrar assunto ANKI"><option value="">Todos os assuntos</option></select>
-                    </label>
-                  </div>
-                  <p id="anki-cfo-status" role="status" aria-live="polite">Carregando o banco ANKI integrado...</p>
-                  <p class="pmdf-cfo-import-note">Os 2.624 cartões estão disponíveis automaticamente, sem envio de arquivos. Enunciados e comentários foram preservados, exceto correções documentadas. A maioria não foi revalidada individualmente: confira a legislação e a jurisprudência atuais. O progresso Leitner é salvo neste navegador.</p>
+                <header class="anki-visual-intro"><div class="anki-visual-intro-content"><span class="anki-visual-intro-kicker">✦ MÉTODO PMDF · MEMORIZAÇÃO ESTRATÉGICA</span><h2>Flashcards <em>ANKI</em></h2><p>Estude o acervo ANKI integrado de 2.624 cartões comentados. Filtre por disciplina e assunto, revele o gabarito e programe as próximas revisões conforme seu desempenho.</p><div class="anki-visual-intro-pills"><span>2.624 cartões integrados</span><span>Revisão espaçada</span><span>Progresso preservado</span></div></div><div class="anki-visual-intro-mark" aria-hidden="true">✦</div></header>
+                <!-- Fonte única: o banco ANKI integrado. O seletor interno mantém compatibilidade com o histórico sem oferecer modelos alternativos. -->
+                <select id="anki-source" class="hidden" hidden aria-hidden="true" tabindex="-1"><option value="cfo-gst" selected>ANKI</option></select>
+                <div id="anki-cfo-controls" class="pmdf-cfo-import-panel" aria-label="Acervo de flashcards ANKI">
+                    <div class="pmdf-cfo-import-head"><strong>ANKI</strong><span>2.624 cartões integrados · Certo/Errado comentado por disciplina e assunto</span></div>
+                    <div class="pmdf-cfo-import-grid">
+                        <label>Disciplina
+                            <select id="anki-cfo-disciplina" aria-label="Filtrar disciplina ANKI"><option value="">Todas as disciplinas</option></select>
+                        </label>
+                        <label>Assunto
+                            <select id="anki-cfo-assunto" aria-label="Filtrar assunto ANKI"><option value="">Todos os assuntos</option></select>
+                        </label>
+                    </div>
+                    <p id="anki-cfo-status" role="status" aria-live="polite">Carregando o banco ANKI integrado...</p>
+                    <p class="pmdf-cfo-import-note">Os 2.624 cartões estão disponíveis automaticamente, sem envio de arquivos. Enunciados e comentários foram preservados, exceto correções documentadas. A maioria não foi revalidada individualmente: confira a legislação e a jurisprudência atuais. O progresso Leitner é salvo neste navegador.</p>
                 </div>
+                <div class="pmdf-anki-fields grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <label class="text-xs text-[#E5C158] font-semibold">Tipo de revisão
-                        <select id="anki-mode" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="due">Vencidos e novos</option><option value="all">Todos (treino livre)</option></select></label>
+                        <select id="anki-mode" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="due">Vencidos e novos</option><option value="all">Todos (treino livre)</option></select>
+                    </label>
                     <label class="text-xs text-[#E5C158] font-semibold">Cartões por sessão
-                        <select id="anki-batch-size" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="25">25</option><option value="50" selected>50</option><option value="100">100</option><option value="200">200</option><option value="all">Todos (pode ser longo)</option></select></label>
+                        <select id="anki-batch-size" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="25">25</option><option value="50" selected>50</option><option value="100">100</option><option value="200">200</option><option value="all">Todos (pode ser longo)</option></select>
+                    </label>
                 </div>
                 <div class="pmdf-anki-primary-actions flex gap-2 flex-wrap items-center">
-                    <button type="button" id="anki-start" data-pmdf-onclick="startAnki()" class="px-5 py-2.5 rounded-xl bg-[#D4AF37] text-[#050B16] font-extrabold">Gerar e iniciar revisão</button>
+                    <button type="button" id="anki-start" data-pmdf-onclick="startAnki()" class="px-5 py-2.5 rounded-xl bg-[#D4AF37] text-[#050B16] font-extrabold">Iniciar revisão ANKI</button>
                     <button type="button" id="anki-stop" data-pmdf-onclick="stopAnkiGeneration()" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs hidden">Interromper geração</button>
                     <button type="button" data-pmdf-onclick="clearAnkiFilters()" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">↺ Limpar filtros</button>
                 </div>
@@ -732,18 +720,17 @@
                     <summary>Exportar baralho para Anki <span aria-hidden="true">⌄</span></summary>
                     <div class="pmdf-anki-export-options"><button type="button" id="anki-export-csv" data-pmdf-onclick="exportAnkiCards('csv')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Exportar CSV (Anki)</button>
                     <button type="button" id="anki-export-tsv" data-pmdf-onclick="exportAnkiCards('tsv')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Exportar TSV</button>
-                    <button type="button" id="anki-export-cloze" data-pmdf-onclick="exportAnkiDeck('cloze')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Anki · Lacunas (.txt, se houver)</button>
-                    <button type="button" id="anki-export-basic" data-pmdf-onclick="exportAnkiDeck('basic')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Anki · Conceitos/Contrastes (.txt)</button>
+                    <button type="button" id="anki-export-basic" data-pmdf-onclick="exportAnkiDeck('basic')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Anki · Cartões comentados (.txt)</button>
                 
                     </div>
                 </details>
                 <details class="pmdf-anki-method-help"><summary>Como funcionam os flashcards e a repetição espaçada</summary>
-                  <p>Revisão com perguntas e respostas rastreáveis. A rede neural local ajuda a classificar a dificuldade; a elaboração utiliza regras semânticas, sem modelo generativo de linguagem. Também é possível estudar por lacunas. O tamanho da sessão não limita o banco. Revisão Leitner adaptada (não FSRS). Confira a norma vigente.</p>
+                  <p>O acervo ANKI já está integrado e pode ser filtrado por disciplina e assunto. Escolha os cartões vencidos e novos ou um treino livre, revele o comentário e marque a dificuldade para agendar a próxima revisão pelo sistema Leitner (não FSRS). Confira a legislação e a jurisprudência vigentes.</p>
                 </details>
                 <p id="anki-generation-status" class="text-xs text-[#E5C158]" role="status" aria-live="polite"></p>
                 <details id="anki-coverage-details" class="rounded-xl border border-[#334155] p-3">
-                   <summary class="text-xs font-bold text-[#E5C158] cursor-pointer">Relatório de cobertura e modalidades</summary>
-                   <div id="anki-coverage" class="text-xs text-slate-300 mt-2" role="status" aria-live="polite">Gere uma revisão para consultar o inventário do conteúdo.</div>
+                   <summary class="text-xs font-bold text-[#E5C158] cursor-pointer">Relatório do acervo ANKI</summary>
+                   <div id="anki-coverage" class="text-xs text-slate-300 mt-2" role="status" aria-live="polite">Inicie uma revisão para consultar o inventário do acervo.</div>
                 </details>
                 <p id="anki-status" class="text-sm text-slate-400" role="status" aria-live="polite"></p>
             </div>

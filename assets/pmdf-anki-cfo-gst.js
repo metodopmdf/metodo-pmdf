@@ -69,12 +69,12 @@ async function load(){
  }
 }
 function showFilter(){
- const active=$('anki-source')?.value==='cfo-gst';
- if($('anki-cfo-controls'))$('anki-cfo-controls').hidden=!active;
- if($('anki-generation-mode'))$('anki-generation-mode').disabled=active;
- if($('anki-card-style'))$('anki-card-style').disabled=active;
- if($('anki-start'))$('anki-start').textContent=active?'Iniciar revisão ANKI':'Gerar e iniciar revisão';
- if(active)load().catch(()=>{});
+ // O acervo ANKI é o único modelo disponível: nenhuma seleção anterior pode ocultar seus filtros.
+ const source=$('anki-source');
+ if(source)source.value='cfo-gst';
+ if($('anki-cfo-controls'))$('anki-cfo-controls').hidden=false;
+ if($('anki-start'))$('anki-start').textContent='Iniciar revisão ANKI';
+ load().catch(()=>{});
 }
 async function filtered(){
  const data=await load();

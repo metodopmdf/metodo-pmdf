@@ -33,7 +33,7 @@ for(const f of styles){
 const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
 check(ids.length===new Set(ids).size,'IDs estáticos repetidos');
 check(html.includes('pmdf-anki-export-details')&&html.includes('pmdf-anki-method-help'),'Menu de exportação/contexto ausente');
-for(const id of ['anki-export-csv','anki-export-tsv','anki-export-cloze','anki-export-basic',
+for(const id of ['anki-export-csv','anki-export-tsv','anki-export-basic',
  'anki-start','anki-stop','summary-format-toolbar','essay-theme','essay-text','essay-btn',
  'source-tab-url','source-tab-text','source-tab-file','generate-btn','pmdf-law-search']){
  check(ids.includes(id),'Função alterada ou controle removido: '+id);
