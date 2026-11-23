@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "moeda": "BRL",
+  "provedor_pagamento": "kiwify",
+  "produtos": [
+    {
+      "id": "combo-estrategico-pmdf",
+      "titulo": "Combo Estratégico Método PMDF",
+      "categoria": "Pacote completo",
+      "descricao": "Proposta de conjunto de apostilas, simulados, questões comentadas e materiais de revisão, sujeito à conclusão editorial.",
+      "preco_centavos": 7990,
+      "beneficios": [
+        "Teoria organizada por disciplina",
+        "Questões comentadas e simulados",
+        "Revisão estratégica por assunto"
+      ],
+      "status": "rascunho",
+      "checkout_url": null,
+      "direitos_verificados": false,
+      "entrega_configurada": false
+    },
+    {
+      "id": "apostila-disciplinar",
+      "titulo": "Apostila por Disciplina",
+      "categoria": "Apostila digital",
+      "descricao": "Proposta de apostila com teoria, exercícios e comentários. A disciplina efetiva será informada antes da abertura das vendas.",
+      "preco_centavos": 2990,
+      "beneficios": [
+        "Conteúdo temático organizado",
+        "Teoria e exercícios de fixação",
+        "Material em formato digital"
+      ],
+      "status": "rascunho",
+      "checkout_url": null,
+      "direitos_verificados": false,
+      "entrega_configurada": false
+    },
+    {
+      "id": "simulados-comentados",
+      "titulo": "Pacote de Simulados Comentados",
+      "categoria": "Treinamento",
+      "descricao": "Proposta de simulados comentados para revisão e treinamento em concursos policiais, sujeita à revisão de qualidade.",
+      "preco_centavos": 3990,
+      "beneficios": [
+        "Exercícios por disciplina",
+        "Resoluções e comentários",
+        "Estudo e revisão autônomos"
+      ],
+      "status": "rascunho",
+      "checkout_url": null,
+      "direitos_verificados": false,
+      "entrega_configurada": false
+    }
+  ]
+}
