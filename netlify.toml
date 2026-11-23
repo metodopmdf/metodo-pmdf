@@ -1,12 +1,7 @@
-# Hospedagem comercial separada. GitHub Pages continua como site gratuito.
+# Loja comercial Hotmart separada do site gratuito no GitHub Pages.
 [build]
-  publish = "commerce"
-  command = "node commerce/validar-catalogo.mjs"
+  publish = "dist"
+  command = "node scripts/build-hotmart-store.mjs"
 
 [build.environment]
   NODE_VERSION = "22"
-
-[[redirects]]
-  from = "/estudar"
-  to = "https://metodopmdf.github.io/metodo-pmdf/"
-  status = 302
