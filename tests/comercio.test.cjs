@@ -58,6 +58,8 @@ test('produtos começam inativos e políticas protegem dados financeiros',()=>{
   assert.match(schema,/pmdf_store_entitlements_own/);
   assert.match(schema,/pmdf_store_reconcile_hotmart/);
   assert.match(schema,/on conflict\(event_id\) do nothing/);
+  assert.match(schema,/select user_id into v_user from public[.]pmdf_store_orders/);
+  assert.match(webhook,/decision==='approved'&&!sck/);
   assert.match(schema,/grant execute on function [^;]+ to service_role/i);
   assert.doesNotMatch(schema,/grant (insert|update|delete) on .* to anon/i);
 });
