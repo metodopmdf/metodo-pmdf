@@ -381,7 +381,7 @@
             const drawer=document.querySelector('.more-laws-drawer');
             if(drawer)drawer.open=false;
             if($('q-source'))$('q-source').value='current';
-            if($('anki-source'))$('anki-source').value='current';
+            if($('anki-source'))$('anki-source').value='cfo-gst';
             if($('q-panel'))$('q-panel').classList.add('hidden');
             if($('q-status'))$('q-status').textContent='Norma selecionada: '+(BUILTIN_PMDF_GUIDES[key]?.lawName||key)+'. Gere um novo simulado.';
             Q_STATE=null;
@@ -2285,9 +2285,7 @@ Se a nota já for 20,00, apenas parabenize o candidato e informe que a reescritu
         }
         function clearAnkiFilters(){
             stopAnkiGeneration();
-            $('anki-source').value='current';$('anki-mode').value='due';
-            if($('anki-generation-mode'))$('anki-generation-mode').value='advanced';
-            if($('anki-card-style'))$('anki-card-style').value='questions';
+            $('anki-source').value='cfo-gst';$('anki-mode').value='due';
             if($('anki-batch-size'))$('anki-batch-size').value='50';
             window.PMDFAnkiCFO?.reset?.();
             $('anki-status').textContent='Filtros limpos.';$('anki-panel').classList.add('hidden');ANKI_STATE=null;
