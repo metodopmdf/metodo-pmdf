@@ -45,7 +45,8 @@ Deno.serve(async req=>{
   const productId=String(payload?.data?.product?.id||'');
   const tracking=payload?.data?.tracking || {};
   const sck=String(tracking?.source_sck||tracking?.sck||payload?.data?.purchase?.sck||payload?.data?.purchase?.tracking?.source_sck||'');
-  if(!id||!transaction||!productId||!sck)return json(200,{result:'unmatched_metadata'});
+  if(!id||!transaction||!productId||(decision==='approved'&&!sck))
+    return json(200,{result:'unmatched_metadata'});
   try{
     const rpc=await fetch(sbUrl+'/rest/v1/rpc/pmdf_store_reconcile_hotmart',{
       method:'POST',
