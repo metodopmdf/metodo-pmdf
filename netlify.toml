@@ -1,21 +1,12 @@
+# Hospedagem comercial separada. GitHub Pages continua como site gratuito.
 [build]
-  publish = "."
+  publish = "commerce"
+  command = "node commerce/validar-catalogo.mjs"
 
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    X-Frame-Options = "DENY"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+[build.environment]
+  NODE_VERSION = "22"
 
-[[headers]]
-  for = "/comercial.html"
-  [headers.values]
-    Cache-Control = "no-store"
-    X-Robots-Tag = "noindex, nofollow"
-
-[[headers]]
-  for = "/assets/*"
-  [headers.values]
-    Cache-Control = "public, max-age=3600"
+[[redirects]]
+  from = "/estudar"
+  to = "https://metodopmdf.github.io/metodo-pmdf/"
+  status = 302
