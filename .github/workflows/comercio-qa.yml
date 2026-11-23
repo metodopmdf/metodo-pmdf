@@ -19,3 +19,4 @@ jobs:
         with:
           node-version: "22"
       - run: node commerce/validar-catalogo.mjs
+      - run: node commerce/testar-loja.mjs
