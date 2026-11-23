@@ -60,7 +60,7 @@
   }
   function render() {
     const rows=initialItems.map(p=>({...p,...products.find(r=>r.slug === p.slug)}));
-    catalog.replaceChildren(...rows.map(r=>card({...r,active:r.status === 'active'})));
+    catalog.replaceChildren(...rows.map(r=>card({...r,active:r.status === 'active' && !location.hostname.endsWith('.github.io')})));
   }
   async function startCheckout(product, button) {
     const bearer=await token().catch(()=>null);
