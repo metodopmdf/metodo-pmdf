@@ -1,0 +1,21 @@
+name: QA loja digital
+on:
+  push:
+    paths:
+      - "commerce/**"
+      - "netlify.toml"
+      - ".github/workflows/comercio-qa.yml"
+  pull_request:
+    paths:
+      - "commerce/**"
+      - "netlify.toml"
+      - ".github/workflows/comercio-qa.yml"
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node commerce/validar-catalogo.mjs
