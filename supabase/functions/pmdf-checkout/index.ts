@@ -1,8 +1,20 @@
 // Supabase Edge Function: POST /functions/v1/pmdf-checkout
 // Serviço deliberadamente fechado enquanto não configurar origens e ofertas reais.
-const url = Deno.env.get('SUPABASE_URL') || '';
-const publicKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
-const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+function envKey(jsonName: string, legacyName: string): string {
+  const raw=Deno.env.get(jsonName)||'';
+  if(raw){
+    try{
+      const keys=JSON.parse(raw);
+      if(typeof keys?.default==='string')return keys.default;
+      const first=Object.values(keys||{}).find(value=>typeof value==='string');
+      if(typeof first==='string')return first;
+    }catch{/* Compatibilidade com variáveis simples. */}
+  }
+  return Deno.env.get(legacyName)||'';
+}
+const url = Deno.env.get('SUPABASE_URL') || Deno.env.get('SUPABASE_PUBLIC_URL') || '';
+const publicKey = envKey('SUPABASE_PUBLISHABLE_KEYS','SUPABASE_ANON_KEY');
+const serviceKey = envKey('SUPABASE_SECRET_KEYS','SUPABASE_SERVICE_ROLE_KEY');
 const origins = (Deno.env.get('PMDF_COMMERCE_ALLOWED_ORIGINS') || '').split(',').map(x=>x.trim()).filter(Boolean);
 const cors = (origin: string) => ({
   'Access-Control-Allow-Origin': origin,
@@ -30,7 +42,8 @@ Deno.serve(async req=>{
     if(raw.length>2048)return response(413,{error:'Requisição muito grande.'},origin);
     const slug=String(JSON.parse(raw).slug||'');
     if(!/^[a-z0-9-]{3,60}$/.test(slug))return response(400,{error:'Produto inválido.'},origin);
-    const adminHeaders={apikey:serviceKey,authorization:'Bearer '+serviceKey,'Content-Type':'application/json'};
+    const adminHeaders:Record<string,string>={apikey:serviceKey,'Content-Type':'application/json'};
+    if(!serviceKey.startsWith('sb_secret_'))adminHeaders.authorization='Bearer '+serviceKey;
     const productRes=await fetch(url+'/rest/v1/pmdf_store_products?slug=eq.'+encodeURIComponent(slug)+'&status=eq.active&select=slug,kind',{
       headers:adminHeaders
     });
