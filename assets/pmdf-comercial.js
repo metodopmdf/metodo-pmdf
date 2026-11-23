@@ -9,7 +9,6 @@
   const PUBLIC_KEY = 'sb_publishable_GD37Y7cVTTKo74Vg5_5U1g_lyoqwcvH';
   const SESSION_KEY = 'pmdf:supabase:session:v1';
   const USER_DOMAIN = 'users.metodopmdf.invalid';
-  const PLATFORM_URL = 'https://metodopmdf.github.io/metodo-pmdf/';
   const initialItems = [
     {slug:'questoes-comentadas', title:'Banco de Questões Comentadas', description:'Questões autorais e comentários por disciplina.', kind:'download'},
     {slug:'apostilas-tematicas', title:'Apostilas Temáticas', description:'Teoria integrada a exercícios e explicações.', kind:'download'},
@@ -309,6 +308,5 @@
   elements.switchMode.addEventListener('click', () => setAccountMode(accountMode === 'login' ? 'register' : 'login'));
   elements.signout.addEventListener('click', signOut);
   elements.refresh.addEventListener('click', loadAccess);
-  document.querySelectorAll('a[href="' + PLATFORM_URL + '"]').forEach(link => { link.rel = 'noopener'; });
   init();
 })();
