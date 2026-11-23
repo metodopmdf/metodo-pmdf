@@ -1,7 +1,19 @@
 // Supabase Edge Function: POST /functions/v1/pmdf-hotmart-webhook
 // Webhook V2 da Hotmart. Não expor HOTMART_HOTTOK ou service role no navegador.
-const sbUrl=Deno.env.get('SUPABASE_URL')||'';
-const serviceKey=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')||'';
+function envKey(jsonName: string, legacyName: string): string {
+  const raw=Deno.env.get(jsonName)||'';
+  if(raw){
+    try{
+      const keys=JSON.parse(raw);
+      if(typeof keys?.default==='string')return keys.default;
+      const first=Object.values(keys||{}).find(value=>typeof value==='string');
+      if(typeof first==='string')return first;
+    }catch{/* Compatibilidade com variáveis simples. */}
+  }
+  return Deno.env.get(legacyName)||'';
+}
+const sbUrl=Deno.env.get('SUPABASE_URL')||Deno.env.get('SUPABASE_PUBLIC_URL')||'';
+const serviceKey=envKey('SUPABASE_SECRET_KEYS','SUPABASE_SERVICE_ROLE_KEY');
 const secret=Deno.env.get('HOTMART_HOTTOK')||'';
 const json=(status:number,body:Record<string,unknown>)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
 async function safeEqual(a:string,b:string) {
@@ -50,7 +62,11 @@ Deno.serve(async req=>{
   try{
     const rpc=await fetch(sbUrl+'/rest/v1/rpc/pmdf_store_reconcile_hotmart',{
       method:'POST',
-      headers:{apikey:serviceKey,authorization:'Bearer '+serviceKey,'Content-Type':'application/json'},
+      headers:{
+        apikey:serviceKey,
+        ...(serviceKey.startsWith('sb_secret_')?{}:{authorization:'Bearer '+serviceKey}),
+        'Content-Type':'application/json'
+      },
       body:JSON.stringify({
         p_event_id:id,p_transaction_id:transaction,p_hotmart_product_id:productId,
         p_sck:sck,p_state:decision,p_expires_at:expiryDate(payload.data)
