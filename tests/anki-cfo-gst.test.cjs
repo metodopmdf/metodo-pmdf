@@ -10,8 +10,15 @@ const html=readFileSync(join(root,'index.html'),'utf8');
 const css=readFileSync(join(root,'assets/pmdf-anki-cfo-gst.css'),'utf8');
 const data=JSON.parse(readFileSync(join(root,'assets/bancos/anki.json'),'utf8'));
 new Function(code);new Function(app);
-assert.match(html,/<option value="cfo-gst">📚 ANKI<\/option>/);
+assert.match(html,/<select id="anki-source"[^>]*hidden[^>]*><option value="cfo-gst" selected>ANKI<\/option><\/select>/);
 assert.match(html,/<strong>ANKI<\/strong>/);
+const section=html.split('<section id="tab-anki"')[1].split('<section id="tab-resultados"')[0];
+for(const obsolete of ['anki-generation-mode','anki-card-style','anki-export-cloze']){
+ assert(!section.includes('id="'+obsolete+'"'),'Opção antiga ainda aparece: '+obsolete);
+}
+assert(section.includes('id="anki-cfo-disciplina"')&&section.includes('id="anki-cfo-assunto"'),
+  'Filtros ANKI precisam permanecer disponíveis');
+
 assert(!html.includes('id="anki-cfo-import"'),'O formulário de upload não deve aparecer');
 assert(!/ANKI CFO GST|Acervo ANKI CFO|Banco ANKI CFO/.test(html),'Nomes antigos não podem aparecer na interface');
 assert(!/ANKI CFO GST|Acervo ANKI CFO|Banco ANKI CFO/.test(app),'Nome antigo não pode aparecer no app');
@@ -68,8 +75,6 @@ const controls={
  'anki-source':{value:'cfo-gst'},
  'anki-cfo-controls':{hidden:true},
  'anki-start':{textContent:''},
- 'anki-generation-mode':{disabled:false},
- 'anki-card-style':{disabled:false},
  'anki-cfo-status':{textContent:'',dataset:{}},
  'anki-cfo-disciplina':options(),
  'anki-cfo-assunto':options()
@@ -111,7 +116,6 @@ async function run(){
  api.showFilter();
  assert.equal(controls['anki-start'].textContent,'Iniciar revisão ANKI');
  assert.equal(controls['anki-cfo-controls'].hidden,false);
- assert.equal(controls['anki-generation-mode'].disabled,true);
  assert.match(controls['anki-cfo-status'].textContent,/2\.624 cartões disponíveis/);
  console.log('ANKI EDITORIAL QA PASS: 2624 cartões, 116 correções, 3 fontes truncadas, contraste, fontes compactas, filtros e Leitner.');
 }
