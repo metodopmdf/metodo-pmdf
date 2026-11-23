@@ -14,6 +14,13 @@ Aplicação pública de preparação para concursos policiais com mapeamento de 
 
 **Importante:** os motores locais não são LLMs generativos e não garantem atualização normativa automática. Confira a redação legal vigente antes de usar o conteúdo como referência jurídica.
 
+## Monetização (implantação controlada)
+
+- Loja de arquivos avulsos: `commerce/` (checkout Kiwify e entrega pelo provedor; catálogo inicialmente inativo). Documentação: [Loja digital automática](docs/implantacao-loja-automatica.md).
+- Integração avançada com contas: `comercial.html` + Supabase + Hotmart (checkout autenticado, webhooks, controle de acesso). Documentação: [Monetização Hotmart](docs/monetizacao-hotmart-2026-11-23.md).
+- Nenhum produto é ativado automaticamente sem conta de produtor, aprovação editorial, checkout real, termos comerciais e compra validada. Não coloque conteúdo pago ou chaves privilegiadas no repositório público.
+- Netlify publica `commerce/` na configuração padrão; a versão Hotmart exige deploy próprio adequado quando for ativada.
+
 ## Testes
 
 Requer Node.js 22:

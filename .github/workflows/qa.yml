@@ -22,8 +22,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Deno v2 para validar funções de pagamento
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Verificar tipos das Edge Functions comerciais
+        run: deno check supabase/functions/pmdf-checkout/index.ts supabase/functions/pmdf-hotmart-webhook/index.ts
       - name: 'Regressão atual: resumos, flashcards, lacunas, catálogo e compatibilidade'
-        run: node tests/markup-audit.mjs && node tests/intermediate-unit.mjs && node tests/neural-questions.test.cjs && node tests/neural-flashcards.test.cjs && node tests/catalogo-praca.test.cjs && node tests/infographic-summary.test.cjs && node tests/anki-cfo-gst.test.cjs && node tests/layout-responsive.test.cjs
+        run: node tests/markup-audit.mjs && node tests/intermediate-unit.mjs && node tests/neural-questions.test.cjs && node tests/neural-flashcards.test.cjs && node tests/catalogo-praca.test.cjs && node tests/infographic-summary.test.cjs && node tests/anki-cfo-gst.test.cjs && node tests/layout-responsive.test.cjs && node tests/comercio.test.cjs
 
   online:
     name: Operação online em Chromium (desktop e celular)
