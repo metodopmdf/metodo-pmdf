@@ -1,0 +1,5 @@
+[functions.pmdf-checkout]
+verify_jwt = false
+
+[functions.pmdf-hotmart-webhook]
+verify_jwt = false
