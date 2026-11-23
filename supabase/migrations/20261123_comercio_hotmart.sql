@@ -135,11 +135,11 @@ begin
     return 'missing_billing_expiry';
   end if;
   v_state:=p_state;
-  insert into public.pmdf_store_orders(transaction_id,user_id,product_slug,state,expires_at)
+  insert into public.pmdf_store_orders as ord(transaction_id,user_id,product_slug,state,expires_at)
     values(p_transaction_id,v_user,v_product,v_state,case when v_kind='subscription' then p_expires_at else null end)
     on conflict(transaction_id) do update set
-      state=case when public.pmdf_store_orders.state='revoked' then 'revoked' else excluded.state end,
-      expires_at=case when public.pmdf_store_orders.state='revoked' then public.pmdf_store_orders.expires_at else excluded.expires_at end,
+      state=case when ord.state='revoked' then 'revoked' else excluded.state end,
+      expires_at=case when ord.state='revoked' then ord.expires_at else excluded.expires_at end,
       updated_at=now();
   select state into v_order_state from public.pmdf_store_orders where transaction_id=p_transaction_id;
   if p_sck ~ '^[a-f0-9]{24}
@@ -187,8 +187,8 @@ commit;
   insert into public.pmdf_store_orders(transaction_id,user_id,product_slug,state,expires_at)
     values(p_transaction_id,v_user,v_product,v_state,case when v_kind='subscription' then p_expires_at else null end)
     on conflict(transaction_id) do update set
-      state=case when public.pmdf_store_orders.state='revoked' then 'revoked' else excluded.state end,
-      expires_at=case when public.pmdf_store_orders.state='revoked' then public.pmdf_store_orders.expires_at else excluded.expires_at end,
+      state=case when ord.state='revoked' then 'revoked' else excluded.state end,
+      expires_at=case when ord.state='revoked' then ord.expires_at else excluded.expires_at end,
       updated_at=now();
   select state into v_order_state from public.pmdf_store_orders where transaction_id=p_transaction_id;
   update public.pmdf_store_checkout_intents
@@ -252,8 +252,8 @@ commit;
   insert into public.pmdf_store_orders(transaction_id,user_id,product_slug,state,expires_at)
     values(p_transaction_id,v_user,v_product,v_state,case when v_kind='subscription' then p_expires_at else null end)
     on conflict(transaction_id) do update set
-      state=case when public.pmdf_store_orders.state='revoked' then 'revoked' else excluded.state end,
-      expires_at=case when public.pmdf_store_orders.state='revoked' then public.pmdf_store_orders.expires_at else excluded.expires_at end,
+      state=case when ord.state='revoked' then 'revoked' else excluded.state end,
+      expires_at=case when ord.state='revoked' then ord.expires_at else excluded.expires_at end,
       updated_at=now();
   select state into v_order_state from public.pmdf_store_orders where transaction_id=p_transaction_id;
   update public.pmdf_store_checkout_intents
@@ -304,8 +304,8 @@ commit;
   insert into public.pmdf_store_orders(transaction_id,user_id,product_slug,state,expires_at)
     values(p_transaction_id,v_user,v_product,v_state,case when v_kind='subscription' then p_expires_at else null end)
     on conflict(transaction_id) do update set
-      state=case when public.pmdf_store_orders.state='revoked' then 'revoked' else excluded.state end,
-      expires_at=case when public.pmdf_store_orders.state='revoked' then public.pmdf_store_orders.expires_at else excluded.expires_at end,
+      state=case when ord.state='revoked' then 'revoked' else excluded.state end,
+      expires_at=case when ord.state='revoked' then ord.expires_at else excluded.expires_at end,
       updated_at=now();
   select state into v_order_state from public.pmdf_store_orders where transaction_id=p_transaction_id;
   update public.pmdf_store_checkout_intents
@@ -388,8 +388,8 @@ commit;
   insert into public.pmdf_store_orders(transaction_id,user_id,product_slug,state,expires_at)
     values(p_transaction_id,v_user,v_product,v_state,case when v_kind='subscription' then p_expires_at else null end)
     on conflict(transaction_id) do update set
-      state=case when public.pmdf_store_orders.state='revoked' then 'revoked' else excluded.state end,
-      expires_at=case when public.pmdf_store_orders.state='revoked' then public.pmdf_store_orders.expires_at else excluded.expires_at end,
+      state=case when ord.state='revoked' then 'revoked' else excluded.state end,
+      expires_at=case when ord.state='revoked' then ord.expires_at else excluded.expires_at end,
       updated_at=now();
   select state into v_order_state from public.pmdf_store_orders where transaction_id=p_transaction_id;
   update public.pmdf_store_checkout_intents
@@ -453,8 +453,8 @@ commit;
   insert into public.pmdf_store_orders(transaction_id,user_id,product_slug,state,expires_at)
     values(p_transaction_id,v_user,v_product,v_state,case when v_kind='subscription' then p_expires_at else null end)
     on conflict(transaction_id) do update set
-      state=case when public.pmdf_store_orders.state='revoked' then 'revoked' else excluded.state end,
-      expires_at=case when public.pmdf_store_orders.state='revoked' then public.pmdf_store_orders.expires_at else excluded.expires_at end,
+      state=case when ord.state='revoked' then 'revoked' else excluded.state end,
+      expires_at=case when ord.state='revoked' then ord.expires_at else excluded.expires_at end,
       updated_at=now();
   select state into v_order_state from public.pmdf_store_orders where transaction_id=p_transaction_id;
   update public.pmdf_store_checkout_intents
@@ -505,8 +505,8 @@ commit;
   insert into public.pmdf_store_orders(transaction_id,user_id,product_slug,state,expires_at)
     values(p_transaction_id,v_user,v_product,v_state,case when v_kind='subscription' then p_expires_at else null end)
     on conflict(transaction_id) do update set
-      state=case when public.pmdf_store_orders.state='revoked' then 'revoked' else excluded.state end,
-      expires_at=case when public.pmdf_store_orders.state='revoked' then public.pmdf_store_orders.expires_at else excluded.expires_at end,
+      state=case when ord.state='revoked' then 'revoked' else excluded.state end,
+      expires_at=case when ord.state='revoked' then ord.expires_at else excluded.expires_at end,
       updated_at=now();
   select state into v_order_state from public.pmdf_store_orders where transaction_id=p_transaction_id;
   update public.pmdf_store_checkout_intents
