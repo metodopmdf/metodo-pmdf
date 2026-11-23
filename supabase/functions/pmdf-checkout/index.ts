@@ -45,6 +45,12 @@ Deno.serve(async req=>{
     const link=new URL(target);
     if(link.protocol!=='https:'||link.hostname!=='pay.hotmart.com'||!link.pathname.startsWith('/'))
       throw Error('checkout_url_invalid');
+    // Cota por conta para evitar abuso de intents e preservar o plano gratuito.
+    const since=encodeURIComponent(new Date(Date.now()-3600000).toISOString());
+    const quotaRes=await fetch(url+'/rest/v1/pmdf_store_checkout_intents?user_id=eq.'+
+      encodeURIComponent(user.id)+'&created_at=gte.'+since+'&select=sck&limit=11',{headers:adminHeaders});
+    if(!quotaRes.ok)throw Error('checkout_quota_lookup');
+    if((await quotaRes.json()).length>=10)return response(429,{error:'Limite de tentativas de checkout atingido. Tente novamente mais tarde.'},origin);
     const sck=crypto.randomUUID().replaceAll('-','').slice(0,24);
     const intentRes=await fetch(url+'/rest/v1/pmdf_store_checkout_intents',{
       method:'POST',headers:{...adminHeaders,Prefer:'return=minimal'},
