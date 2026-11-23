@@ -15,7 +15,7 @@
 
 1. Criar/validar uma conta de produtor na **Hotmart**, com seus dados de identificação, aceite contratual e recebimento (não enviar senhas ou tokens pelo chat). A plataforma pode exigir verificação e aprovação de produto.
 2. Possuir direitos de comercialização sobre todos os materiais; aprovar o conteúdo (questões autorais/revisadas e legislação atual). Para PDF avulso, cadastrar o arquivo **na Hotmart**, em armazenamento/área de membros privada, jamais no repositório público.
-3. Informar no checkout, na página de vendas e na política comercial a identidade do vendedor, suporte, termos de compra, tratamento de dados, reembolso/arrependimento aplicável. O material deve informar que NÃO é material oficial da PMDF.
+3. Informar no checkout e no site comercial a **identificação completa do fornecedor (nome empresarial/nome civil, CPF ou CNPJ conforme aplicável, endereço físico e eletrônico, suporte)**, preço, conteúdo, termos de compra, tratamento de dados e reembolso/arrependimento. Preencher esses dados verdadeiros em `termos-venda.html` antes de ativar os produtos, conforme a legislação de comércio eletrônico. O material deve informar que NÃO é material oficial da PMDF.
 4. Criar um site comercial na **Netlify** (plano gratuito sujeito a limites): conectar GitHub > este repositório, branch de lançamento aprovada, comando de build vazio, diretório de publicação `.`. Mantenha GitHub Pages para versão gratuita ou retire o deploy antigo ao transferir tudo: GitHub Pages não é hospedagem apropriada para SaaS/e-commerce.
 
 ## Configuração no Supabase
@@ -71,6 +71,7 @@ O checkout desativa validação JWT automática somente porque valida o **token 
 - Não inclui automaticamente PDF comercial; publicar arquivos premium em `assets` tornaria o material baixável por qualquer visitante. O PDF deve estar configurado na Hotmart.
 - O usuário continua utilizando **nome de usuário e senha**, mas a conta existente depende das configurações de Supabase Auth. Sem recuperação por e-mail, o procedimento de suporte deve ser definido antes do lançamento.
 - Transação externa sem a referência de checkout autenticado não será vinculada automaticamente à plataforma. Entrega nativa da Hotmart não depende dessa vinculação.
+- **SEO:** `comercial.html` e Netlify começam com `noindex` para não indexar ofertas inativas. Antes de lançar a loja oficial, remova `noindex` do HTML e da regra de headers `netlify.toml`; atualize também o canonical da página principal para a URL definitiva do site comercial.
 - O SQL é uma nova migração: confirmar no banco remoto se foi executada, e se há conflito com outras alterações, antes de efetivar a abertura comercial.
 - Nenhuma promessa de venda, rendimento ou gratuidade ilimitada; há tarifas de transação e cotas de serviços gratuitos.
 
