@@ -1,5 +1,5 @@
 /* Método PMDF · Perguntas de revisão estratégica, executadas no navegador.
-   Integra o classificador neural local existente para escore pedagógico. A escrita
+   Integra o classificador local dos flashcards para escore pedagógico. A escrita
    é determinística e baseada em padrões semânticos; NÃO é LLM nem gera fatos novos.
    Toda resposta precisa estar presente na unidade de origem. */
 (function(root){
@@ -271,7 +271,7 @@ function processUnit(ctx,row,unit){
  if(!added)ctx.skipped++;
 }
 function setup(guide,opts={}){
- let motor=null;if(opts.mode!=='classic')try{motor=root.PMDFNeuralQuestions?.testModel?.()||null;}catch(_){}
+ let motor=null;if(opts.mode!=='classic')try{motor=root.PMDFFlashcardClassifier?.getModel?.()||null;}catch(_){}
  return {motor,law:clean(guide?.lawName)||'Material',level:opts.level||'intermediario',
   cards:[],seen:new Set(),answerSeen:new Set(),unitsSeen:new Set(),covered:new Set(),skipped:0,
   modalities:{'Pergunta estratégica (P&R)':0},style:opts.style||'questions'};
@@ -285,32 +285,46 @@ function runRow(ctx,row){
   if(++count>=500)break;
  }
 }
+function summarizeCards(cards,modalities){
+ const kinds={...modalities},difficulties={Fácil:0,Médio:0,Difícil:0},covered=new Set();
+ for(const card of cards){
+  kinds[card.modality]=(kinds[card.modality]||0)+1;
+  difficulties[card.difficulty]=(difficulties[card.difficulty]||0)+1;
+  covered.add(card.reference);
+ }
+ return {total:cards.length,coveredTopics:covered.size,modalities:kinds,difficulties};
+}
+function clozeOnly(result){
+ const cards=result.cards.filter(card=>card.family==='cloze'&&card.cloze);
+ if(!result.report)return {...result,cards};
+ const summary=summarizeCards(cards,{'Cloze (Lacuna)':0});
+ return {...result,cards,report:{...result.report,...summary,
+  pendingTopics:Math.max(0,result.report.sourceRows-summary.coveredTopics),
+  engine:'Anki contextual: lacunas extraídas do material (classificador local de flashcards)'}};
+}
 function finish(ctx,rows,opts,guide){
  let cards=ctx.cards;
- if(opts.style==='mixed' && cards.length){
+ if(opts.style==='mixed'){
   const existing=original.build(guide,{level:opts.level}).cards
    .filter(c=>c.family==='cloze'&&c.cloze&&c.back&&c.front);
-  const quota=Math.ceil(cards.length*.25),extra=existing.slice(0,quota);
+  const quota=cards.length?Math.ceil(cards.length*.25):existing.length,extra=existing.slice(0,quota);
   cards=cards.concat(extra);
  }
- const kindCounts={...ctx.modalities};
- for(const c of cards)if(c.family==='cloze')kindCounts['Cloze (Lacuna)']=(kindCounts['Cloze (Lacuna)']||0)+1;
- const difficulties={Fácil:0,Médio:0,Difícil:0};
- for(const c of cards)difficulties[c.difficulty]=(difficulties[c.difficulty]||0)+1;
- return {cards,report:{total:cards.length,sourceRows:rows.length,sourceUnits:ctx.unitsSeen.size,
-  coveredTopics:ctx.covered.size,pendingTopics:Math.max(0,rows.length-ctx.covered.size),
-  skipped:ctx.skipped,modalities:kindCounts,difficulties,
+ const summary=summarizeCards(cards,{'Pergunta estratégica (P&R)':0});
+ return {cards,report:{...summary,sourceRows:rows.length,sourceUnits:ctx.unitsSeen.size,
+  pendingTopics:Math.max(0,rows.length-summary.coveredTopics),
+  skipped:ctx.skipped,
   engine:'Motor local híbrido: classificação neural + elaboração semântica verificável',
   warning:'O classificador neural não é um modelo generativo. Perguntas e respostas são construídas por regras a partir do material, com fonte rastreável; não há verificação automática da vigência normativa.'}};
 }
 function build(guide,options={}){
- if(options.style==='cloze')return original.build(guide,options);
+ if(options.style==='cloze')return clozeOnly(original.build(guide,options));
  const rows=rowsFor(guide),ctx=setup(guide,options);
  for(const row of rows)runRow(ctx,row);
  return finish(ctx,rows,options,guide);
 }
 async function buildAsync(guide,options={}){
- if(options.style==='cloze')return original.buildAsync(guide,options);
+ if(options.style==='cloze')return clozeOnly(await original.buildAsync(guide,options));
  const rows=rowsFor(guide),ctx=setup(guide,options);
  for(let i=0;i<rows.length;i++){
   if(options.cancelled?.())return {...finish(ctx,rows,{...options,style:'questions'},guide),cards:[],cancelled:true};

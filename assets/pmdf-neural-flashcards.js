@@ -1,6 +1,6 @@
 /* Método PMDF — Cartões Anki de precisão para concursos.
    Cloze contextual + conceitos + contraste, fundamentados exclusivamente na fonte.
-   Usa a classificação neural compartilhada das questões apenas para apoio de prioridade;
+   Usa o classificador local dos flashcards apenas para apoio de prioridade;
    NÃO é IA generativa, não valida vigência nem infere jurisprudência.
 */
 (function(root){
@@ -219,7 +219,7 @@ function generate(ctx,row,text){
  }
 }
 function buildContext(guide,level){
- let motor=null;try{motor=root.PMDFNeuralQuestions?.testModel?.()||null;}catch(_){}
+ let motor=null;try{motor=root.PMDFFlashcardClassifier?.getModel?.()||null;}catch(_){}
  return {motor,law:clean(guide?.lawName)||"Material",level:level||"intermediario",
   cards:[],seen:new Set(),unitsSeen:new Set(),covered:new Set(),skipped:0,
   modalities:{"Básico (P&R)":0,"Cloze (Lacuna)":0,"Gatilho de Banca":0},
@@ -238,7 +238,7 @@ function finish(ctx,rows){
   sourceRows:rows.length,sourceUnits:ctx.unitsSeen.size,coveredTopics:ctx.covered.size,
   pendingTopics:rows.length-ctx.covered.size,skipped:ctx.skipped,
   modalities:ctx.modalities,difficulties:ctx.difficulties,
-  engine:"Anki contextual: Cloze + conceitos + contraste (motor neural compartilhado)",
+  engine:"Anki contextual: Cloze + conceitos + contraste (classificador local de flashcards)",
   warning:"Cartões extraídos somente de fatos verificáveis do material selecionado. Não é interpretação jurídica automática."}};
 }
 function build(guide,options={}){
@@ -255,6 +255,7 @@ async function buildAsync(guide,options={}){
    await new Promise(resolve=>setTimeout(resolve,0));}
  }
  options.onProgress?.(rows.length,rows.length,ctx.cards.length);
+ if(options.cancelled?.())return {...finish(ctx,rows),cards:[],cancelled:true};
  return finish(ctx,rows);
 }
 root.PMDFNeuralFlashcards=Object.freeze({build,buildAsync,sourceRows,version:"20261104-anki-quality-v4"});

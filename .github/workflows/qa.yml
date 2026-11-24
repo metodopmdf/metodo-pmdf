@@ -1,67 +1,33 @@
-name: QA Método PMDF
+name: QA Flashcards
 on:
   push:
-    branches: [main]
   pull_request:
-    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: pmdf-qa-${{ github.ref }}
+  group: flashcards-qa-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  smoke:
-    name: Testar funcionalidades principais (JavaScript)
+  test:
+    name: Geração, importação, exportação e navegador
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 10
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Node.js 22
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Deno v2 para validar funções de pagamento
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-      - name: Verificar tipos das Edge Functions comerciais
-        run: deno check supabase/functions/pmdf-checkout/index.ts supabase/functions/pmdf-hotmart-webhook/index.ts
-      - name: 'Regressão atual: resumos, flashcards, lacunas, catálogo e compatibilidade'
-        run: node tests/markup-audit.mjs && node tests/intermediate-unit.mjs && node tests/neural-questions.test.cjs && node tests/neural-flashcards.test.cjs && node tests/catalogo-praca.test.cjs && node tests/infographic-summary.test.cjs && node tests/anki-cfo-gst.test.cjs && node tests/layout-responsive.test.cjs && node tests/comercio.test.cjs
-
-  online:
-    name: Operação online em Chromium (desktop e celular)
-    needs: smoke
-    runs-on: ubuntu-24.04
-    timeout-minutes: 18
-    steps:
-      - name: Checkout do commit testado
-        uses: actions/checkout@v4
-      - name: Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Instalar Playwright
-        run: npm install --no-save --no-package-lock playwright@1.57.0 @axe-core/playwright@4.10.2
-      - name: Instalar Chromium e dependências
-        run: npx playwright install --with-deps chromium
-      - name: Subir prévia local isolada (somente pull requests)
-        if: github.event_name == 'pull_request'
-        run: |
-          python3 -m http.server 8000 --bind 127.0.0.1 > /tmp/pmdf-preview.log 2>&1 &
-          sleep 2
-      - name: Percorrer leis, resumos, flashcards e redação em Chromium
-        env:
-          PMDF_ONLINE_URL: ${{ github.event_name == 'pull_request' && 'http://127.0.0.1:8000/' || 'https://metodopmdf.github.io/metodo-pmdf/' }}
-          PMDF_DEPLOY_ATTEMPTS: ${{ github.event_name == 'pull_request' && '3' || '65' }}
-        run: node tests/online-intermediate.mjs
-      - name: Guardar relatório e capturas (inclusive falhas)
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - name: Capturas desktop e celular
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pmdf-online-qa-${{ github.run_id }}
+          name: flashcards-qa-${{ github.run_id }}
           path: test-artifacts/
           if-no-files-found: ignore
           retention-days: 14

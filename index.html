@@ -1,836 +1,93 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-<!-- Método PMDF: GitHub Pages + Supabase Auth/PostgREST; versão 2026-11-02-r2 -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- CSP efetiva via meta: scripts apenas externos, sem handlers inline. -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: data: blob:; worker-src 'self' blob: https:; frame-src 'self' blob: data: https:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
-    <title>Método PMDF — Resumos, Flashcards e Redação para Concursos Policiais</title>
-    <!-- SEO e compartilhamento: metadados estáticos adequados ao GitHub Pages. -->
-    <meta name="description" content="Método PMDF: estudos gratuitos para carreiras policiais, com resumos jurídicos, lacunas estratégicas, flashcards e correção de redações.">
-    <meta name="robots" content="index,follow">
-    <meta name="theme-color" id="pmdf-theme-color" content="#071020">
-    <link rel="canonical" href="https://metodopmdf.github.io/metodo-pmdf/">
-    <meta property="og:type" content="website">
-    <meta property="og:locale" content="pt_BR">
-    <meta property="og:title" content="Método PMDF — Plataforma gratuita de estudos policiais">
-    <meta property="og:description" content="Estude legislação policial com resumos ilustrados, flashcards e lacunas estratégicas, além de correção de redações.">
-    <meta property="og:url" content="https://metodopmdf.github.io/metodo-pmdf/">
-    <meta name="twitter:card" content="summary">
-    <!-- CSS de produção gerado localmente; não depende do Tailwind CDN. -->
-    
-
-    <!-- Google Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Lucide Icons -->
-    <script defer src="https://unpkg.com/lucide@1.66.0"></script>
-
-
-
-
-    <!-- Segurança real: controle de gravação no GitHub e permissões no Supabase; não é possível impedir cópia do HTML público. -->
-    <!-- X-Content-Type-Options requer cabeçalho HTTP configurado na hospedagem; uma meta-tag não produz esse cabeçalho. -->
-
-
-
-
-
-
-
-    
-
-
-    <!-- Arquitetura modular: folhas de estilo externas com a mesma ordem de cascata. -->
-    <link rel="stylesheet" href="assets/pmdf-tailwind.css?v=20261104-arch-v1">
-    <link rel="stylesheet" href="assets/pmdf-components.css?v=20261104-arch-v8">
-    <link rel="stylesheet" href="assets/pmdf-visual.css?v=20261115-editorial-v3">
-    <link rel="stylesheet" href="assets/pmdf-ui-polish.css?v=20261115-ui-v1">
-    <link rel="stylesheet" href="assets/pmdf-flashcards-visual.css?v=20261115-flash-v3">
-    <!-- Estilos essenciais de segurança: independentes do carregamento do CSS adicional. -->
-    <link rel="stylesheet" href="assets/pmdf-anki-visual-failsafe.css?v=20261116-v4">
-    <link rel="stylesheet" href="assets/pmdf-flashcards-questions.css?v=20261116-qa-v1">
-    <link rel="stylesheet" href="assets/pmdf-cloze-strategic.css?v=20261116-cloze-v3">
-    <link rel="stylesheet" href="assets/pmdf-ux-audit-20261116.css?v=20261116-contrast-v3">
-    <link rel="stylesheet" href="assets/pmdf-summary-editorial.css?v=20261116-editorial-v2">
-    <link rel="stylesheet" href="assets/pmdf-ui-intermediate-20261116.css?v=20261116-intermediate-v2">
-    <link rel="stylesheet" href="assets/pmdf-acervo-interativo.css?v=20261116-acervo-v2">
-    <link rel="stylesheet" href="assets/pmdf-layout-20261118.css?v=20261118-ui-v1">
-    <link rel="stylesheet" href="assets/pmdf-infographic.css?v=20261117-info-contrast-v2">
-    <link rel="stylesheet" href="assets/pmdf-anki-cfo-gst.css?v=20261117-anki-editorial-v3">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; script-src-attr 'none'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://cdnjs.cloudflare.com; worker-src 'self' blob: https://cdnjs.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>Método PMDF — Criador de Flashcards</title>
+  <meta name="description" content="Transforme seu material em flashcards, revise com repetição espaçada e exporte para o Anki.">
+  <meta name="theme-color" content="#17354d">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2317354d'/%3E%3Cpath d='M17 20h30v29H17zM23 14h30v29' fill='none' stroke='%23f2d38f' stroke-width='4'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/pmdf-flashcards-standalone.css">
+  <link rel="stylesheet" href="assets/pmdf-flashcards-visual.css">
+  <link rel="stylesheet" href="assets/pmdf-flashcards-questions.css">
+  <script defer src="assets/pmdf-flashcard-classifier.js"></script>
+  <script defer src="assets/pmdf-neural-flashcards.js"></script>
+  <script defer src="assets/pmdf-flashcards-perguntas.js"></script>
+  <script defer src="assets/pmdf-flashcard-io.js"></script>
+  <script defer src="assets/pmdf-flashcards-app.js"></script>
 </head>
-<body class="landing-active min-h-screen flex flex-col font-sans antialiased selection:bg-[#D4AF37] selection:text-[#050B16]">
-<a href="#pmdf-main-content" class="pmdf-skip-link">Ir para o conteúdo principal</a>
+<body>
+  <a class="skip-link" href="#source-title">Ir para a criação de flashcards</a>
+  <header class="site-header">
+    <a class="brand" href="./" aria-label="Método PMDF — Flashcards">
+      <svg width="38" height="38" viewBox="0 0 44 44" fill="none" aria-hidden="true"><rect x="7" y="12" width="25" height="27" rx="4" stroke="currentColor" stroke-width="2"/><path d="M14 7h20a4 4 0 0 1 4 4v21M14 22h11M14 28h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span>MÉTODO <strong>PMDF</strong><small>FLASHCARDS</small></span>
+    </a>
+    <button type="button" id="theme-toggle" class="button quiet" aria-pressed="false">Tema escuro</button>
+  </header>
 
-<section id="welcome-screen" class="no-print welcome-screen" aria-label="Início dos estudos">
-  <div class="welcome-content">
-   <div class="welcome-emblem" role="img" aria-label="Símbolo Método PMDF"><svg viewBox="0 0 64 64" class="pmdf-brand-svg w-14 h-14" fill="none" stroke="#D4AF37" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path fill="#E5C158" stroke="none" d="M32 3l1.6 3.3 3.6.5-2.6 2.5.6 3.6L32 11.200l-3.2 1.700.6-3.600-2.600-2.500 3.600-.5z"/>
-                        <path fill="#D4AF37" stroke="none" d="M20 7l1 2 2.200.3-1.600 1.500.4 2.200L20 12l-2 1 .4-2.200-1.600-1.500L19 9zM44 7l1 2 2.200.3-1.600 1.500.4 2.200L44 12l-2 1 .4-2.200-1.600-1.500L43 9z"/>
-                        <path d="M14 46C6 40 4 28 9 18M17 43C11 38 9 29 12 21M20 40c-4-4-5-10-3-15"/>
-                        <path d="M50 46c8-6 10-18 5-28M47 43c6-5 8-14 5-22M44 40c4-4 5-10 3-15"/>
-                        <path fill="#D4AF37" fill-opacity=".25" d="M32 50c-6-3-13-3-20-2v-4c7-1 14-1 20 2 6-3 13-3 20-2v4c-7-1-14-1-20 2z"/>
-                        <path d="M32 50V46M12 48l20 6 20-6"/>
-                        <text x="32" y="38" text-anchor="middle" font-family="Cinzel,Georgia,serif" font-weight="800" font-size="13" fill="#E5C158" stroke="none">PMDF</text>
-                    </svg></div>
-   <span class="welcome-kicker">PLATAFORMA GRATUITA DE PREPARAÇÃO POLICIAL</span>
-   <h1 class="welcome-heading">MÉTODO <span>PMDF</span></h1>
-   <p class="welcome-lead">Estude legislação policial com resumos, lacunas estratégicas, flashcards e correção de redações.</p>
-   <form id="account-form" data-pmdf-onsubmit="submitAccount(event)" class="space-y-3 rounded-2xl p-4 border border-[#D4AF37]/40 bg-[#0A1426] text-left" autocomplete="on">
-     <h2 id="account-title" class="text-[#E5C158] text-lg font-bold">Acessar meus estudos</h2>
-     <label class="block text-slate-300 text-xs font-semibold">Nome de usuário
-       <input id="account-name" type="text" autocomplete="username" required minlength="3" maxlength="24" pattern="[A-Za-z0-9._-]{3,24}" autocapitalize="none" spellcheck="false" class="mt-1 w-full rounded-xl bg-[#040912] border border-[#334155] text-white p-3" placeholder="Ex.: candidato_pmdf" />
-     </label>
-     <label for="account-password" class="block text-slate-300 text-xs font-semibold">Senha
-       <span class="pmdf-password-field">
-         <input id="account-password" type="password" autocomplete="current-password" required minlength="6" maxlength="72" class="mt-1 w-full rounded-xl bg-[#040912] border border-[#334155] text-white p-3" placeholder="Mínimo de 6 caracteres" />
-         <button type="button" id="account-password-toggle" class="pmdf-password-toggle" data-pmdf-onclick="toggleAccountPassword()" aria-label="Mostrar senha" title="Mostrar senha" aria-pressed="false" aria-controls="account-password">
-           <svg class="pmdf-eye-visible" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
-           <svg class="pmdf-eye-hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18M10.6 5.1A11.8 11.8 0 0 1 12 5c6.4 0 10 7 10 7s-1.2 2.4-3.5 4.2M6.1 6.3C3.4 8.1 2 12 2 12s3.6 7 10 7a10.9 10.9 0 0 0 4.1-.8"/><path d="M10 10a3 3 0 0 0 4 4"/></svg>
-         </button>
-       </span>
-     </label>
-     <p class="text-xs text-slate-400 leading-relaxed">Seus estudos serão associados ao usuário escolhido. Leia a <a class="underline text-[#E5C158]" href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>. Sem e-mail de recuperação, perder a senha pode tornar a conta inacessível.</p>
-     <div class="flex flex-wrap gap-2 items-center"><button id="account-submit" type="submit" class="welcome-primary" style="padding:12px 20px">Entrar</button><button type="button" data-pmdf-onclick="switchAccountMode()" id="account-switch" class="welcome-secondary" style="padding:12px 20px">Criar conta gratuita</button></div>
-     <p id="account-msg" role="status" aria-live="polite" class="text-xs text-slate-300">Verificando disponibilidade da conta online...</p><button id="account-retry" type="button" data-pmdf-onclick="retryAccountConnection()" class="text-xs underline text-[#E5C158]" style="margin-top:8px">Verificar conexão do cadastro</button>
-   </form>
-   <div id="account-ready" class="hidden text-sm text-[#E5C158] font-semibold">✅ <span id="account-who"></span> · <button type="button" data-pmdf-onclick="logoutAccount()" class="underline">Sair da conta</button> · <button type="button" data-pmdf-onclick="confirmDeleteAccount()" class="underline text-rose-300">Excluir conta e dados</button></div>
-   <div class="welcome-actions" id="welcome-study-actions" hidden>
-    <button type="button" id="welcome-start" data-pmdf-onclick="beginStudies(false)" class="welcome-primary">Iniciar meus estudos</button>
-    <button type="button" id="welcome-continue" data-pmdf-onclick="beginStudies(true)" class="welcome-secondary hidden">Continuar os estudos</button>
-   </div>
-   <div class="welcome-actions" style="margin-top:12px;grid-template-columns:1fr 1fr;max-width:410px">
-     <button type="button" data-pmdf-onclick="toggleTheme()" class="welcome-secondary">☾ / ☀ Tema</button>
-     <label class="welcome-secondary" style="display:grid;place-items:center;padding:10px 8px;border-radius:12px;font-weight:700;cursor:pointer">Importar backup<input type="file" accept=".json,application/json" class="hidden" data-pmdf-onchange="importProgress(this)" /></label>
-   </div>
-   
-   <p class="welcome-privacy">Ao entrar, seu histórico de estudos é sincronizado pelo Supabase e pode permanecer armazenado neste navegador. Não compartilhe sua senha. Não há recuperação automática de senha. Guarde sua credencial com segurança.</p>
-   <p class="mt-3 text-center text-xs"><a href="comercial.html" class="text-[#E5C158] underline">Conhecer materiais complementares de estudo</a></p>
-  </div>
-</section>
-
-    <!-- Notificação Toast (Substituto de alert) -->
-    <div id="toast-container" role="region" aria-label="Notificações do sistema" aria-live="polite" aria-relevant="additions" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none no-print max-w-md"></div>
-
-    <!-- Modal de Visualização do Prompt -->
-    <div id="prompt-modal" role="dialog" aria-modal="true" aria-labelledby="prompt-modal-heading" tabindex="-1" class="fixed inset-0 z-50 bg-[#040912]/80 backdrop-blur-sm hidden items-center justify-center p-4 no-print">
-        <div class="bg-[#0A1426] border border-[#1E2E4F] rounded-2xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-[#172642] bg-[#040912]/50">
-                <div class="flex items-center gap-2.5">
-                    <i data-lucide="terminal" class="w-5 h-5 text-[#E5C158]"></i>
-                    <h3 id="prompt-modal-heading" class="font-bold text-slate-100 text-lg">Prompt Mestre Configurado</h3>
-                </div>
-                <button type="button" data-pmdf-onclick="closePromptModal()" aria-label="Fechar janela de prompt" title="Fechar" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-[#0E1B33] transition">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
-            <div class="p-6 overflow-y-auto flex-1 space-y-3">
-                <p class="text-sm text-slate-400">Este é o prompt gerado com os parâmetros que você selecionou. Você pode copiá-lo para usar em qualquer conversa ou Notebook:</p>
-                <pre id="prompt-modal-text" class="bg-[#040912] border border-[#172642] rounded-xl p-4 text-xs sm:text-sm text-slate-200 whitespace-pre-wrap font-mono leading-relaxed select-all"></pre>
-                <textarea id="external-json-input" rows="10" placeholder="Cole aqui o JSON estruturado retornado pela IA externa..." class="hidden w-full bg-[#040912] border border-[#D4AF37]/40 rounded-xl p-3 text-xs text-slate-100 font-mono"></textarea>
-                <p id="external-json-help" class="hidden text-xs text-slate-400">O JSON será validado e salvo como guia personalizado, disponível após recarregar a página e incluído no backup.</p>
-            </div>
-            <div class="px-6 py-4 border-t border-[#172642] bg-[#040912]/50 flex flex-wrap justify-end gap-2">
-                <button data-pmdf-onclick="showJsonPrompt()" class="px-3 py-2 rounded-xl text-xs font-semibold text-[#E5C158] border border-[#D4AF37]/40">Gerar prompt JSON</button>
-                <button data-pmdf-onclick="toggleExternalJsonInput()" class="px-3 py-2 rounded-xl text-xs font-semibold text-slate-200 border border-[#1E2E4F]">Colar / importar JSON</button>
-                <button data-pmdf-onclick="importExternalGuide()" class="px-3 py-2 rounded-xl text-xs font-semibold text-[#050B16] bg-[#D4AF37]">Importar guia</button>
-                <button data-pmdf-onclick="closePromptModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-300 hover:bg-[#0E1B33] transition">Fechar</button>
-                <button data-pmdf-onclick="copyPromptFromModal()" class="px-5 py-2 rounded-xl text-sm font-bold bg-[#D4AF37] hover:bg-[#E5C158] text-[#050B16] flex items-center gap-2 transition shadow-lg shadow-[#D4AF37]/20">
-                    <i data-lucide="copy" class="w-4 h-4"></i>
-                    Copiar Prompt
-                </button>
-            </div>
-        </div>
-    </div>
-
-
-    <div id="gen-modal" role="dialog" aria-modal="true" aria-labelledby="gen-title" tabindex="-1" class="fixed inset-0 z-50 bg-[#040912]/80 backdrop-blur-sm hidden items-center justify-center p-3 no-print">
-        <div class="bg-[#0A1426] border border-[#1E2E4F] rounded-2xl max-w-2xl w-full max-h-[92vh] overflow-y-auto p-4 sm:p-6 space-y-3 shadow-2xl">
-            <div class="flex justify-between items-center"><h3 id="gen-title" class="font-bold text-white"></h3><button type="button" data-pmdf-onclick="closeModal()" aria-label="Fechar janela" title="Fechar" class="text-slate-400 hover:text-white px-2">✕</button></div>
-            <div id="gen-body" class="text-sm text-slate-200"></div>
-        </div>
-    </div>
-
-    <!-- Cabeçalho Tático -->
-    <header class="pmdf-app-header bg-[#071020]/95 border-b border-[#D4AF37]/30 shadow-lg shadow-black/40 md:sticky md:top-0 z-30 backdrop-blur-md no-print">
-        <div class="pmdf-header-inner max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div class="flex items-center gap-3.5">
-                <div class="pmdf-brand-mark w-16 h-16 rounded-xl bg-[#071020] border border-[#D4AF37]/40 flex items-center justify-center shrink-0 shadow-lg shadow-black/40" role="img" aria-label="Brasão Método PMDF">
-                    <svg viewBox="0 0 64 64" class="w-14 h-14" fill="none" stroke="#D4AF37" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path fill="#E5C158" stroke="none" d="M32 3l1.6 3.3 3.6.5-2.6 2.5.6 3.6L32 11.200l-3.2 1.700.6-3.600-2.600-2.500 3.600-.5z"/>
-                        <path fill="#D4AF37" stroke="none" d="M20 7l1 2 2.200.3-1.600 1.500.4 2.200L20 12l-2 1 .4-2.200-1.600-1.500L19 9zM44 7l1 2 2.200.3-1.600 1.500.4 2.200L44 12l-2 1 .4-2.200-1.600-1.500L43 9z"/>
-                        <path d="M14 46C6 40 4 28 9 18M17 43C11 38 9 29 12 21M20 40c-4-4-5-10-3-15"/>
-                        <path d="M50 46c8-6 10-18 5-28M47 43c6-5 8-14 5-22M44 40c4-4 5-10 3-15"/>
-                        <path fill="#D4AF37" fill-opacity=".25" d="M32 50c-6-3-13-3-20-2v-4c7-1 14-1 20 2 6-3 13-3 20-2v4c-7-1-14-1-20 2z"/>
-                        <path d="M32 50V46M12 48l20 6 20-6"/>
-                        <text x="32" y="38" text-anchor="middle" font-family="Cinzel,Georgia,serif" font-weight="800" font-size="13" fill="#E5C158" stroke="none">PMDF</text>
-                    </svg>
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <span class="px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider bg-[#D4AF37]/20 text-[#E5C158] border border-[#D4AF37]/30 rounded-md pmdf-header-badge">Carreiras Policiais</span>
-                        <span class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-md">Foco CFO / CFP PMDF</span>
-                    </div>
-                    <h1 class="font-serif text-xl sm:text-2xl font-bold tracking-[.18em] text-white mt-0.5">MÉTODO <span class="text-[#E5C158]">PMDF</span></h1>
-                    <p class="text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest text-[#D4AF37]">Preparatório Policial · Mapeador Estratégico de Leis</p>
-                </div>
-            </div>
-            <div class="pmdf-header-actions">
-                <div id="pomo" class="no-print flex items-center gap-2 text-xs bg-[#040912]/70 px-3 py-2 rounded-xl border border-[#172642]"><span id="pomo-mode" class="text-[#E5C158] font-bold">FOCO</span><span id="pomo-time" class="font-mono text-white text-sm" aria-label="Tempo de estudo decorrido">00:00</span><button data-pmdf-onclick="pomoToggle()" id="pomo-btn" type="button" title="Iniciar ou pausar cronômetro" aria-label="Iniciar ou pausar cronômetro" class="px-2.5 py-1 rounded-lg bg-[#D4AF37] text-[#050B16] font-bold">▶</button><button data-pmdf-onclick="pomoReset()" type="button" title="Reiniciar cronômetro" aria-label="Reiniciar cronômetro" class="px-2.5 py-1 rounded-lg bg-[#0E1B33] text-slate-300">↺</button></div>
-                <button type="button" id="theme-toggle" data-pmdf-onclick="toggleTheme()" aria-label="Alternar entre tema claro e escuro" aria-pressed="false" class="no-print inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#1E2E4F] bg-[#0E1B33] text-slate-100 font-semibold text-xs hover:border-[#D4AF37] transition"><span id="theme-symbol" aria-hidden="true">☀</span><span id="theme-label">Tema claro</span></button>
-                <span id="cloud-save-status" role="status" aria-live="polite" class="no-print text-xs font-semibold text-emerald-300">◌ Sincronização</span>
-                <details class="pmdf-account-menu">
-                    <summary aria-label="Abrir opções da conta">◉ Conta <span aria-hidden="true">⌄</span></summary>
-                    <div class="pmdf-account-popover">
-                        <button type="button" data-pmdf-onclick="backToHome()" class="no-print px-3 py-2 bg-[#0E1B33] text-slate-100 border border-[#334155] rounded-xl text-xs font-bold">⌂ Início</button>
-                        <a class="no-print px-3 py-2 bg-[#0E1B33] text-[#E5C158] border border-[#D4AF37]/50 rounded-xl text-xs font-bold" href="comercial.html">Materiais complementares</a>
-                        
-                        <button type="button" data-pmdf-onclick="logoutAccount()" class="no-print px-3 py-2 bg-[#0E1B33] text-slate-100 border border-[#334155] rounded-xl text-xs font-bold">Sair</button>
-                    </div>
-                </details>
-            </div>
-        </div>
+  <main id="tab-anki">
+    <header class="anki-visual-intro">
+      <div class="anki-visual-intro-content">
+        <span class="anki-visual-intro-kicker">✦ MEMORIZAÇÃO ESTRATÉGICA</span>
+        <h1>Seu material. Seus <em>flashcards.</em></h1>
+        <p>Transforme o conteúdo que você estuda em perguntas e lacunas. Revele as respostas, programe suas revisões e leve o baralho para o Anki.</p>
+        <div class="anki-visual-intro-pills"><span>Criação a partir do texto</span><span>Revisão espaçada</span><span>Exportação para Anki</span></div>
+      </div>
+      <div class="anki-visual-intro-mark" aria-hidden="true">✦</div>
     </header>
 
-    <!-- Conteúdo Principal -->
-    <main id="pmdf-main-content" tabindex="-1" class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 space-y-6">
-
-
-        <nav class="pmdf-app-tabs no-print flex gap-1 sm:gap-2 border-b border-[#172642] overflow-x-auto whitespace-nowrap" role="tablist" aria-label="Ferramentas de estudo" data-pmdf-onkeydown="pmdfTabKeydown(event)">
-            <button id="tab-btn-leis" role="tab" aria-controls="tab-leis" aria-selected="true" tabindex="0" data-pmdf-onclick="showTab('leis')" class="px-3 sm:px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="scale" class="w-4 h-4"></i><span class="hidden sm:inline">Mapeador de Leis</span><span class="sm:hidden">Leis</span></button>
-            <button type="button" id="tab-btn-questoes" hidden inert aria-hidden="true" role="tab" aria-controls="tab-questoes" aria-selected="false" tabindex="-1" data-pmdf-onclick="showTab('questoes')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="list-checks" class="w-4 h-4"></i>Questões</button>
-            <button type="button" id="tab-btn-acervo" role="tab" aria-controls="tab-acervo" aria-selected="false" tabindex="-1" data-pmdf-onclick="showTab('acervo')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="book-open-check" class="w-4 h-4"></i>Banco de questões</button>
-            <button type="button" id="tab-btn-anki" role="tab" aria-controls="tab-anki" aria-selected="false" tabindex="-1" data-pmdf-onclick="showTab('anki')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="layers" class="w-4 h-4"></i>Flashcards</button>
-            <button type="button" id="tab-btn-resultados" hidden inert aria-hidden="true" role="tab" aria-controls="tab-resultados" aria-selected="false" tabindex="-1" data-pmdf-onclick="showTab('resultados');renderResults()" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="chart-column" class="w-4 h-4"></i>Resultados</button>
-            <button id="tab-btn-redacao" role="tab" aria-controls="tab-redacao" aria-selected="false" tabindex="-1" data-pmdf-onclick="showTab('redacao')" class="px-5 py-2.5 text-sm font-bold rounded-t-xl border border-b-0 flex items-center gap-2"><i data-lucide="pen-line" class="w-4 h-4"></i><span class="sm:hidden">Redação</span><span class="hidden sm:inline">Corretor de Redação (Cebraspe)</span></button>
-        </nav>
-        <div id="pmdf-context-bar" class="pmdf-flow no-print" aria-label="Orientações para uso das ferramentas">
-          <div id="pmdf-context-leis" class="pmdf-flow-copy"><strong>Como começar</strong><span>1 · Selecione uma lei ou arquivo · 2 · Ajuste as opções · 3 · Leia e revise</span></div>
-          <div id="pmdf-context-questoes" class="pmdf-flow-copy hidden"><strong>Como começar</strong><span>1 · Escolha a fonte · 2 · Configure o simulado · 3 · Gere e responda</span></div>
-          <div id="pmdf-context-acervo" class="pmdf-flow-copy hidden"><strong>Banco de questões</strong><span>1 · Importe ou carregue o acervo · 2 · Responda · 3 · Veja o gráfico e a porcentagem</span></div>
-          <div id="pmdf-context-anki" class="pmdf-flow-copy hidden"><strong>Como começar</strong><span>1 · Filtre o acervo ANKI · 2 · Inicie a revisão · 3 · Revele e avalie</span></div>
-          <div id="pmdf-context-resultados" class="pmdf-flow-copy hidden"><strong>Como começar</strong><span>Selecione um tema e acompanhe acertos, erros e tempo de estudo.</span></div>
-          <div id="pmdf-context-redacao" class="pmdf-flow-copy hidden"><strong>Como começar</strong><span>1 · Informe o tema · 2 · Cole a redação · 3 · Corrija e leia o relatório</span></div>
-          <button id="pmdf-primary-jump" type="button" data-pmdf-onclick="pmdfFocusPrimary()">Ir para a ação ↓</button>
-        </div>
-        <div id="tab-leis" role="tabpanel" aria-labelledby="tab-btn-leis" class="space-y-6">
-        <!-- Painel de Configuração e Entrada da Lei -->
-        <section class="pmdf-study-setup bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 shadow-xl no-print">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-4 mb-5 border-b border-[#172642]">
-                <div>
-                    <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                        <i data-lucide="radar" class="w-5 h-5 text-[#E5C158]"></i>
-                        Biblioteca e análise de legislação
-                    </h2>
-                    <p class="text-xs sm:text-sm text-slate-400">Escolha uma lei do catálogo para começar ou envie um documento para criar seu próprio material de estudo.</p>
-                </div>
-                <!-- Atalhos Rápidos PMDF (Carregam Instantaneamente sem Erro) -->
-                <div class="pmdf-law-selector"><div class="pmdf-core-laws">
-                    <span class="text-xs text-slate-400 mr-1 font-medium">Leis em destaque:</span>
-                    <button id="btn-law-cf88" data-pmdf-onclick="selectAndLoadLaw('cf88', 'https://www.planalto.gov.br/ccivil_03/constituicao/constituicaocompilado.htm')" class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]">
-                        CF/88 (Constituição)
-                    </button>
-                    <button id="btn-law-cpm" data-pmdf-onclick="selectAndLoadLaw('cpm', 'https://www.planalto.gov.br/ccivil_03/decreto-lei/del1001.htm')" class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#D4AF37] text-[#050B16] font-bold transition border border-[#E5C158]">
-                        CPM (DL 1.001/69)
-                    </button>
-                    <button id="btn-law-cppm" data-pmdf-onclick="selectAndLoadLaw('cppm', 'https://www.planalto.gov.br/ccivil_03/decreto-lei/del1002.htm')" class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]">
-                        CPPM (DL 1.002/69)
-                    </button>
-                    <button id="btn-law-estatuto" data-pmdf-onclick="selectAndLoadLaw('estatuto', 'https://www.planalto.gov.br/ccivil_03/leis/l7289.htm')" class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]">
-                        Estatuto PMDF (Lei 7.289/84)
-                    </button>
-                    <button id="btn-law-l12086" data-pmdf-onclick="selectAndLoadLaw('l12086', 'https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2009/lei/l12086.htm')" class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]">
-                        Promoções PMDF (12.086/09)
-                    </button>
-                    <button id="btn-law-abuso" data-pmdf-onclick="selectAndLoadLaw('abuso', 'https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2019/lei/l13869.htm')" class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]">
-                        Abuso Autoridade (13.869/19)
-                    </button>
-                    </div>
-                    <details class="more-laws-drawer">
-                      <summary>📚 +20 Leis do Edital <span class="pmdf-drawer-action">Expandir catálogo <span aria-hidden="true">⌄</span></span></summary>
-                      <div class="pmdf-more-laws-body">
-                        <label class="pmdf-more-laws-search" for="pmdf-law-search">Buscar no catálogo
-                          <input id="pmdf-law-search" type="search" placeholder="Pesquisar lei, tema ou número…" autocomplete="off" aria-label="Pesquisar as leis do edital" data-pmdf-oninput="document.querySelectorAll('.pmdf-more-laws-grid .law-shortcut-btn').forEach(b=>b.hidden=!b.textContent.toLocaleLowerCase('pt-BR').includes(this.value.toLocaleLowerCase('pt-BR').trim()))">
-                        </label>
-                        <div class="pmdf-more-laws-grid">
-                    <button id="btn-law-cp" data-pmdf-onclick="selectAndLoadLaw('cp', 'https://www.planalto.gov.br/ccivil_03/decreto-lei/del2848compilado.htm')" class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]">
-                        CP (DL 2.848/40)
-                    </button>
-                    <button id="btn-law-cpp" data-pmdf-onclick="selectAndLoadLaw('cpp', 'https://www.planalto.gov.br/ccivil_03/decreto-lei/del3689compilado.htm')" class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]">
-                        CPP (DL 3.689/41)
-                    </button>
-                    <button id="btn-law-drogas" data-pmdf-onclick="selectAndLoadLaw('drogas', 'https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2006/lei/l11343.htm')" class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]">
-                        Lei de Drogas (11.343/06)
-                    </button>
-                    <button id="btn-law-tortura" data-pmdf-onclick="selectAndLoadLaw('tortura', 'https://www.planalto.gov.br/ccivil_03/leis/l9455.htm')" class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]">
-                        Tortura (9.455/97)
-                    </button>
-                    <button id="btn-law-armas" data-pmdf-onclick="selectAndLoadLaw('armas', 'https://www.planalto.gov.br/ccivil_03/leis/2003/l10.826.htm')" class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]">
-                        Armas (10.826/03)
-                    </button>
-                    <button id="btn-law-mariadapenha" data-pmdf-onclick="selectAndLoadLaw('mariadapenha', 'https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2006/lei/l11340.htm')" class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]">
-                        Maria da Penha (11.340/06)
-                    </button>
-                    <button id="btn-law-hediondos" data-pmdf-onclick="selectAndLoadLaw('hediondos', 'https://www.planalto.gov.br/ccivil_03/leis/l8072.htm')" class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]">
-                        Crimes Hediondos (8.072/90)
-                    </button>
-                    <button class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]" id="btn-law-jecrim" data-pmdf-onclick="selectAndLoadLaw('jecrim')" type="button">JECRIM (9.099/95)</button>
-                    <button class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]" id="btn-law-orcrim" data-pmdf-onclick="selectAndLoadLaw('orcrim')" type="button">Crime organizado (12.850/13)</button>
-                    <button class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]" id="btn-law-genocidio" data-pmdf-onclick="selectAndLoadLaw('genocidio')" type="button">Genocídio (2.889/56)</button>
-                    <button class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]" id="btn-law-racismo" data-pmdf-onclick="selectAndLoadLaw('racismo')" type="button">Racismo (7.716/89)</button>
-                    <button class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]" id="btn-law-eca" data-pmdf-onclick="selectAndLoadLaw('eca')" type="button">ECA (8.069/90)</button>
-                    <button class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]" id="btn-law-improbidade" data-pmdf-onclick="selectAndLoadLaw('improbidade')" type="button">Improbidade (8.429/92)</button>
-                    <button class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]" id="btn-law-temporaria" data-pmdf-onclick="selectAndLoadLaw('temporaria')" type="button">Prisão temporária (7.960/89)</button>
-                    <button class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]" id="btn-law-jef" data-pmdf-onclick="selectAndLoadLaw('jef')" type="button">JEF (10.259/01)</button>
-                    <button class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]" id="btn-law-r200" data-pmdf-onclick="selectAndLoadLaw('r200')" type="button">R-200 (88.777/83)</button>
-                    <button class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]" id="btn-law-d10443" data-pmdf-onclick="selectAndLoadLaw('d10443')" type="button">Organização PMDF (10.443/20)</button>
-                    <button class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]" id="btn-law-l14751" data-pmdf-onclick="selectAndLoadLaw('l14751')" type="button">Lei Orgânica Nacional (14.751/23)</button>
-                    <button type="button" id="btn-law-lai" class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]" data-pmdf-onclick="selectAndLoadLaw('lai')">Acesso à Informação (12.527/11)</button>
-                    <button type="button" id="btn-law-interceptacao" class="law-shortcut-btn text-xs px-2.5 py-1.5 rounded-lg bg-[#0E1B33] hover:bg-[#D4AF37] hover:text-[#050B16] text-slate-300 font-medium transition border border-[#1E2E4F]" data-pmdf-onclick="selectAndLoadLaw('interceptacao')">Interceptação (9.296/96)</button>
-                        </div>
-                      </div>
-                    </details>
-
-                </div>
-            </div>
-
-            <details class="pmdf-parameters" open>
-            <summary><span>⚙ Parâmetros de análise</span><span class="pmdf-params-hint">Ocultar / Mostrar parâmetros ⌄</span></summary>
-            <div class="pmdf-parameter-grid grid grid-cols-1 md:grid-cols-12 gap-4">
-                <!-- Seletor de fonte de dados: apenas um painel fica ativo -->
-                <div class="md:col-span-12">
-                    <p id="pmdf-source-picker-label" class="block text-xs font-semibold uppercase tracking-wider text-[#E5C158] mb-2">Fonte de dados da análise</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2" role="tablist" aria-labelledby="pmdf-source-picker-label">
-                        <button type="button" id="source-tab-url" role="tab" aria-controls="source-url-panel" aria-selected="true" tabindex="0" data-pmdf-onclick="setSourceMode('url')" class="source-tab px-3 py-2.5 rounded-xl border text-xs sm:text-sm font-bold transition">🔗 Colar Link (URL)</button>
-                        <button type="button" id="source-tab-text" role="tab" aria-controls="source-text-panel" aria-selected="false" tabindex="-1" data-pmdf-onclick="setSourceMode('text')" class="source-tab px-3 py-2.5 rounded-xl border text-xs sm:text-sm font-bold transition">📋 Colar Texto Extraído</button>
-                        <button type="button" id="source-tab-file" role="tab" aria-controls="source-file-panel" aria-selected="false" tabindex="-1" data-pmdf-onclick="setSourceMode('file')" class="source-tab px-3 py-2.5 rounded-xl border text-xs sm:text-sm font-bold transition">📎 Enviar Arquivo (PDF / DOCX / TXT)</button>
-                    </div>
-                </div>
-                <!-- Fonte URL -->
-                <div id="source-url-panel" role="tabpanel" aria-labelledby="source-tab-url" class="md:col-span-12">
-                <div class="max-w-3xl">
-                    <label for="law-input" class="block text-xs font-semibold uppercase tracking-wider text-[#E5C158] mb-1.5">Link Oficial da Lei (Planalto / SINJ-DF) ou Nome da Norma *</label>
-                    <div class="relative">
-                        <i data-lucide="link" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-                        <input type="text" id="law-input" value="https://www.planalto.gov.br/ccivil_03/decreto-lei/del1001.htm" placeholder="Ex: https://www.planalto.gov.br/... ou Lei nº 7.289/1984" class="w-full pl-10 pr-4 py-2.5 bg-[#040912] border border-[#1E2E4F] rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] transition">
-                    </div>
-                    <p class="text-[11px] text-slate-500 mt-1">A análise utiliza exclusivamente este campo enquanto esta aba estiver selecionada.</p>
-                </div>
-                </div>
-                <!-- Fonte texto colado -->
-                <div id="source-text-panel" role="tabpanel" aria-labelledby="source-tab-text" class="md:col-span-12 hidden">
-                    <label for="law-text-title" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Título do conteúdo / disciplina (opcional)</label>
-                    <input id="law-text-title" type="text" placeholder="Ex.: Direito Administrativo — atos administrativos, doutrina, jurisprudência..." class="w-full px-4 py-2 bg-[#040912]/70 border border-[#172642] rounded-xl text-sm text-slate-200 placeholder-slate-500 mb-3">
-                    <label for="law-text" class="block text-xs font-semibold uppercase tracking-wider text-[#E5C158] mb-1.5">Texto extraído / conteúdo para análise</label>
-                    <textarea id="law-text" rows="9" placeholder="Cole texto legal, artigo doutrinário, apostila, resumo ou qualquer conteúdo de estudo. Não precisa ser uma lei." class="w-full px-3 py-3 bg-[#040912] border border-[#1E2E4F] rounded-xl text-sm text-white focus:outline-none focus:border-[#D4AF37] leading-relaxed"></textarea>
-                    <div class="flex flex-wrap items-center justify-between gap-2 mt-2">
-                        <span id="law-text-counter" class="text-xs text-slate-400">0 palavras · 0 caracteres</span>
-                        <button type="button" data-pmdf-onclick="clearLawText()" class="px-3 py-1.5 rounded-lg bg-[#0E1B33] border border-[#1E2E4F] text-xs font-semibold text-slate-200 hover:border-[#D4AF37]">Limpar texto</button>
-                    </div>
-                </div>
-                <!-- Fonte arquivo -->
-                <div id="source-file-panel" role="tabpanel" aria-labelledby="source-tab-file" class="md:col-span-12 hidden">
-                    <label for="law-file-title" class="block text-xs font-semibold uppercase tracking-wider text-[#E5C158] mb-1.5">Título do conteúdo / disciplina</label>
-                    <input id="law-file-title" type="text" maxlength="160" placeholder="Ex.: Direito Administrativo — poder de polícia, atos e princípios" class="w-full px-4 py-2 bg-[#040912] border border-[#1E2E4F] rounded-xl text-sm text-white mb-3" />
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-[#E5C158] mb-1.5">Arquivo para extração</label>
-                    <div id="law-dropzone" class="rounded-2xl border-2 border-dashed border-[#334155] bg-[#040912]/60 p-5 sm:p-7 text-center transition">
-                        <i data-lucide="file-up" class="w-8 h-8 text-[#E5C158] mx-auto mb-2"></i>
-                        <p class="text-sm font-semibold text-slate-100">Arraste PDF, DOCX, TXT ou imagem para esta área</p><p class="text-xs text-slate-400 my-2">ou</p>
-                        <label class="inline-flex cursor-pointer px-4 py-2 rounded-xl bg-[#0E1B33] hover:bg-[#162646] border border-[#1E2E4F] text-xs font-bold text-slate-200">Selecionar arquivo<input id="law-file-input" type="file" accept=".pdf,.docx,.txt,.png,.jpg,.jpeg,.webp,application/pdf,text/plain,image/*" class="hidden" data-pmdf-onchange="onLawFile(this)"></label>
-                    </div>
-                    <div class="mt-3 flex flex-wrap gap-2 items-center"><span id="law-file-name" class="text-xs text-slate-300"></span><span id="law-file-status" role="status" aria-live="polite" class="text-xs text-emerald-300"></span></div>
-                    <label for="law-file-preview" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mt-3 mb-1.5">Pré-visualização editável do conteúdo extraído</label>
-                    <textarea id="law-file-preview" rows="9" placeholder="O texto extraído do arquivo aparecerá aqui para conferência e edição." class="w-full px-3 py-3 bg-[#040912] border border-[#1E2E4F] rounded-xl text-sm text-white focus:outline-none focus:border-[#D4AF37] leading-relaxed"></textarea>
-                </div>
-                <!-- Foco do Cargo -->
-                <details id="pmdf-advanced-law" class="pmdf-advanced-settings"><summary>Personalizar análise <small>Cargo, banca, nível, resumo e recorte (opcionais)</small></summary><div class="pmdf-advanced-grid">
-                <div class="md:col-span-12 flex justify-end"><button type="button" data-pmdf-onclick="clearMainFilters()" class="px-3 py-2 rounded-xl border border-[#1E2E4F] bg-[#0E1B33] text-slate-200 text-xs font-semibold">↺ Limpar filtros do mapeador</button></div>
-                <div class="pmdf-param-role md:col-span-3">
-                    <label for="role-select" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
-                        Foco do Cargo
-                    </label>
-                    <select id="role-select" data-pmdf-onchange="refreshCurrentBuiltInLawMetadata()" class="w-full px-3.5 py-2.5 bg-[#040912] border border-[#1E2E4F] rounded-xl text-sm text-white focus:outline-none focus:border-[#D4AF37] transition">
-                        <option value="CFO / Oficial PMDF (Curso de Formação de Oficiais)">CFO / Oficial PMDF (Oficiais)</option>
-                        <option value="CFP / Soldado PMDF (Curso de Formação de Praças)" selected>CFP / Soldado PMDF (Praças)</option>
-                        <option value="Polícia Federal / PRF / Polícia Civil">PF / PRF / Polícia Civil (Agente/Escrivão)</option>
-                        <option value="Polícia Penal / Geral Carreiras Policiais">Polícia Penal / Geral Policial</option>
-                    </select>
-                </div>
-
-                <!-- Banca Examinadora -->
-                <div class="pmdf-param-board md:col-span-3">
-                    <label for="board-select" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
-                        Banca de Referência
-                    </label>
-                    <select id="board-select" data-pmdf-onchange="refreshCurrentBuiltInLawMetadata()" class="w-full px-3.5 py-2.5 bg-[#040912] border border-[#1E2E4F] rounded-xl text-sm text-white focus:outline-none focus:border-[#D4AF37] transition">
-                        <option value="Cebraspe (Certo/Errado e Múltipla Escolha)" selected>Cebraspe (Padrão PMDF)</option>
-                        <option value="FGV">FGV</option>
-                        <option value="Idecan / Instituto AOCP">Idecan / AOCP</option>
-                        <option value="Vunesp">Vunesp</option>
-                        <option value="Geral Policial">Geral (Todas as Bancas)</option>
-                    </select>
-                </div>
-
-                <div class="pmdf-param-level md:col-span-12">
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-[#E5C158] mb-1.5">Nível do Candidato (define a profundidade e a linguagem do resumo)</label>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2" id="level-group">
-                        <button type="button" id="lvl-iniciante" data-pmdf-onclick="setLevel('iniciante')" class="lvl-btn px-3 py-2 rounded-xl text-sm border transition">🌱 Iniciante</button>
-                        <button type="button" id="lvl-intermediario" data-pmdf-onclick="setLevel('intermediario')" class="lvl-btn px-3 py-2 rounded-xl text-sm border transition">⚔️ Intermediário</button>
-                        <button type="button" id="lvl-avancado" data-pmdf-onclick="setLevel('avancado')" class="lvl-btn px-3 py-2 rounded-xl text-sm border transition">🎯 Avançado</button>
-                    </div>
-                    <p id="level-desc" class="text-xs text-slate-400 mt-1.5"></p>
-                </div>
-                                <!-- Filtro opcional de Título/Capítulo -->
-                <div class="md:col-span-12">
-                    <label for="filter-input" class="block text-xs font-medium text-slate-400 mb-1.5">
-                        Recorte Específico (Opcional — deixe em branco para que o sistema faça a varredura da lei inteira e aponte os Títulos mais importantes)
-                    </label>
-                    <input type="text" id="filter-input"
-                        placeholder="Ex: Analisar a lei inteira com triagem de Títulos, ou focar apenas no Título II - Dos Crimes contra a Autoridade ou Disciplina Militar"
-                        class="w-full px-4 py-2 bg-[#040912]/70 border border-[#172642] rounded-xl text-xs sm:text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-[#D4AF37] transition">
-                </div>
-                </div></details>
-            </div>
-
-            <!-- Botões de Ação -->
-            <div class="mt-5 pt-4 border-t border-[#172642] flex flex-wrap items-center justify-between gap-3">
-                
-
-                <button id="generate-btn" data-pmdf-onclick="generateStrategicGuide()" class="px-6 py-2.5 rounded-xl font-extrabold text-sm flex items-center gap-2.5 transition transform active:scale-95 bg-gradient-to-r from-[#D4AF37] via-[#E5C158] to-[#C59B27] text-[#050B16] font-extrabold shadow-lg shadow-[#D4AF37]/15 hover:brightness-110">
-                    <i data-lucide="sparkles" class="w-4 h-4 stroke-[2.5]"></i>
-                    <span>Analisar Lei e Gerar Guia Completo</span>
-                </button>
-            </div>
-            </details>
-        </section>
-
-        <!-- Estado de Carregamento (Oculto por padrão) -->
-        <div id="loading-panel" class="hidden bg-[#0A1426] border border-[#D4AF37]/40 rounded-2xl p-8 text-center space-y-4 shadow-xl no-print">
-            <div class="w-14 h-14 rounded-2xl bg-[#D4AF37]/10 border border-[#D4AF37]/30 flex items-center justify-center mx-auto text-[#E5C158]">
-                <i data-lucide="loader-2" class="w-8 h-8 animate-spin"></i>
-            </div>
-            <div class="space-y-1 max-w-lg mx-auto">
-                <h3 class="text-lg font-bold text-white" id="loading-title">Escaneando a estrutura da Lei e filtrando Títulos...</h3>
-                <p class="text-xs sm:text-sm text-slate-400" id="loading-subtitle">
-                    Mapeando os artigos de maior incidência para a PMDF, traduzindo o juridiquês com exemplos práticos e preparando o documento para o Google Docs.
-                </p>
-            </div>
-            <div class="w-full max-w-md mx-auto bg-[#040912] rounded-full h-2 overflow-hidden border border-[#172642]">
-                <div class="bg-[#D4AF37] h-full w-2/3 animate-pulse rounded-full"></div>
-            </div>
-        </div>
-
-        <!-- Barra de navegação e seleção dos formatos de estudo -->
-        <div id="export-toolbar" class="pmdf-reading-bar bg-[#0A1426]/95 border border-[#1E2E4F]/80 rounded-2xl p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 shadow-lg no-print">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
-                    <i data-lucide="file-text" class="w-5 h-5"></i>
-                </div>
-                <div>
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400 block">Leitura e revisão na plataforma</span>
-                    <h3 id="current-doc-title" class="text-sm sm:text-base font-bold text-white break-words">
-                        Guia Estratégico PMDF - Decreto-Lei nº 1.001/1969 (Código Penal Militar)
-                    </h3>
-                </div>
-            </div>
-
-            <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
-                <label class="pmdf-format-label text-xs text-slate-300 flex items-center gap-2">Formato de resumo <select id="summary-format-toolbar" data-pmdf-onchange="setSummaryFormat(this.value)" class="max-w-[270px] px-2.5 py-2 rounded-xl bg-[#040912] border border-[#1E2E4F] text-xs text-white"><option value="full">📖 Por Extenso</option><option value="bullets">⚡ Esquematizado</option><option value="flash">🃏 Flashcards</option><option value="visual">🎨 Visual Ilustrado</option><option value="infographic">📰 Infográfico Estratégico</option><option value="cloze">🧩 Lacunas Estratégicas</option></select></label>
-            </div>
-        </div>
-
-        <!-- Área renderizada do guia estratégico para estudo na plataforma -->
-        <article id="printable-area" class="bg-[#0A1426] border border-[#172642] rounded-2xl p-6 sm:p-8 shadow-2xl space-y-8">
-            <!-- O conteúdo dinâmico é injetado aqui via JS -->
-        </article>
-
-        </div><!-- /tab-leis -->
-
-
-
-        <!-- Acervo importado: sistema separado do gerador oculto e dos flashcards -->
-        <section id="tab-acervo" role="tabpanel" aria-labelledby="tab-btn-acervo" class="hidden space-y-5" aria-label="Banco de questões interativo">
-          <div id="acervo-shell" class="space-y-4">
-            <header class="acervo-block acervo-top">
-              <div>
-                <p class="text-[11px] font-bold tracking-wider uppercase text-emerald-400">Método PMDF · Estudos e simulados</p>
-                <h2>Banco de questões interativo</h2>
-                <p class="acervo-subtitle">Pratique em ordem aleatória, misturando questões de certo/errado e múltipla escolha, nos níveis fácil, médio e difícil. Selecione a matéria e o tópico e acompanhe os resultados.</p>
-              </div>
-              <label class="acervo-upload" id="acervo-import-label" for="acervo-file" title="Importar o pacote de questões sem modificar os enunciados">
-                <i data-lucide="file-up" class="w-4 h-4" aria-hidden="true"></i> Importar banco (.json.gz)
-                <input id="acervo-file" type="file" accept=".json,.gz,.json.gz,application/json,application/gzip" aria-label="Selecionar pacote de questões do Método PMDF">
-              </label>
-            </header>
-            <div class="acervo-block">
-              <p id="acervo-status" role="status" aria-live="polite">Preparando banco de questões...</p>
-              <p class="acervo-subtitle mt-2">As respostas são registradas neste dispositivo. A importação não altera o enunciado, as alternativas nem o gabarito fornecidos. Revise a vigência das normas e os gabaritos antes de uso avaliativo oficial.</p>
-            </div>
-            <section class="acervo-block" aria-label="Filtros das questões">
-              <div class="acervo-grid" aria-label="Matéria, lei e tópico">
-                <label class="acervo-control" for="acervo-materia">Matéria / disciplina
-                  <select id="acervo-materia" class="acervo-select"><option value="all">Todas as matérias</option></select>
-                </label>
-                <label class="acervo-control" for="acervo-deck">Lei ou caderno
-                  <select id="acervo-deck" class="acervo-select"><option value="all">Todas as normas</option></select>
-                </label>
-                <label class="acervo-control" for="acervo-topic">Tópico / artigo
-                  <select id="acervo-topic" class="acervo-select"><option value="all">Todos os tópicos</option></select>
-                </label>
-              </div>
-              <div class="acervo-grid acervo-grid-secondary mt-3" aria-label="Modalidade, dificuldade e situação das respostas">
-                <label class="acervo-control" for="acervo-format">Tipo de questão
-                  <select id="acervo-format" class="acervo-select">
-                    <option value="all">Misturar certo/errado e múltipla escolha</option>
-                    <option value="CE">Somente certo ou errado</option>
-                    <option value="MC">Somente múltipla escolha</option>
-                  </select>
-                </label>
-                <label class="acervo-control" for="acervo-difficulty">Nível de dificuldade
-                  <select id="acervo-difficulty" class="acervo-select">
-                    <option value="all">Misturar fácil, médio e difícil</option>
-                    <option value="Fácil">Fácil</option>
-                    <option value="Médio">Médio</option>
-                    <option value="Difícil">Difícil</option>
-                  </select>
-                </label>
-                <label class="acervo-control" for="acervo-state">Situação
-                  <select id="acervo-state" class="acervo-select">
-                    <option value="all">Todas as questões</option>
-                    <option value="pending">Não respondidas</option>
-                    <option value="correct">Acertadas</option>
-                    <option value="wrong">Erradas</option>
-                  </select>
-                </label>
-              </div>
-              <div class="acervo-search-row mt-3">
-                <label class="acervo-control" for="acervo-search">Pesquisar no banco
-                  <input id="acervo-search" class="acervo-select" type="search" autocomplete="off" placeholder="Buscar palavra, tema, artigo ou enunciado">
-                </label>
-                <button type="button" id="acervo-shuffle" class="acervo-btn" aria-label="Embaralhar questões novamente">Embaralhar novamente</button>
-              </div>
-              <p id="acervo-order-hint" class="acervo-hint mt-2">Ordem aleatória fixa nesta sessão de estudo. Respostas anteriores são preservadas.</p>
-              <p id="acervo-total" class="acervo-hint mt-3">0 itens no filtro</p>
-              <p class="acervo-hint mt-2">As estatísticas mostram o desempenho na matéria, tópico, modalidade e dificuldade escolhidos. O filtro “Situação” altera apenas a lista de questões exibidas.</p>
-               <div class="acervo-counters" aria-label="Estatísticas do recorte de estudo">
-                <div class="acervo-counter"><strong id="acervo-hits">0</strong><span>Acertos</span></div>
-                <div class="acervo-counter"><strong id="acervo-wrong">0</strong><span>Erros</span></div>
-                <div class="acervo-counter"><strong id="acervo-pct">0,0%</strong><span>Aproveitamento</span></div>
-                <div class="acervo-counter"><strong id="acervo-done">0 de 0 respondidas</strong><span>Questões resolvidas</span></div>
-              </div>
-              <div class="acervo-actions">
-                <button type="button" id="acervo-show-chart" class="acervo-btn acervo-primary">Ver resultado em gráfico de pizza</button>
-                <button type="button" id="acervo-reset" class="acervo-btn">Reiniciar respostas do filtro</button>
-              </div>
-              <div id="acervo-chart" class="acervo-block mt-4" hidden aria-label="Gráfico de resultados">
-                <div class="acervo-chart-wrap">
-                  <div id="acervo-pie" class="acervo-pie" aria-label="Gráfico circular de acertos e erros"></div>
-                  <div class="acervo-legend">
-                    <p class="green"><strong>●</strong> Verde — acertos</p>
-                    <p class="red"><strong>●</strong> Vermelho — erros</p>
-                    <p id="acervo-pie-summary">Ainda não há respostas registradas.</p>
-                  </div>
-                </div>
-              </div>
-            </section>
-            <section class="acervo-block" aria-label="Resolver questão">
-              <div class="acervo-actions mb-3">
-                <strong id="acervo-counter" class="text-slate-200 text-sm">Nenhuma questão selecionada</strong>
-                <span class="text-xs text-slate-400">O gabarito é exibido após responder</span>
-              </div>
-              <progress id="acervo-progress" max="100" value="0" aria-label="Progresso de navegação no caderno"></progress>
-              <div id="acervo-question" class="mt-4" aria-live="polite"><p class="acervo-empty">Importe o banco para começar.</p></div>
-              <div class="acervo-actions mt-4">
-                <button type="button" id="acervo-prev" class="acervo-btn" disabled>← Anterior</button>
-                <div class="flex flex-wrap gap-2">
-                  <button type="button" id="acervo-next-unseen" class="acervo-btn" disabled>Próxima não respondida</button>
-                  <button type="button" id="acervo-next" class="acervo-btn acervo-primary" disabled>Próxima →</button>
-                </div>
-              </div>
-            </section>
+    <div class="workspace">
+      <section class="panel source-panel" aria-labelledby="source-heading">
+        <div class="section-heading"><span class="step">01</span><div><h2 id="source-heading">Crie seus cartões</h2><p>Comece com um texto ou importe seu material.</p></div></div>
+        <form id="create-form">
+          <label for="source-title">Nome do material</label>
+          <input id="source-title" type="text" maxlength="180" placeholder="Ex.: Direito Constitucional — Direitos fundamentais" autocomplete="off">
+          <div class="source-toolbar">
+            <label class="button file-picker" for="source-file">Importar arquivo<input id="source-file" type="file" accept=".txt,.md,.json,.pdf,.docx,text/plain,application/json,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></label>
+            <button type="button" id="load-example" class="button quiet">Usar exemplo</button>
           </div>
-        </section>
+          <p class="help" id="file-help">TXT, Markdown, JSON, PDF com texto ou DOCX. Os leitores de PDF e DOCX precisam de internet no primeiro uso.</p>
+          <label for="source-text">Texto-base</label>
+          <textarea id="source-text" rows="11" aria-describedby="file-help source-count" placeholder="Cole aqui o conteúdo que deseja estudar. Preserve os títulos, artigos e frases completas para obter cartões mais precisos."></textarea>
+          <div class="text-meta"><span id="source-count">0 caracteres</span><span>Processamento no seu navegador</span></div>
+          <label for="anki-card-style">Formato dos cartões</label>
+          <select id="anki-card-style"><option value="questions">Perguntas e respostas</option><option value="cloze">Lacunas (Cloze)</option><option value="mixed">Misto: perguntas e lacunas</option></select>
+          <div class="create-actions"><button type="submit" id="generate-cards" class="button primary">Criar flashcards <span aria-hidden="true">→</span></button><button type="button" id="stop-generation" class="button" hidden>Cancelar</button></div>
+          <p id="generation-status" class="status" role="status" aria-live="polite">As respostas são extraídas do material fornecido. Revise os cartões antes de estudar.</p>
+        </form>
+        <details class="method-help"><summary>Como a criação funciona</summary><p>O gerador original do Método PMDF reconhece definições, competências, prazos e condições em textos em português. Ele usa regras locais e um classificador de apoio; não é uma IA generativa.</p><p>Nem todo trecho produz um cartão. Textos sem fatos claros, incompletos ou muito extensos em uma única frase podem ficar de fora. Para conteúdo jurídico, confira a fonte e a redação vigente.</p><p>Seu texto não é enviado a uma API. O último baralho e seu progresso ficam neste navegador, quando o armazenamento está disponível. Exporte um backup JSON para guardar os cartões em outro lugar.</p></details>
+      </section>
 
-        <section id="tab-questoes" hidden inert aria-hidden="true" role="tabpanel" aria-labelledby="tab-btn-questoes" class="hidden space-y-5" aria-label="Elaborador de questões">
-            <div class="qstudio rounded-2xl p-5 sm:p-6 space-y-5 shadow-xl">
-                <div class="flex items-start gap-3">
-                    <div class="qstudio-brand" aria-hidden="true"><i data-lucide="brain-circuit"></i></div>
-                    <div class="min-w-0 flex-1">
-                        <p class="qstudio-eyebrow">MÉTODO PMDF · BANCO INTELIGENTE</p>
-                        <h2 class="text-xl sm:text-2xl font-extrabold text-white">Elaborador Inteligente de Questões</h2>
-                        <p class="text-sm text-slate-400 mt-1">Transforme leis e documentos em questões de concursos. Use o motor neural local leve, sem GPU ou API externa, ou continue com o gerador tradicional.</p>
-                    </div>
-                </div>
+      <aside class="panel deck-panel" aria-labelledby="deck-heading">
+        <div class="section-heading"><span class="step">02</span><div><h2 id="deck-heading">Seu baralho</h2><p id="deck-title">Pronto para o primeiro cartão.</p></div></div>
+        <div class="deck-overview"><div><strong id="deck-count">0</strong><span>cartões no baralho</span></div><svg viewBox="0 0 100 88" width="100" height="88" fill="none" aria-hidden="true"><rect x="28" y="8" width="56" height="68" rx="8" fill="currentColor" opacity=".08" transform="rotate(12 56 42)"/><rect x="12" y="14" width="56" height="68" rx="8" fill="var(--bg-paper)" stroke="currentColor" stroke-width="2"/><path d="M26 34h29M26 44h21M26 54h25" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+        <p id="deck-breakdown" class="help">Crie cartões a partir do texto ou importe um backup JSON.</p>
+        <p id="storage-status" class="help" role="status" aria-live="polite"></p>
+        <details id="coverage-details" class="coverage" hidden><summary>Cobertura do material</summary><p id="coverage-report" class="help"></p></details>
+        <div class="divider"></div>
+        <h3>Revisar</h3>
+        <div class="field-grid"><div><label for="anki-mode">Seleção</label><select id="anki-mode"><option value="due">Novos e vencidos</option><option value="all">Todos (treino livre)</option></select></div><div><label for="anki-batch-size">Cartões por sessão</label><select id="anki-batch-size"><option value="25">25</option><option value="50" selected>50</option><option value="100">100</option><option value="all">Todos</option></select></div></div>
+        <button type="button" id="start-review" class="button primary full" disabled>Iniciar revisão <span aria-hidden="true">→</span></button>
+        <p id="review-status" class="help" role="status" aria-live="polite">Revele a resposta e avalie o quanto você lembrou.</p>
+        <div class="divider"></div>
+        <h3>Exportar</h3>
+        <label for="export-format">Formato do arquivo</label>
+        <select id="export-format"><option value="basic">Anki · Perguntas e respostas (.txt)</option><option value="cloze">Anki · Lacunas (.txt)</option><option value="csv">Planilha CSV</option><option value="tsv">Planilha TSV</option><option value="json">Backup dos cartões (.json)</option></select>
+        <button type="button" id="export-cards" class="button full" disabled>Baixar baralho</button>
+        <p class="help">Para o Anki, importe perguntas e lacunas separadamente. O backup JSON permite reabrir os cartões neste criador.</p>
+      </aside>
+    </div>
 
-                <div class="qstudio-block space-y-3">
-                    <div class="flex items-center justify-between flex-wrap gap-2">
-                        <h3 class="font-bold text-white text-sm"><i data-lucide="file-text" class="inline w-4 h-4 mr-1"></i> Material de estudo</h3>
-                        <span id="q-document-indicator" class="text-xs text-slate-400">Use a lei selecionada ou envie conteúdo</span>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
-                        <label class="text-xs text-[#E5C158] font-semibold">Fonte do conteúdo
-                            <select id="q-source" data-pmdf-onchange="refreshQuestionStudio()" class="qstudio-input mt-1 w-full"><option value="current">Documento / lei selecionada</option><option value="programa">Questões por matéria e assunto · acervo local</option><option value="all">Todas as leis cadastradas</option><option value="catalogo">Banco Praça PMDF (15 disciplinas)</option><option value="imported">Provas anteriores importadas</option></select>
-                        </label>
-                        <label class="qstudio-upload cursor-pointer text-sm font-bold text-center">
-                            <i data-lucide="file-up" class="inline w-4 h-4 mr-1"></i> Enviar PDF / DOCX / TXT
-                            <input type="file" accept=".pdf,.docx,.txt,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="hidden" data-pmdf-onchange="questionUploadFile(this)">
-                        </label>
-                    </div>
-                    <p class="text-xs text-slate-400"><strong>Questões por matéria e assunto</strong>: acervo autoral com 163 itens de certo/errado (todos os tópicos) e 21 de múltipla escolha, além de variações elaboradas pelo motor local. <strong>Banco Praça PMDF</strong>: somente questões publicadas no Supabase. Para elaborar a partir de um documento, escolha “Documento / lei selecionada”.</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" aria-label="Catálogo programático de Praça PMDF">
-                        <label for="q-disciplina" class="text-xs text-[#E5C158] font-semibold">Disciplina do edital
-                            <select id="q-disciplina" class="qstudio-input block w-full mt-1" data-pmdf-onchange="onQuestaoDisciplinaChange()">
-                                <option value="">Selecione a disciplina</option>
-                            </select>
-                        </label>
-                        <label for="q-assunto" class="text-xs text-[#E5C158] font-semibold">Assunto / tópico
-                            <select id="q-assunto" class="qstudio-input block w-full mt-1" data-pmdf-onchange="onQuestaoAssuntoChange()" disabled>
-                                <option value="">Todos os assuntos</option>
-                            </select>
-                        </label>
-                    </div>
-                    <p id="q-catalog-status" class="text-xs text-slate-400" role="status" aria-live="polite">Carregando matriz do concurso de Praça PMDF...</p>
-                    <details class="qstudio-paste">
-                        <summary class="cursor-pointer text-xs font-semibold text-[#E5C158]">Ou colar diretamente uma lei / texto</summary>
-                        <label class="text-xs text-slate-300 block mt-3">Título do conteúdo
-                            <input id="q-inline-title" class="qstudio-input w-full mt-1" maxlength="160" placeholder="Ex.: Lei nº ... / Direito Administrativo">
-                        </label>
-                        <label class="text-xs text-slate-300 block mt-3">Texto para análise
-                            <textarea id="q-inline-text" rows="5" class="qstudio-input w-full mt-1" placeholder="Cole aqui artigos, parágrafos e demais disposições da lei."></textarea>
-                        </label>
-                        <button type="button" class="qstudio-secondary mt-2" data-pmdf-onclick="questionUseText()">Analisar este texto</button>
-                    </details>
-                </div>
-
-                <div class="qstudio-block space-y-3">
-                    <h3 class="font-bold text-white text-sm"><i data-lucide="layers-3" class="inline w-4 h-4 mr-1"></i> Modo de elaboração</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" role="group" aria-label="Escolha o mecanismo de elaboração">
-                        <button id="q-engine-local" type="button" class="qstudio-engine active text-left" aria-pressed="true" data-pmdf-onclick="setQuestionEngine('local')">
-                            <span class="qstudio-engine-symbol"><i data-lucide="list-checks"></i></span>
-                            <span><strong class="block text-sm">Tradicional</strong><span class="block text-xs text-slate-400 mt-1">Questões elaboradas por regras locais, sem baixar modelos.</span></span>
-                        </button>
-                        <button id="q-engine-neural" type="button" class="qstudio-engine text-left" aria-pressed="false" data-pmdf-onclick="setQuestionEngine('neural')">
-<span class="qstudio-engine-symbol"><i data-lucide="brain-circuit"></i></span>
-<span><strong class="block text-sm">Motor neural · local</strong><span class="block text-xs text-slate-400 mt-1">Rede 6–8–3 e regras textuais, sem GPU, API ou downloads pesados.</span></span>
-</button>
-                    </div>
-                </div>
-
-                <div class="qstudio-block space-y-3">
-                    <h3 class="font-bold text-white text-sm"><i data-lucide="sliders-horizontal" class="inline w-4 h-4 mr-1"></i> Configurações da prova</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                        <label class="text-xs text-[#E5C158] font-semibold">Tipo de questão
-                            <select id="q-format" class="qstudio-input w-full mt-1" data-pmdf-onchange="updateNeuralFormatUI()"><option value="CE">Certo / Errado</option><option value="MC">Múltipla escolha</option><option value="MIX">Misto (motor neural)</option></select>
-                        </label>
-                        <label class="text-xs text-[#E5C158] font-semibold">Nível
-                            <select id="q-level" class="qstudio-input w-full mt-1"><option value="iniciante">Iniciante</option><option value="intermediario" selected>Intermediário</option><option value="avancado">Avançado</option></select>
-                        </label>
-                        <label class="text-xs text-[#E5C158] font-semibold">Banca de referência
-                            <select id="q-board" class="qstudio-input w-full mt-1"><option>Cebraspe</option><option>FGV</option><option>FCC</option><option>Vunesp</option><option>Iades</option><option>Idecan</option><option>AOCP</option><option>Cesgranrio</option><option>Quadrix</option><option value="todas">Todas</option></select>
-                        </label>
-                    </div>
-                    <div id="q-local-settings" class="flex items-center gap-3 flex-wrap">
-                        <label class="text-xs font-semibold text-[#E5C158]">Questões por lote
-                            <select id="q-batch" class="qstudio-input block mt-1"><option value="15">15 questões</option><option value="30" selected>30 questões</option><option value="50">50 questões</option><option value="0">Todas as disponíveis</option></select>
-                        </label>
-                        <p class="text-xs text-slate-400 flex-1">O gerador tradicional usa trechos verificáveis e respeita as limitações da fonte.</p>
-                    </div>
-                    <div id="q-neural-settings" class="hidden space-y-3">
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-<label class="text-xs font-semibold text-[#E5C158]">Questões por lote
-<select id="q-neural-target" class="qstudio-input block w-full mt-1"><option value="15">15</option><option value="30">30</option><option value="50">50</option><option value="100" selected>100 (recomendado)</option><option value="150">150</option><option value="200">200</option><option value="250">250</option><option value="300">300</option></select></label>
-<label id="q-neural-command-wrap" class="text-xs font-semibold text-[#E5C158]">Comando de múltipla escolha
-<select id="q-neural-command" class="qstudio-input block w-full mt-1"><option value="correta">Assinale a CORRETA</option><option value="incorreta">Assinale a INCORRETA</option></select></label>
-</div>
-<p class="text-xs text-slate-400">Elaboração local ampliada: combina o motor neural com o banco de questões do próprio Método PMDF, respeitando o nível e a banca selecionados. Inclui comparação de dispositivos, alternativas comentadas e novos lotes de até 300 itens. A quantidade depende da fonte. Não utiliza IA generativa nem verifica a vigência das normas.</p>
-<button type="button" class="qstudio-secondary" data-pmdf-onclick="stopQuestionAI()">Interromper geração</button>
-<p id="q-neural-status" class="text-xs text-slate-300" role="status" aria-live="polite">Motor neural pronto.</p>
-</div>
-                </div>
-
-                <div class="qstudio-audit rounded-xl p-3 flex items-start gap-2">
-                    <i data-lucide="shield-check" class="w-5 h-5 shrink-0 text-emerald-400"></i>
-                    <div><p class="text-sm font-bold text-white">Auditoria de questões</p><p class="text-xs text-slate-400 mt-1">Verificação de estrutura, cinco alternativas distintas e rastreabilidade à fonte. Confira gabaritos e vigência jurídica: o motor neural não compreende normas como uma IA generativa.</p></div>
-                </div>
-
-                <div class="pmdf-question-actions"><div class="pmdf-primary-actions">
-                    <button type="button" id="q-generate-button" data-pmdf-onclick="startQuestions()" class="qstudio-primary text-sm font-extrabold">Gerar e iniciar questões</button>
-                    <button type="button" id="q-next-button" data-pmdf-onclick="startQuestions(true)" class="qstudio-secondary">Próximo lote inédito</button>
-                </div><details id="q-extra-actions" class="pmdf-more-actions"><summary>Outras ações <small>Salvar · Exportar · Filtros · Erros</small></summary><div class="pmdf-extra-actions">
-<button type="button" id="q-neural-save" data-pmdf-onclick="saveNeuralQuestions()" class="qstudio-secondary hidden">Salvar lote no Supabase</button>
-<button type="button" id="q-neural-json" data-pmdf-onclick="exportNeuralQuestions()" class="qstudio-secondary hidden">Exportar JSON</button>
-                    <button type="button" data-pmdf-onclick="resetQuestionCycle()" class="qstudio-secondary">Reiniciar cobertura</button>
-                    <button type="button" data-pmdf-onclick="clearQuestionFilters()" class="qstudio-secondary">Limpar filtros</button>
-                    
-                </div></details></div>
-                <p id="question-progress-summary" class="text-xs text-[#E5C158]" aria-live="polite"></p>
-                <p id="q-status" class="text-sm text-slate-400" role="status" aria-live="polite"></p>
-                <p id="q-coverage" class="text-xs text-[#E5C158]" role="status" aria-live="polite"></p>
-            </div>
-
-            <details id="auto-questions-section" class="pmdf-more-actions"><summary>📚 Provas anteriores e gabaritos <small>Importação opcional</small></summary><div class="pmdf-import-body">
-                <p class="text-xs text-slate-400">O gerador utiliza o material estudado e não consulta automaticamente bases externas. Para treinar com questões reais, importe a prova e o gabarito; confira a autoria, a licença e a fundamentação.</p>
-                <p id="research-status" class="text-xs text-slate-300" role="status" aria-live="polite">Aguardando início de treino.</p>
-                <details><summary class="cursor-pointer text-xs text-[#E5C158]">Consultar links e fontes de provas</summary><div id="research-results" class="research-results space-y-2 mt-2"></div></details>
-                <div class="flex flex-wrap gap-3">
-                    <label class="cursor-pointer px-3.5 py-2.5 rounded-xl bg-[#0E1B33] border border-[#334155] text-slate-100 text-xs font-semibold">📎 Importar prova (PDF/TXT)<input type="file" accept=".pdf,.txt,application/pdf,text/plain" class="hidden" data-pmdf-onchange="importOfficialExamFile(this)"></label>
-                    <label class="cursor-pointer px-3.5 py-2.5 rounded-xl bg-[#0E1B33] border border-[#334155] text-slate-100 text-xs font-semibold">✓ Importar gabarito (TXT)<input type="file" accept=".txt,text/plain" class="hidden" data-pmdf-onchange="importOfficialAnswerFile(this)"></label>
-                </div>
-                <label class="block text-xs font-semibold text-[#E5C158]">Prova correspondente ao gabarito
-                    <select id="exam-answer-source" class="block w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="">Importe uma prova primeiro</option></select>
-                </label>
-                <p class="text-xs text-slate-400">Selecione a prova correta antes de anexar o gabarito. O arquivo TXT deve ter uma resposta por linha, por exemplo: 1 A, 2 C, 3 Errado. O sistema não mistura gabaritos de provas diferentes.</p>
-            </div></details>
-            <div id="q-panel" class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 hidden" aria-live="polite"></div>
-        </section>
-        <section id="tab-anki" role="tabpanel" aria-labelledby="tab-btn-anki" class="hidden space-y-5" aria-label="Flashcards com repetição espaçada">
-            <div class="anki-visual-config bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
-                <header class="anki-visual-intro"><div class="anki-visual-intro-content"><span class="anki-visual-intro-kicker">✦ MÉTODO PMDF · MEMORIZAÇÃO ESTRATÉGICA</span><h2>Flashcards <em>ANKI</em></h2><p>Estude o acervo ANKI integrado de 2.624 cartões comentados. Filtre por disciplina e assunto, revele o gabarito e programe as próximas revisões conforme seu desempenho.</p><div class="anki-visual-intro-pills"><span>2.624 cartões integrados</span><span>Revisão espaçada</span><span>Progresso preservado</span></div></div><div class="anki-visual-intro-mark" aria-hidden="true">✦</div></header>
-                <!-- Fonte única: o banco ANKI integrado. O seletor interno mantém compatibilidade com o histórico sem oferecer modelos alternativos. -->
-                <select id="anki-source" class="hidden" hidden aria-hidden="true" tabindex="-1"><option value="cfo-gst" selected>ANKI</option></select>
-                <div id="anki-cfo-controls" class="pmdf-cfo-import-panel" aria-label="Acervo de flashcards ANKI">
-                    <div class="pmdf-cfo-import-head"><strong>ANKI</strong><span>2.624 cartões integrados · Certo/Errado comentado por disciplina e assunto</span></div>
-                    <div class="pmdf-cfo-import-grid">
-                        <label>Disciplina
-                            <select id="anki-cfo-disciplina" aria-label="Filtrar disciplina ANKI"><option value="">Todas as disciplinas</option></select>
-                        </label>
-                        <label>Assunto
-                            <select id="anki-cfo-assunto" aria-label="Filtrar assunto ANKI"><option value="">Todos os assuntos</option></select>
-                        </label>
-                    </div>
-                    <p id="anki-cfo-status" role="status" aria-live="polite">Carregando o banco ANKI integrado...</p>
-                    <p class="pmdf-cfo-import-note">Os 2.624 cartões estão disponíveis automaticamente, sem envio de arquivos. Enunciados e comentários foram preservados, exceto correções documentadas. A maioria não foi revalidada individualmente: confira a legislação e a jurisprudência atuais. O progresso Leitner é salvo neste navegador.</p>
-                </div>
-                <div class="pmdf-anki-fields grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <label class="text-xs text-[#E5C158] font-semibold">Tipo de revisão
-                        <select id="anki-mode" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="due">Vencidos e novos</option><option value="all">Todos (treino livre)</option></select>
-                    </label>
-                    <label class="text-xs text-[#E5C158] font-semibold">Cartões por sessão
-                        <select id="anki-batch-size" class="w-full mt-1 rounded-xl p-2.5 bg-[#040912] text-slate-100 border border-[#334155]"><option value="25">25</option><option value="50" selected>50</option><option value="100">100</option><option value="200">200</option><option value="all">Todos (pode ser longo)</option></select>
-                    </label>
-                </div>
-                <div class="pmdf-anki-primary-actions flex gap-2 flex-wrap items-center">
-                    <button type="button" id="anki-start" data-pmdf-onclick="startAnki()" class="px-5 py-2.5 rounded-xl bg-[#D4AF37] text-[#050B16] font-extrabold">Iniciar revisão ANKI</button>
-                    <button type="button" id="anki-stop" data-pmdf-onclick="stopAnkiGeneration()" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs hidden">Interromper geração</button>
-                    <button type="button" data-pmdf-onclick="clearAnkiFilters()" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">↺ Limpar filtros</button>
-                </div>
-                <details class="pmdf-anki-export-details">
-                    <summary>Exportar baralho para Anki <span aria-hidden="true">⌄</span></summary>
-                    <div class="pmdf-anki-export-options"><button type="button" id="anki-export-csv" data-pmdf-onclick="exportAnkiCards('csv')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Exportar CSV (Anki)</button>
-                    <button type="button" id="anki-export-tsv" data-pmdf-onclick="exportAnkiCards('tsv')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Exportar TSV</button>
-                    <button type="button" id="anki-export-basic" data-pmdf-onclick="exportAnkiDeck('basic')" class="px-3 py-2 rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-200 font-semibold text-xs">Anki · Cartões comentados (.txt)</button>
-                
-                    </div>
-                </details>
-                <details class="pmdf-anki-method-help"><summary>Como funcionam os flashcards e a repetição espaçada</summary>
-                  <p>O acervo ANKI já está integrado e pode ser filtrado por disciplina e assunto. Escolha os cartões vencidos e novos ou um treino livre, revele o comentário e marque a dificuldade para agendar a próxima revisão pelo sistema Leitner (não FSRS). Confira a legislação e a jurisprudência vigentes.</p>
-                </details>
-                <p id="anki-generation-status" class="text-xs text-[#E5C158]" role="status" aria-live="polite"></p>
-                <details id="anki-coverage-details" class="rounded-xl border border-[#334155] p-3">
-                   <summary class="text-xs font-bold text-[#E5C158] cursor-pointer">Relatório do acervo ANKI</summary>
-                   <div id="anki-coverage" class="text-xs text-slate-300 mt-2" role="status" aria-live="polite">Inicie uma revisão para consultar o inventário do acervo.</div>
-                </details>
-                <p id="anki-status" class="text-sm text-slate-400" role="status" aria-live="polite"></p>
-            </div>
-            <div id="anki-panel" class="anki-illustrated-panel bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 hidden" aria-live="off"></div>
-        </section>
-        <section id="tab-resultados" hidden inert aria-hidden="true" role="tabpanel" aria-labelledby="tab-btn-resultados" class="hidden space-y-5" aria-label="Resultados de estudos">
-          <div class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 space-y-4">
-            <h2 class="font-bold text-white text-lg">📊 Meus resultados</h2>
-            <p class="text-xs text-slate-400">Histórico privado sincronizado com sua conta, incluindo questões respondidas, acertos, erros, redações e tempo por tema. Itens sem gabarito não entram no percentual.</p>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label class="text-[#E5C158] text-xs font-bold">Escolha o tema
-                <select id="results-topic" data-pmdf-onchange="onResultsTopicChange()" class="w-full mt-1 bg-[#040912] border border-[#334155] text-slate-100 rounded-xl p-3"><option value="">Selecione um tema</option></select>
-              </label>
-
-            </div>
-            <div id="results-overview" class="text-sm text-slate-300" aria-live="polite"></div>
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-               <div class="lg:col-span-9 min-w-0"><div id="results-chart" class="rounded-xl border border-[#334155] bg-[#071020] p-3" role="img" aria-label="Gráfico de desempenho"></div></div>
-               <aside class="lg:col-span-3 rounded-xl border border-[#334155] bg-[#071020] p-4 space-y-3"><h3 class="font-bold text-[#E5C158]">⏱ Tempo nas questões</h3><div id="results-time" class="text-sm text-slate-300"></div></aside>
-            </div>
-            <div id="results-rows" class="overflow-auto"></div>
-          </div>
-        </section>
-        <div id="tab-redacao" role="tabpanel" aria-labelledby="tab-btn-redacao" class="hidden space-y-6">
-            <section class="bg-[#0A1426] border border-[#172642] rounded-2xl p-5 sm:p-6 shadow-xl no-print space-y-4">
-                <div>
-                    <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2"><i data-lucide="pen-line" class="w-5 h-5 text-[#E5C158]"></i>Correção de Redação — Padrão CEBRASPE (CFP)</h2>
-                    <p class="text-xs sm:text-sm text-slate-400">Cole o tema e o texto. Correção didática estimada por regras locais (não oficial): NC, NE, TL, NPD, feedback e sugestões. Confira os critérios do edital vigente.</p>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
-                    <div class="md:col-span-9">
-                        <label for="essay-theme" class="block text-xs font-semibold uppercase tracking-wider text-[#E5C158] mb-1.5">Tema *</label>
-                        <input id="essay-theme" type="text" placeholder="Ex: O uso diferenciado da força e a proteção dos direitos humanos na atividade policial" class="w-full px-4 py-2.5 bg-[#040912] border border-[#1E2E4F] rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#D4AF37]">
-                    </div>
-                    <div class="md:col-span-3">
-                        <label for="essay-lines" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Nº de linhas (TL)</label>
-                        <div class="flex gap-2"><input id="essay-lines" type="number" min="1" max="60" value="" placeholder="Auto (~12/linha)" class="w-full px-3 py-2.5 bg-[#040912] border border-[#1E2E4F] rounded-xl text-sm text-white focus:outline-none focus:border-[#D4AF37]"><button data-pmdf-onclick="estimateLines()" title="Estimar pelo nº de palavras (~12 por linha manuscrita)" class="px-3 rounded-xl bg-[#0E1B33] hover:bg-[#162646] border border-[#1E2E4F] text-xs text-slate-200">Estimar</button></div>
-                    </div>
-                    <div class="md:col-span-12">
-                        <label for="essay-motiv" class="block text-xs font-semibold uppercase tracking-wider text-[#E5C158] mb-1.5">Texto motivador e tópicos exigidos pela banca</label>
-                        <textarea id="essay-motiv" rows="5" placeholder="Cole o texto motivador e os tópicos do comando da prova (ou envie um arquivo abaixo)..." class="w-full px-4 py-3 bg-[#040912] border border-[#1E2E4F] rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#D4AF37] leading-relaxed"></textarea>
-                        <div class="flex flex-wrap items-center gap-3 mt-2"><label class="px-3.5 py-2 rounded-xl bg-[#0E1B33] hover:bg-[#162646] border border-[#1E2E4F] text-xs font-semibold text-slate-200 cursor-pointer">📎 Enviar PDF / DOCX / TXT<input type="file" accept=".pdf,.docx,.txt" class="hidden" data-pmdf-onchange="onMotivFile(this)"></label><span id="motiv-status" class="text-xs text-emerald-300"></span></div>
-                    </div>
-                    <div class="md:col-span-12">
-                        <label for="essay-text" class="block text-xs font-semibold uppercase tracking-wider text-[#E5C158] mb-1.5">Redação do candidato *</label>
-                        <textarea id="essay-text" rows="14" data-pmdf-oninput="essayLive()" placeholder="Cole aqui o texto (4 parágrafos, impessoal, com leis citadas nominalmente)..." class="w-full px-4 py-3 bg-[#040912] border border-[#1E2E4F] rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#D4AF37] leading-relaxed"></textarea>
-                        <div id="essay-live" class="flex flex-wrap gap-2 mt-2 text-xs"></div>
-                    </div>
-                </div>
-                <details class="bg-[#040912]/60 border border-[#172642] rounded-xl p-3">
-                    <summary class="text-sm font-semibold text-slate-200 cursor-pointer">Calculadora NPD = NC − (4 × NE ÷ TL)</summary>
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3 items-end">
-                        <label class="text-xs text-slate-400">NC (0–20)<input id="npd-nc" type="number" step="0.01" data-pmdf-oninput="calcNPD()" class="mt-1 w-full px-3 py-2 bg-[#040912] border border-[#1E2E4F] rounded-lg text-white text-sm"></label>
-                        <label class="text-xs text-slate-400">NE (erros)<input id="npd-ne" type="number" data-pmdf-oninput="calcNPD()" class="mt-1 w-full px-3 py-2 bg-[#040912] border border-[#1E2E4F] rounded-lg text-white text-sm"></label>
-                        <label class="text-xs text-slate-400">TL (linhas)<input id="npd-tl" type="number" data-pmdf-oninput="calcNPD()" class="mt-1 w-full px-3 py-2 bg-[#040912] border border-[#1E2E4F] rounded-lg text-white text-sm"></label>
-                        <div id="npd-out" class="text-sm font-bold text-[#E5C158]">NPD: —</div>
-                    </div>
-                </details>
-                <label class="flex items-start gap-2 text-xs text-slate-400"><input id="essay-lt" type="checkbox" class="mt-0.5 accent-[#D4AF37]"><span>Opcional: consultar o LanguageTool online (serviço independente de terceiro). Ao ativar, você autoriza o envio da redação ao serviço externo; desmarcado, o processamento é local. A disponibilidade do serviço não é garantida.</span></label>
-                <div class="pt-4 border-t border-[#172642] flex flex-wrap justify-between gap-3">
-                    
-                    <button id="essay-btn" data-pmdf-onclick="correctEssay()" class="px-6 py-2.5 rounded-xl font-extrabold text-sm flex items-center gap-2.5 transition active:scale-95 bg-gradient-to-r from-[#D4AF37] via-[#E5C158] to-[#C59B27] text-[#050B16] font-extrabold shadow-lg shadow-[#D4AF37]/15 hover:brightness-110"><i data-lucide="check-check" class="w-4 h-4"></i><span>Corrigir Redação</span></button>
-                    <div id="essay-loading" class="hidden w-full text-sm text-[#E5C158] animate-pulse">⏳ Analisando a redação no padrão Cebraspe...</div>
-                </div>
-            </section>
-            <div class="no-print flex gap-2 flex-wrap"><button type="button" data-pmdf-onclick="showEssayHistory()" class="rounded-xl border border-[#334155] bg-[#0E1B33] text-slate-100 px-4 py-2.5 font-semibold">📚 Histórico de redações corrigidas</button></div>
-            <section id="essay-result" class="hidden bg-[#0A1426] border border-[#172642] rounded-2xl p-6 sm:p-8 shadow-2xl">
-                <div class="no-print flex flex-wrap gap-2 mb-4">
-                    <button data-pmdf-onclick="copyEssayResult()" class="px-3.5 py-2 rounded-xl bg-[#0E1B33] hover:bg-[#162646] text-slate-100 text-xs font-semibold border border-[#1E2E4F]">Copiar correção</button>
-                    <button data-pmdf-onclick="exportEssayDoc()" class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold">Baixar (.doc)</button>
-                    <button data-pmdf-onclick="exportEssayPdfA4()" class="px-3.5 py-2 rounded-xl bg-[#0E1B33] hover:bg-[#162646] text-slate-300 text-xs border border-[#1E2E4F]">PDF / Imprimir</button>
-                </div>
-                <div id="essay-out" class="essay-out"></div>
-            </section>
-        </div>
-
-    </main>
-
-    <!-- Rodapé -->
-    <footer class="border-t border-[#172642]/80 bg-[#040912] py-5 mt-12 no-print">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
-            <p>Método PMDF · Plataforma gratuita de estudos para carreiras policiais</p>
-            <p>Dica: Ao baixar o arquivo <strong>.doc</strong>, basta arrastá-lo para o seu Google Drive para editá-lo no Google Docs.</p>
-        </div>
-    </footer>
-
-
-    <script defer src="assets/pmdf-catalogo-praca.js?v=20261109-praca-v1"></script>
-    <script defer src="assets/pmdf-questoes-programaticas.js?v=20261110-editorial-v2"></script>
-    <script defer src="assets/pmdf-guides.js?v=20261104-arch-v2"></script>
-    <script defer src="assets/pmdf-neural-questions.js?v=20261110-banco-v1"></script>
-    <script defer src="assets/pmdf-neural-flashcards.js?v=20261104-anki-quality-v4"></script>
-    <script defer src="assets/pmdf-flashcards-perguntas.js?v=20261116-classic-v4"></script>
-    <script defer src="assets/pmdf-cloze-strategic.js?v=20261116-cloze-v3"></script>
-        <script defer src="assets/pmdf-visual-engine.js?v=20261115-editorial-v4"></script>
-    <script defer src="assets/pmdf-summary-editorial.js?v=20261116-editorial-v2"></script>
-    <script defer src="assets/pmdf-infographic.js?v=20261117-info-v1"></script>
-        <script defer src="assets/pmdf-anki-cfo-gst.js?v=20261117-anki-editorial-v3"></script>
-    <script defer src="assets/pmdf-app.js?v=20261117-anki-editorial-v3"></script>
-    <script defer src="assets/pmdf-acervo-interativo.js?v=20261116-acervo-v2"></script>
+    <section id="review-section" aria-labelledby="review-heading" hidden>
+      <div class="section-heading"><span class="step">03</span><div><h2 id="review-heading" tabindex="-1">Hora de recordar</h2><p>Tente responder antes de revelar. Pular um cartão não altera sua avaliação.</p></div></div>
+      <div id="anki-panel" class="panel anki-illustrated-panel"></div>
+      <p class="keyboard-help">Atalhos: espaço para revelar · 1–4 para avaliar · ← e → para navegar.</p>
+    </section>
+    <noscript><p class="panel">Ative o JavaScript do navegador para criar e revisar seus flashcards.</p></noscript>
+  </main>
+  <footer class="site-footer"><span>MÉTODO PMDF · FLASHCARDS</span><span>Um conceito de cada vez.</span></footer>
+  <p id="toast" role="status" aria-live="polite" hidden></p>
 </body>
 </html>
-

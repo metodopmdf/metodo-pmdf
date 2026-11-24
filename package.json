@@ -1,0 +1,12 @@
+{
+  "name": "metodo-pmdf-flashcards",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Criação independente de flashcards a partir do Método PMDF",
+  "scripts": {
+    "test": "node tests/neural-flashcards.test.cjs && node tests/flashcard-modes.test.cjs && node tests/flashcard-io.test.cjs",
+    "test:browser": "node tests/standalone-browser.mjs"
+  },
+  "engines": { "node": ">=22" },
+  "devDependencies": { "playwright": "1.57.0" }
+}

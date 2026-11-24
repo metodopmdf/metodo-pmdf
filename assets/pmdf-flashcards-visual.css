@@ -1,6 +1,5 @@
 /* Método PMDF · Flashcards ilustrados · revisão 2026-11
    Não modifica JS nem os dados Anki/Leitner. Paleta autônoma com contraste alto. */
-body #tab-btn-questoes,body #tab-questoes{display:none!important}
 body #tab-anki .anki-visual-config{
  border-radius:20px!important;padding:clamp(14px,2.5vw,28px)!important;
  border:1px solid var(--border-subtle)!important;
@@ -259,91 +258,10 @@ body #tab-anki #anki-panel .anki-finish p{color:#29485e!important}
  }
 }
 @media print{
- body #tab-btn-questoes,body #tab-questoes{display:none!important}
- body #tab-anki #anki-panel .anki-visual-card{break-inside:avoid-page;box-shadow:none!important}
+  body #tab-anki #anki-panel .anki-visual-card{break-inside:avoid-page;box-shadow:none!important}
  body #tab-anki #anki-panel .anki-visual-banner{
   background:#e9f1f5!important;color:#1a3548!important;print-color-adjust:exact!important;
  }
  body #tab-anki #anki-panel .anki-visual-banner :is(span,strong,p){color:#1a3548!important}
  body #tab-anki #anki-panel .anki-study-controls{display:none!important}
-}
-
-
-/* Flashcards no resumo em formato de cartões: mesmo vocabulário visual do Anki. */
-body #printable-area .pmdf-report-flash .pmdf-flash-summary-card{
- display:flex!important;flex-direction:column!important;gap:8px;
- align-items:stretch;justify-content:flex-start;
- background:#fffdfa!important;color:#22384b!important;border:1px solid #d6e2ea!important;
- border-radius:15px!important;box-shadow:0 4px 15px rgba(20,48,70,.07)!important;
- padding:16px!important;text-align:left;overflow-wrap:anywhere;
-}
-body #printable-area .pmdf-report-flash .pmdf-flash-summary-art{
- display:grid;place-items:center;width:100%;height:112px;
- border-radius:11px;background:#edf3f0!important;border:1px solid #d9e7df;
- padding:8px;margin-bottom:4px;flex:0 0 auto;
-}
-body #printable-area .pmdf-report-flash .pmdf-flash-summary-art svg{
- width:auto;max-height:102px;max-width:118px;display:block;
-}
-body #printable-area .pmdf-report-flash .pmdf-flash-summary-card .g-tag{
- display:inline-block;align-self:flex-start;max-width:100%;
- background:#e8f4ee!important;color:#20543d!important;border-radius:6px;
- padding:4px 8px!important;font-size:11px!important;white-space:normal;
-}
-body #printable-area .pmdf-report-flash .pmdf-flash-summary-card .front,
-body #printable-area .pmdf-report-flash .pmdf-flash-summary-card .back{
- color:#233c4d!important;overflow-wrap:anywhere;
-}
-body #printable-area .pmdf-report-flash .pmdf-flash-summary-card .front>b,
-body #printable-area .pmdf-report-flash .pmdf-flash-summary-card .back>b{
- color:#14605a!important;font-size:11px!important;letter-spacing:.08em;
-}
-body #printable-area .pmdf-report-flash .pmdf-flash-summary-card p{
- color:#22384b!important;font-size:14px!important;line-height:1.7!important;
- margin:4px 0!important;white-space:normal!important;
-}
-body #printable-area .pmdf-report-flash .pmdf-flash-summary-card.flipped{
- border-color:#a9d0c0!important;background:#f5fbf6!important;
-}
-body #printable-area .pmdf-report-flash .pmdf-flash-summary-card:focus-visible{
- outline:3px solid #bf943f!important;outline-offset:3px!important;
-}
-/* Modal legado de revisão: frente/verso ilustrados com texto completo. */
-.pmdf-flash-modal{
- color:#22384b!important;background:#fffdfa!important;
- border:1px solid #d5e2e8!important;border-radius:15px!important;overflow:hidden;
-}
-.pmdf-flash-modal h3,.pmdf-flash-modal h3~p{color:#22384b!important;padding:12px 16px}
-.pmdf-flash-modal-head{
- display:flex;justify-content:space-between;align-items:center;gap:9px;flex-wrap:wrap;
- background:#233e56!important;color:#fff!important;padding:12px 16px;
-}
-.pmdf-flash-modal-head span{
- color:#fff!important;font-size:11px;font-weight:800;letter-spacing:.04em;
-}
-.pmdf-flash-modal-grid{display:grid;grid-template-columns:132px minmax(0,1fr);gap:15px;padding:15px}
-.pmdf-flash-modal-art{
- display:grid;place-items:center;background:#edf4ef!important;border-radius:11px;
- padding:8px;min-width:0;
-}
-.pmdf-flash-modal-art svg{width:100%;max-width:116px;max-height:145px}
-.pmdf-flash-modal-copy{min-width:0;align-self:center}
-.pmdf-flash-modal-copy b{font-size:11px;color:#1a6c5d!important;letter-spacing:.08em}
-.pmdf-flash-modal-copy p{
- color:#253c4f!important;font-size:clamp(16px,2.2vw,22px)!important;
- font-weight:660!important;line-height:1.65!important;
- margin:8px 0 0!important;overflow-wrap:anywhere;white-space:pre-line;
-}
-@media(max-width:430px){
- .pmdf-flash-modal-grid{grid-template-columns:1fr}
- .pmdf-flash-modal-art svg{max-height:100px}
-}
-@media print{
- body #printable-area .pmdf-report-flash .pmdf-flash-summary-card{
-  box-shadow:none!important;break-inside:avoid-page!important;
- }
- body #printable-area .pmdf-report-flash .pmdf-flash-summary-card .front,
- body #printable-area .pmdf-report-flash .pmdf-flash-summary-card .back{
-  display:block!important;color:#22384b!important;
- }
 }

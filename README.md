@@ -1,63 +1,159 @@
-# Método PMDF — Plataforma gratuita de estudos policiais
+# Método PMDF — Criador de Flashcards
 
-Aplicação pública de preparação para concursos policiais com mapeamento de normas, questões comentadas, flashcards Anki, mapas mentais, redação e acompanhamento de resultados.
+Versão independente da ferramenta de criação de flashcards extraída de
+[metodopmdf/metodo-pmdf](https://github.com/metodopmdf/metodo-pmdf), a partir do
+commit `08bdb149428459583d170287feac5960519cffa9`.
 
-**Site:** https://metodopmdf.github.io/metodo-pmdf/
+Esta versão reúne **criação, revisão e exportação de flashcards**. Os motores de
+geração e os estilos dos cartões foram reaproveitados do projeto original, com
+um controlador próprio e somente suas dependências necessárias.
 
-## Arquitetura
+## Usar
 
-- `index.html`: estrutura HTML, SEO, acessibilidade e CSP.
-- `assets/pmdf-tailwind.css` e `assets/pmdf-components.css`: CSS de produção, layout responsivo e temas.
-- `assets/pmdf-guides.js`: catálogo jurídico cacheável.
-- `assets/pmdf-app.js`: recursos, navegação, armazenamento, autenticação, exportação e UI.
-- `assets/pmdf-neural-questions.js` e `assets/pmdf-neural-flashcards.js`: motores locais de exercícios e revisão.
+Não é necessário compilar, cadastrar uma conta ou configurar chaves de API.
 
-**Importante:** os motores locais não são LLMs generativos e não garantem atualização normativa automática. Confira a redação legal vigente antes de usar o conteúdo como referência jurídica.
+1. Baixe este branch ou clone o repositório:
 
-## Monetização (implantação controlada)
+   ```bash
+   git clone --branch flashcards-standalone-20261124 --single-branch https://github.com/metodopmdf/metodo-pmdf.git flashcards
+   cd flashcards
+   ```
 
-- Loja de arquivos avulsos: `commerce/` (checkout Kiwify e entrega pelo provedor; catálogo inicialmente inativo). Documentação: [Loja digital automática](docs/implantacao-loja-automatica.md).
-- Integração avançada com contas: `comercial.html` + Supabase + Hotmart (checkout autenticado, webhooks, controle de acesso). Documentação: [Monetização Hotmart](docs/monetizacao-hotmart-2026-11-23.md).
-- Nenhum produto é ativado automaticamente sem conta de produtor, aprovação editorial, checkout real, termos comerciais e compra validada. Não coloque conteúdo pago ou chaves privilegiadas no repositório público.
-- Netlify publica `commerce/` na configuração padrão; a versão Hotmart exige deploy próprio adequado quando for ativada.
+2. Sirva a pasta com um servidor estático. Por exemplo, com Python:
 
-## Testes
+   ```bash
+   python -m http.server 8000
+   ```
 
-Requer Node.js 22:
+3. Abra [http://localhost:8000](http://localhost:8000).
+4. Cole um texto ou importe um arquivo, escolha o formato e clique em **Criar
+   flashcards**. O botão **Usar exemplo** carrega um regulamento fictício.
+5. Inicie uma revisão ou baixe o baralho.
+
+O fluxo textual usa apenas arquivos locais da aplicação. Para ler PDF ou DOCX,
+o navegador baixa o leitor correspondente de `cdnjs.cloudflare.com` quando
+necessário. Os documentos são processados no navegador.
+
+## Funcionalidades
+
+- Texto colado e arquivos TXT, Markdown, JSON, PDF textual e DOCX.
+- Perguntas e respostas, lacunas Cloze ou formato misto.
+- Referência ao trecho de origem, dicas e observações herdadas dos motores.
+- Cancelamento sem substituir o baralho anterior.
+- Revisão frente/verso, navegação e quatro avaliações: Errei, Difícil, Bom e Fácil.
+- Caixas Leitner com os intervalos originais de 1, 3, 7 e 14 dias; avaliação
+  Difícil agenda a revisão para 12 horas e Errei deixa o cartão disponível.
+- Seleção de cartões novos/vencidos ou treino livre, com lotes de 25, 50, 100 ou
+  todos. Lotes de treino livre percorrem o baralho em sequência.
+- Recuperação do último baralho, rascunho, sessão e progresso neste navegador.
+- Exportação para Anki Basic/Cloze, planilhas CSV/TSV e backup JSON dos cartões.
+- Interface responsiva, tema claro/escuro e navegação por teclado.
+
+### Importação e exportação
+
+| Formato | Uso |
+| --- | --- |
+| TXT / MD | Texto-base para geração |
+| PDF / DOCX | Extração textual local; leitor baixado sob demanda |
+| JSON de guia | Estrutura original com `lawName` e `articlesMapping` |
+| JSON com `text` e `title` | Texto-base com título opcional |
+| JSON `PMDF-FLASHCARDS-v1` | Backup dos cartões, reaberto sem geração |
+| Anki Basic `.txt` | Somente cartões sem lacunas |
+| Anki Cloze `.txt` | Somente cartões com marcação `{{c1::...}}` |
+| CSV / TSV | Todos os cartões, incluindo fonte e tags |
+
+No Anki, importe os arquivos Basic e Cloze separadamente. Os arquivos incluem
+cabeçalhos com separador de tabulação, tipo de nota, colunas, baralho e
+`#html:false`; confirme o tipo correspondente na sua instalação do Anki.
+CSV/TSV usam escape de aspas e proteção contra fórmulas de planilha.
+
+O backup JSON guarda os cartões e seus metadados. **O agendamento e o progresso
+da revisão permanecem no navegador e não fazem parte desse backup.**
+
+Limites de entrada: TXT/MD de até 2 MiB; JSON/PDF/DOCX de até 12 MiB; texto
+extraído de até 2 Mi caracteres; PDF de até 80 páginas. Os limites produzem uma
+mensagem explícita, sem cortar o restante do arquivo silenciosamente.
+PDFs protegidos ou páginas sem texto extraível precisam de uma versão textual.
+Não há OCR nesta extração.
+
+### Como funciona a geração
+
+O código original reconhece padrões em português: definições, competências,
+prazos, condições e outras relações explícitas no texto. Um pequeno
+classificador local atribui escores de apoio.
+
+**Não é um modelo generativo nem uma API de IA.** A ferramenta não cria fatos
+ausentes da fonte e não garante cartões para todos os trechos. A cobertura
+mostrada na interface permite conferir quantos trechos produziram cartões.
+Revise o conteúdo gerado, especialmente a redação vigente de material jurídico.
+
+## O que foi extraído
+
+| Arquivo | Responsabilidade |
+| --- | --- |
+| `index.html` | Interface exclusiva de flashcards |
+| `assets/pmdf-flashcards-app.js` | Criação, estado, revisão, persistência e eventos |
+| `assets/pmdf-flashcard-classifier.js` | Classificador extraído do módulo compartilhado |
+| `assets/pmdf-neural-flashcards.js` | Motor original de lacunas, conceitos e contrastes |
+| `assets/pmdf-flashcards-perguntas.js` | Motor original de perguntas e seleção de formato |
+| `assets/pmdf-flashcard-io.js` | Entrada de arquivos, normalização e exportação |
+| `assets/pmdf-flashcards-standalone.css` | Estrutura e temas da aplicação independente |
+| `assets/pmdf-flashcards-visual.css` | Estilos originais dos cartões, com regras alheias removidas |
+| `assets/pmdf-flashcards-questions.css` | Apresentação original das perguntas de flashcards |
+
+Foram retirados da versão isolada os módulos de questões e simulados, mapeamento
+e resumos, mapas mentais, redação, infográficos, acervos prontos, loja, pagamentos,
+autenticação, funções de backend, migrações e workflows correspondentes.
+`pmdf-flashcards-perguntas.js` contém **perguntas de flashcards**, não a ferramenta
+de questões de múltipla escolha.
+
+A dependência do gerador no módulo de questões foi substituída pelo classificador
+isolado, preservando a rede e os recursos originais. O modo Cloze foi corrigido
+para retornar somente lacunas, e o modo misto aproveita lacunas válidas mesmo
+quando o texto não produz perguntas estratégicas.
+
+## Dados e segurança
+
+Os arquivos são lidos localmente, e a aplicação não usa conta, banco remoto ou
+envio do material a APIs. O armazenamento usa chaves próprias; pode ler
+agendamentos antigos compatíveis no mesmo endereço, sem alterar as chaves do
+aplicativo original. Outro domínio, navegador ou dispositivo tem armazenamento
+separado. Se o navegador bloquear o armazenamento ou atingir sua capacidade,
+a interface avisa para exportar os cartões antes de fechar.
+
+Texto e metadados importados são escapados na apresentação, inclusive os trechos
+ao redor das lacunas. A política de conteúdo não permite handlers inline nem
+avaliação dinâmica; o leitor PDF também recebe `isEvalSupported: false`.
+
+## Verificar o código
+
+Requer Node.js 22 ou superior. Os testes de unidade não precisam de dependências:
 
 ```bash
-node tests/markup-audit.mjs
-node tests/smoke.mjs
-node tests/neural-questions.test.cjs
-node tests/neural-flashcards.test.cjs
+npm test
 ```
 
-O GitHub Actions executa também Playwright/Chromium e axe-core em desktop/mobile, temas claro/escuro, com teste de CSP e relatórios de desempenho. Consulte `.github/workflows/qa.yml`.
+Para os testes reais de navegador:
 
-## Segurança e manutenção
+```bash
+npm ci
+npx playwright install chromium
+npm run test:browser
+```
 
-Autenticação e dados são protegidos pelas regras do serviço de backend (Supabase); nenhuma credencial privada deve ser disponibilizada no JavaScript público. A versão estática usa uma CSP que bloqueia scripts inline e eventos delegados, preservando a possibilidade de impressão A4. Consulte [o relatório técnico da refatoração](docs/refatoracao-integral-2026-11-04.md) para decisões, limitações e estratégia de testes.
+A suíte inicia seu próprio servidor local, testa o fluxo em desktop e celular e
+salva capturas em `test-artifacts/`. `PMDF_TEST_URL` permite apontar para outro
+servidor; `PMDF_CHROMIUM_PATH` permite escolher um Chromium instalado.
 
-## Catálogo Praça PMDF (2026-11-09)
+O workflow `.github/workflows/qa.yml` executa esses testes no GitHub Actions.
+Ele não publica o site e não chama serviços de pagamento ou banco de dados.
 
-O módulo **Questões** dispõe de 15 disciplinas e 163 assuntos definidos em `assets/pmdf-catalogo-praca.js`; não contém **Administração Geral** no catálogo ativo e inclui **Noções de Primeiros Socorros** (8 tópicos).
+## Implantação independente
 
-**Para habilitar o banco no Supabase:** execute `supabase/migrations/20261109_catalogo_praca_pmdf.sql` no SQL Editor do seu projeto, após validar um backup. O catálogo funciona sem exigir questões pré-cadastradas, mas a consulta a questões classificadas requer a migração. Ela preserva o histórico antigo e as políticas RLS já existentes de `questoes`.
+A pasta pode ser publicada em qualquer hospedagem de arquivos estáticos.
+O `netlify.toml` aponta para a raiz e não exige build. Para GitHub Pages, use a
+raiz de um repositório/branch destinado a esta versão.
 
-Teste: `node tests/catalogo-praca.test.cjs`. Diagnóstico e testes: [QA Praça PMDF](docs/qa-praca-2026-11-09.md).
-
-## Banco público de questões (corrige PGRST205)
-
-Quando aparecer `Could not find the table 'public.questoes' in the schema cache`, a estrutura da API precisa ser instalada/atualizada no projeto Supabase, pois publicar o GitHub Pages não cria tabelas PostgreSQL.
-
-1. Faça backup e execute [`supabase/INSTALAR_BANCO_QUESTOES_COMPLETO.sql`](supabase/INSTALAR_BANCO_QUESTOES_COMPLETO.sql) no **SQL Editor** do projeto configurado no site. O script cria `public.questoes`, ativa RLS, instala o catálogo e recarrega o cache do PostgREST.
-2. Opcionalmente, execute [`supabase/seeds/EXEMPLOS_QUESTOES_PUBLICAS.sql`](supabase/seeds/EXEMPLOS_QUESTOES_PUBLICAS.sql) para testar quatro questões autorais publicadas (revisar antes).
-3. Em **Questões > Banco Praça PMDF**, selecione disciplina, assunto, formato e nível; só registros `publicada=true` aparecem aos candidatos.
-
-Passo a passo para criar, importar e revisar questões: [Banco público de questões](docs/banco-de-questoes-publico.md). A publicação deve ser administrativa; rascunhos gerados por candidatos não são publicados automaticamente.
-
-## Questões do edital, por matéria e assunto — sem Supabase
-
-O seletor de **Fonte do conteúdo → Questões por matéria e assunto · acervo local** habilita 163 questões autorais de Certo/Errado (uma por tópico, nas 15 disciplinas), mais 21 de múltipla escolha. Questões comentadas podem ser praticadas no navegador sem tabela `public.questoes`; o motor local também pode elaborar variações a partir das afirmações fundamentadas, com limitações explícitas e sem garantir atualização normativa. O banco público Supabase continua em modo independente.
-
-Veja [matriz de cobertura, instruções e fontes](docs/acervo-questoes-edital-praca-pmdf.md).
+O branch `flashcards-standalone-20261124` contém a extração. A versão original
+permanece no branch `main`; nenhuma migração, alteração de dados remotos ou
+publicação em produção é necessária para usar esta cópia.

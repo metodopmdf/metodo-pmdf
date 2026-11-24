@@ -3,18 +3,11 @@ const assert=require("node:assert/strict");
 const fs=require("node:fs");
 const path=require("node:path");
 const source=fs.readFileSync(path.join(__dirname,"..","assets","pmdf-neural-flashcards.js"),"utf8");
-const html=fs.readFileSync(path.join(__dirname,"..","index.html"),"utf8");
-const app=fs.readFileSync(path.join(__dirname,"..","assets","pmdf-app.js"),"utf8");
-new Function(source);
-assert.match(html,/pmdf-neural-flashcards\.js/);
-assert.doesNotMatch(html,/id="anki-generation-mode"/,'A aba ANKI não deve mostrar outros motores');
-assert.doesNotMatch(html,/id="anki-card-style"/,'A aba ANKI não deve mostrar formatos paralelos');
-assert.match(html,/<option value="cfo-gst" selected>ANKI<\/option>/);
-assert.match(app,/startAnkiAdvanced/);
-assert.match(app,/exportAnkiCards/);
-const fake={PMDFNeuralQuestions:{testModel:()=>({extrairFeatures:()=>[0.6],preverVetor:()=>({saida:[0.65]})})}};
-new Function("window",source)(fake);
-const api=fake.PMDFNeuralFlashcards;
+// Executa o motor extraído com seu classificador real, sem carregar questões.
+const browser={};
+new Function("window",fs.readFileSync(path.join(__dirname,"..","assets","pmdf-flashcard-classifier.js"),"utf8"))(browser);
+new Function("window",source)(browser);
+const api=browser.PMDFNeuralFlashcards;
 assert(api?.buildAsync&&api?.build,"API do motor de flashcards indisponível");
 const guide={lawName:"Regulamento fictício para auditoria",articlesMapping:{
  highIncidence:[
