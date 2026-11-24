@@ -174,6 +174,56 @@ try {
     report.push({device: device.name, generated: count, persistence: true, exports: ['json', 'basic', 'cloze'], escaped: true});
     await context.close();
   }
+  // A atualização deve recuperar somente a sessão local da conta identificada,
+  // mantendo os cartões, a posição da revisão e os agendamentos anteriores.
+  const legacyContext = await browser.newContext();
+  const legacyPage = await legacyContext.newPage();
+  const legacyErrors = [];
+  legacyPage.on('pageerror', error => legacyErrors.push(error.message));
+  await legacyPage.goto(target, {waitUntil: 'networkidle'});
+  const legacyCards = [
+    {id: 'legacy-first', front: 'Qual é a primeira etapa?', back: 'Preparar o material.', law: 'Material anterior'},
+    {id: 'legacy-second', front: 'Qual é a segunda etapa?', back: 'Revisar os cartões.', law: 'Material anterior'}
+  ];
+  const futureReview = Date.now() + 7 * 86400000;
+  const legacyPrefix = 'pmdf:account:11111111-1111-4111-8111-111111111111:';
+  const oldSession = JSON.stringify({version: 4, tab: 'anki', anki: {
+    cards: legacyCards, index: 1, back: true, ratings: {'0': 'good'}
+  }});
+  await legacyPage.evaluate(({cards, prefix, savedSession, due}) => {
+    localStorage.setItem('pmdf:supabase:session:v1', JSON.stringify({user: {id: '11111111-1111-4111-8111-111111111111'}}));
+    localStorage.setItem(prefix + 'pmdf:session:v4', savedSession);
+    localStorage.setItem(prefix + 'fc:legacy-first', '2');
+    localStorage.setItem(prefix + 'leitner:legacy-first', '3');
+    localStorage.setItem(prefix + 'leitnerDue:legacy-first', String(due));
+    localStorage.setItem('pmdf:account:22222222-2222-4222-8222-222222222222:pmdf:session:v4',
+      JSON.stringify({version: 4, anki: {cards: [{...cards[0], id: 'other-account', front: 'Outro perfil'}]}}));
+  }, {cards: legacyCards, prefix: legacyPrefix, savedSession: oldSession, due: futureReview});
+  await legacyPage.reload({waitUntil: 'networkidle'});
+  assert.equal(await deckSize(legacyPage), 2, 'Os cartões da sessão anterior devem ser recuperados');
+  assert((await legacyPage.locator('#anki-panel').innerText()).includes('Revisar os cartões.'),
+    'O verso e a posição da sessão antiga devem ser restaurados');
+  const recovered = await legacyPage.evaluate(() => JSON.parse(localStorage.getItem('pmdf:flashcards:standalone:v1')));
+  assert.deepEqual(recovered.cards.map(card => card.id), ['legacy-first', 'legacy-second']);
+  assert.equal(recovered.schedule['legacy-first'].box, 3);
+  assert.equal(recovered.schedule['legacy-first'].due, futureReview);
+  assert.equal(recovered.session.index, 1);
+  assert.equal(recovered.session.back, true);
+  assert.equal(recovered.session.ratings['0'], 'good');
+  assert.equal(await legacyPage.evaluate(key => localStorage.getItem(key), legacyPrefix + 'pmdf:session:v4'), oldSession,
+    'A recuperação não deve alterar a sessão original');
+  await legacyPage.selectOption('#anki-mode', 'due');
+  await legacyPage.click('#start-review');
+  assert.equal(await legacyPage.locator('#anki-panel .anki-question').innerText(), legacyCards[1].front,
+    'O cartão agendado para o futuro não deve aparecer entre os vencidos');
+  await legacyPage.reload({waitUntil: 'networkidle'});
+  assert.equal(await deckSize(legacyPage), 2);
+  assert.equal(await legacyPage.locator('#anki-panel .anki-question').innerText(), legacyCards[1].front,
+    'A nova sessão salva deve ter prioridade sobre a sessão legada');
+  assert.deepEqual(legacyErrors, []);
+  await legacyContext.close();
+  report.push({legacySession: true, schedule: true, accountIsolation: true});
+
   // Os leitores reais são exercitados com arquivos sintéticos: verifica também
   // carregamento da CDN, worker PDF e compatibilidade com a CSP da aplicação.
   const documentContext = await browser.newContext();

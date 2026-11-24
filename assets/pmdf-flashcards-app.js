@@ -48,6 +48,7 @@
       $('storage-status').dataset.error = 'false';
       $('storage-status').textContent = 'Baralho e progresso salvos neste navegador.';
     }
+    return saved;
   }
   function persistDraft() {
     clearTimeout(draftTimer);
@@ -326,8 +327,25 @@
       status('Não foi possível recuperar o texto em edição. Cole ou importe novamente o material.');
     }
     try {
-      const saved = JSON.parse(readStorage(KEY) || 'null');
-      if (saved?.version === 1 && saved.cards?.length) {
+      // Uma chave existente, mesmo corrompida, nunca é substituída pela migração.
+      const raw = localStorage.getItem(KEY);
+      let saved = null, migrated = null;
+      if (raw !== null) {
+        saved = JSON.parse(raw);
+        if (saved?.version !== 1 || !Array.isArray(saved.cards) || !saved.cards.length)
+          throw new Error('Baralho salvo inválido.');
+      } else {
+        const recovery = window.PMDFFlashcardMigration?.recover(
+          {getItem: key => localStorage.getItem(key)}, IO.validateCards);
+        if (recovery?.status === 'recovered') {
+          saved = recovery.state;
+          migrated = recovery;
+        } else if (recovery?.message) {
+          $('storage-status').dataset.error = 'true';
+          $('storage-status').textContent = recovery.message;
+        }
+      }
+      if (saved) {
         bank = IO.validateCards(saved.cards);
         deckTitle = typeof saved.title === 'string' ? saved.title : 'Meu baralho';
         report = saved.report && typeof saved.report === 'object' ? saved.report : null;
@@ -351,10 +369,15 @@
         }
         $('storage-status').textContent = 'Último baralho e progresso recuperados deste navegador.';
         $('review-status').textContent = session ? 'Sua última sessão foi recuperada.' : 'Baralho recuperado. Inicie uma revisão quando quiser.';
+        if (migrated) {
+          // A restauração em memória já terminou. Se a gravação falhar, os
+          // cartões continuam disponíveis para revisar e exportar nesta página.
+          if (persistDeck()) $('storage-status').textContent = migrated.message;
+        }
       }
     } catch (_) {
       $('storage-status').dataset.error = 'true';
-      $('storage-status').textContent = 'Não foi possível recuperar o baralho salvo. Importe um backup JSON ou crie um novo baralho.';
+      $('storage-status').textContent = 'Não foi possível recuperar o baralho salvo. Nenhum registro foi substituído. Importe um backup JSON ou crie um novo baralho.';
     }
     renderDeck(); updateSourceCount();
   }
