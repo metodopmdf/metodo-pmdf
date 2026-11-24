@@ -19,6 +19,7 @@
   const THEME_KEY = KEY + ':theme';
   const RATINGS = {again: 'Errei', hard: 'Difícil', good: 'Bom', easy: 'Fácil'};
   const DAYS = [0, 1, 3, 7, 14];
+  const intervalLabel = days => days + (days === 1 ? ' dia' : ' dias');
   const EXAMPLE = 'Art. 1º A comissão de estudos é uma equipe responsável pela organização das atividades de aprendizagem.\n\n' +
     'Art. 2º O coordenador deverá publicar o calendário em 15 dias, salvo impedimento devidamente justificado.\n\n' +
     'Art. 3º A revisão ativa consiste em recuperar uma informação antes de consultar a resposta.\n\n' +
@@ -252,8 +253,8 @@
       evaluated ? '<span class="anki-reviewed-hint">Já avaliado como ' + esc(RATINGS[s.ratings[s.index]]) + '. Voltar não altera a nota.</span>' :
       '<button type="button" class="qstudio-secondary" data-rating="again">Errei<small>Rever agora</small></button>' +
       '<button type="button" class="qstudio-secondary" data-rating="hard">Difícil<small>12 horas</small></button>' +
-      '<button type="button" class="qstudio-primary" data-rating="good">Bom<small>' + DAYS[Math.min(4, state.box + 1)] + ' dias</small></button>' +
-      '<button type="button" class="qstudio-primary" data-rating="easy">Fácil<small>' + DAYS[Math.min(4, state.box + 2)] + ' dias</small></button>';
+      '<button type="button" class="qstudio-primary" data-rating="good">Bom<small>' + intervalLabel(DAYS[Math.min(4, state.box + 1)]) + '</small></button>' +
+      '<button type="button" class="qstudio-primary" data-rating="easy">Fácil<small>' + intervalLabel(DAYS[Math.min(4, state.box + 2)]) + '</small></button>';
     panel.innerHTML = '<progress class="study-progress-meter" aria-label="Progresso da revisão" value="' + s.index +
       '" max="' + s.cards.length + '"></progress>' +
       '<div class="anki-visual-banner"><div class="anki-visual-banner-head"><span>✦ MÉTODO PMDF · FLASHCARDS</span><strong>' +
