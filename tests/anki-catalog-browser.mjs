@@ -165,7 +165,9 @@ try {
       await start(page, 'all', 'all');
       for (let index = 0; index < group.findIndex(card => card.id === flagged.id); index++) await page.click('#anki-nav-next');
       await assertFront(page, flagged);
-      assert.match(await page.locator('#anki-panel').innerText(), /imagem referenciada/i,
+      await page.click('#reveal-answer');
+      await page.locator('.anki-evidence-details > summary').click();
+      assert.match(await page.locator('.anki-evidence-details').innerText(), /imagem referenciada/i,
         'O aviso de imagem ausente deve continuar visível no cartão original');
     }
     assert.deepEqual(errors, []);
