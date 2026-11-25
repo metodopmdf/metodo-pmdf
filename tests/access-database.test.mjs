@@ -5,7 +5,7 @@ import { PGlite } from '@electric-sql/pglite';
 
 const migrationUrls = [
   new URL('../supabase/migrations/20261125192133_pmdf_flashcards_access.sql', import.meta.url),
-  new URL('../supabase/migrations/20261125194019_pmdf_legacy_email_guard.sql', import.meta.url),
+  new URL('../supabase/migrations/20261125201746_pmdf_legacy_email_guard.sql', import.meta.url),
 ];
 const alice = '00000000-0000-4000-8000-000000000001';
 const bob = '00000000-0000-4000-8000-000000000002';

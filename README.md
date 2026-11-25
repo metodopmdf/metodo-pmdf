@@ -27,9 +27,9 @@ O checkout verificado é `https://pay.hotmart.com/X108664161M`. O botão Comprar
 
 O backend foi provisionado no Supabase com o acervo privado completo e as duas funções de acesso/webhook publicadas. A autorização permanece desativada (`enabled=false`), o HOTTOK não foi configurado e nenhuma compra ou concessão de teste foi criada. As verificações remotas confirmaram o bloqueio de requisições sem autorização e os hashes do acervo. Os detalhes estão em `supabase/README.md`.
 
-A confirmação obrigatória de e-mail foi ativada no painel Auth. O SMTP próprio permanece desativado. A migração adicional `20261125194019_pmdf_legacy_email_guard.sql` prepara o bloqueio das contas legadas criadas antes dessa exigência, até validação do suporte; a interface explica o motivo sem prometer um fluxo de confirmação que ainda não existe. A aplicação remota dessa proteção adicional ainda aguarda confirmação e deve ser concluída antes de liberar compradores.
+A confirmação obrigatória de e-mail está ativada no painel Auth. O SMTP próprio permanece desativado. A migração `20261125201746_pmdf_legacy_email_guard.sql` foi aplicada e `pmdf-access` está na versão 2. O corte de verificação é `2026-11-25T19:39:17Z`: as oito contas legadas retornam `email_reverification_required`, sem reivindicar compras ou contornar a barreira com concessões. Não foram criadas exceções, alteradas contas ou enviadas mensagens. O acesso comercial continua desativado (`enabled=false`).
 
-O frontend está preparado para uma nova hospedagem; esta alteração não publica o site nem ativa vendas. Ainda faltam SMTP e URLs de retorno do Auth, HOTTOK, hospedagem definitiva, configuração do webhook e da entrega Hotmart, tratamento da exposição no histórico público e validação completa de um comprador antes do lançamento.
+O frontend está preparado para uma nova hospedagem. O login no Netlify não foi concluído: a tentativa expirou sem uma sessão autenticada, e nenhum deploy do frontend foi concluído nesta etapa. A oferta permanece em rascunho. Ainda faltam SMTP e URLs de retorno do Auth, HOTTOK, hospedagem definitiva, configuração do webhook e da entrega Hotmart, tratamento da exposição no histórico público e validação completa de um comprador antes do lançamento.
 
 ## Proteção do acervo
 
@@ -78,6 +78,8 @@ O progresso continua local ao navegador, sem sincronização entre dispositivos.
 
 ## Desenvolvimento
 
+A validação desta preparação passou em **25 testes backend/SQL** e no QA de acesso em Chromium, incluindo o bloqueio das contas legadas. A renomeação da migração preserva o mesmo conteúdo SQL já testado.
+
 Requer Node.js 22 ou superior.
 
 ```sh
@@ -90,7 +92,7 @@ npm run test:browser
 npm run build
 ```
 
-`npm run build` publica somente `index.html` e os arquivos permitidos de `assets/` em `dist/`. Backend, testes e acervo privado não entram no resultado. O Netlify utiliza esse diretório; outras hospedagens estáticas devem fazer o mesmo.
+`npm run build` publica somente `index.html` e os arquivos permitidos de `assets/` em `dist/`. Backend, testes e acervo privado não entram no resultado. A configuração `netlify.toml` está preparada para utilizar esse diretório; outras hospedagens estáticas devem fazer o mesmo.
 
 Os testes normais usam exclusivamente um catálogo sintético, sem conteúdo comercial. Os testes de navegador interceptam a API em seu próprio contexto de teste e usam o SDK real; não existe atalho de acesso no código de produção.
 
@@ -105,7 +107,7 @@ Não copie esse arquivo para `assets/`, fixtures, commits ou artefatos públicos
 ## Itens necessários para o lançamento
 
 - Configurar a URL definitiva do site nas URLs permitidas de autenticação.
-- Habilitar confirmação de e-mail e configurar SMTP apropriado para compradores externos.
+- Manter a confirmação de e-mail ativada e configurar/testar SMTP apropriado para compradores externos.
 - Conferir a implantação das funções e da estrutura já provisionadas, conforme `supabase/`.
 - Manter o acervo privado e confirmar os hashes após qualquer nova importação.
 - Vincular o webhook ao produto **9071720**, com segredo mantido exclusivamente no servidor.
