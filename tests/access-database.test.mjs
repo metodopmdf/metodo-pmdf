@@ -3,7 +3,10 @@ import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
 
-const migrationUrl = new URL('../supabase/migrations/20261125192133_pmdf_flashcards_access.sql', import.meta.url);
+const migrationUrls = [
+  new URL('../supabase/migrations/20261125192133_pmdf_flashcards_access.sql', import.meta.url),
+  new URL('../supabase/migrations/20261125194019_pmdf_legacy_email_guard.sql', import.meta.url),
+];
 const alice = '00000000-0000-4000-8000-000000000001';
 const bob = '00000000-0000-4000-8000-000000000002';
 
@@ -18,9 +21,11 @@ test('Postgres enforces purchase ownership, lifecycle and private catalogue', as
       create table auth.users(id uuid primary key);
       insert into auth.users values ('${alice}'),('${bob}');
     `);
-    const migration = await readFile(migrationUrl, 'utf8');
-    await db.exec(migration);
-    await db.exec(migration); // Safe re-application does not change existing data or grants.
+    for (const migrationUrl of migrationUrls) {
+      const migration = await readFile(migrationUrl, 'utf8');
+      await db.exec(migration);
+      await db.exec(migration); // Safe re-application does not change existing data or grants.
+    }
     await db.exec(`
       update pmdf_private.access_config
       set hotmart_product_id='9071720', hottok_sha256=repeat('a',64), enabled=true, expected_cards=1;
@@ -30,20 +35,23 @@ test('Postgres enforces purchase ownership, lifecycle and private catalogue', as
     const row = async (sql, values = []) => (await db.query(sql, values)).rows[0];
     const now = new Date((await row('select now() as date')).date).toISOString();
     const approved = new Date(Date.parse(now) - 1000).toISOString();
-    const reset = () => db.exec('reset role; truncate pmdf_private.access_events, pmdf_private.access_purchases, pmdf_private.access_grants;');
+    const reset = () => db.exec('reset role; truncate pmdf_private.access_events, pmdf_private.access_purchases, pmdf_private.access_grants, pmdf_private.access_identity_verifications;');
     async function ingest({ id = 'event-approved-01', transaction = 'HPPURCHASE000001', email = 'alice@example.test', state = 'approved',
       event = 'PURCHASE_APPROVED', approval = approved, created = now, product = '9071720', hash = 'a'.repeat(64) } = {}) {
       return (await row('select public.pmdf_access_ingest_hotmart($1,$2,$3,$4,$5,$6,$7::timestamptz,$8::timestamptz,$9) as result',
         [id, transaction, product, email, state, event, created, approval, hash])).result;
     }
-    async function access(id = alice, email = 'alice@example.test', action = 'status') {
-      return (await row('select public.pmdf_access_read($1::uuid,$2,$3) as result', [id, email, action])).result;
+    async function access(id = alice, email = 'alice@example.test', action = 'status',
+      { createdAt = approved, confirmedAt = now } = {}) {
+      return (await row('select public.pmdf_access_read($1::uuid,$2,$3,$4::timestamptz,$5::timestamptz) as result',
+        [id, email, action, createdAt, confirmedAt])).result;
     }
 
     await t.test('public and authenticated roles cannot read data, settings or invoke privileged RPCs', async () => {
       for (const role of ['anon', 'authenticated']) {
         await db.exec('set role ' + role);
         await assert.rejects(db.query('select * from pmdf_private.access_catalog'), /permission denied/);
+        await assert.rejects(db.query('select * from pmdf_private.access_identity_verifications'), /permission denied/);
         await assert.rejects(db.query('select public.pmdf_access_webhook_settings()'), /permission denied/);
         await assert.rejects(access(), /permission denied/);
         await assert.rejects(ingest(), /permission denied/);
@@ -52,6 +60,63 @@ test('Postgres enforces purchase ownership, lifecycle and private catalogue', as
       const functions = (await db.query("select proname,prosecdef from pg_proc where proname like 'pmdf_access_%'")).rows;
       assert.equal(functions.length, 3);
       assert.ok(functions.every(f => f.prosecdef === false));
+      assert.equal((await row("select to_regprocedure('public.pmdf_access_read(uuid,text,text)') as old")).old, null);
+    });
+
+    await t.test('legacy auto-confirmation cannot claim a purchase or bypass identity checks with an owner grant', async () => {
+      await reset(); await ingest();
+      const legacy = { createdAt: '2026-11-23T12:00:00Z', confirmedAt: '2026-11-23T12:00:00Z' };
+      const status = await access(alice, 'alice@example.test', 'status', legacy);
+      assert.equal(status.active, false);
+      assert.equal(status.reason, 'email_reverification_required');
+      assert.equal('cards' in await access(alice, 'alice@example.test', 'catalog', legacy), false);
+      assert.equal((await row('select user_id from pmdf_private.access_purchases')).user_id, null);
+      await db.query("insert into pmdf_private.access_grants(user_id,grant_type,expires_at,reason) values($1,'owner',now()+interval '1 hour','Local test only')", [alice]);
+      assert.equal((await access(alice, 'alice@example.test', 'catalog', legacy)).reason, 'email_reverification_required');
+      assert.equal((await row('select user_id from pmdf_private.access_purchases')).user_id, null);
+    });
+
+    await t.test('new accounts need valid creation and confirmation after the private cutoff', async () => {
+      await reset(); await ingest();
+      const invalidDates = [
+        { createdAt: null, confirmedAt: now },
+        { createdAt: approved, confirmedAt: null },
+        { createdAt: 'infinity', confirmedAt: 'infinity' },
+        { createdAt: '2026-11-23T12:00:00Z', confirmedAt: now },
+        { createdAt: approved, confirmedAt: '2026-11-23T12:00:00Z' },
+        { createdAt: now, confirmedAt: approved },
+        { createdAt: approved, confirmedAt: new Date(Date.parse(now) + 600000).toISOString() },
+      ];
+      for (const dates of invalidDates) {
+        assert.equal((await access(alice, 'alice@example.test', 'status', dates)).reason, 'email_reverification_required');
+        assert.equal((await row('select user_id from pmdf_private.access_purchases')).user_id, null);
+      }
+      assert.equal((await access()).active, true);
+      assert.equal((await row('select user_id from pmdf_private.access_purchases')).user_id, alice);
+    });
+
+    await t.test('a future legacy exception must be admin-only, current, exact-email and is not itself a content entitlement', async () => {
+      await reset();
+      const legacy = { createdAt: '2026-11-23T12:00:00Z', confirmedAt: '2026-11-23T12:00:00Z' };
+      await db.exec('set role service_role');
+      await assert.rejects(db.query("insert into pmdf_private.access_identity_verifications(user_id,verified_email,verified_at,evidence_reference) values($1,'alice@example.test',now(),'Local test only')", [alice]), /permission denied/);
+      await db.exec('reset role');
+      await db.query("insert into pmdf_private.access_identity_verifications(user_id,verified_email,verified_at,evidence_reference) values($1,'other@example.test',now(),'Local test only')", [alice]);
+      assert.equal((await access(alice, 'alice@example.test', 'status', legacy)).reason, 'email_reverification_required');
+      await db.exec("update pmdf_private.access_identity_verifications set verified_email='alice@example.test',verified_at='2026-11-23T12:00:00Z'");
+      assert.equal((await access(alice, 'alice@example.test', 'status', legacy)).reason, 'email_reverification_required');
+      await db.exec("update pmdf_private.access_identity_verifications set verified_at=now()+interval '1 hour'");
+      assert.equal((await access(alice, 'alice@example.test', 'status', legacy)).reason, 'email_reverification_required');
+      await db.exec('update pmdf_private.access_identity_verifications set verified_at=now(),revoked_at=now()');
+      assert.equal((await access(alice, 'alice@example.test', 'status', legacy)).reason, 'email_reverification_required');
+      await db.exec('update pmdf_private.access_identity_verifications set revoked_at=null');
+      await db.exec('set role service_role');
+      assert.equal((await access(alice, 'alice@example.test', 'status', legacy)).reason, 'no_purchase');
+      assert.equal('cards' in await access(alice, 'alice@example.test', 'catalog', legacy), false);
+      await db.exec('reset role');
+      await ingest();
+      assert.equal((await access(alice, 'alice@example.test', 'status', legacy)).active, true);
+      assert.equal((await access(alice, 'different@example.test', 'status', legacy)).reason, 'email_reverification_required');
     });
 
     await t.test('service_role can ingest and only verified identity supplied by server gets its own purchase', async () => {

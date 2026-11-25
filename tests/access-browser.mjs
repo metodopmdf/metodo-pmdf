@@ -157,6 +157,25 @@ try {
   }
   {
     const context = await browser.newContext();
+    const model = await installAuthMock(context,{legacyReverification:true});
+    const page = await context.newPage();
+    await page.goto(target);
+    await page.locator('#access-status').filter({hasText:'Sua conta foi criada antes da verificação obrigatória'}).waitFor();
+    await assertLocked(page);
+    assert.equal(model.catalogCalls,0,'Conta legada bloqueada não solicita catálogo');
+    assert.equal(model.recoveryCalls,0,'O bloqueio não envia mensagens de recuperação');
+    model.emailReverificationRequired = false;
+    await page.click('#access-check');
+    await ready(page);
+    model.emailReverificationRequired = true;
+    await page.evaluate(() => PMDFAccess.check());
+    await assertLocked(page);
+    assert.match(await page.locator('#access-status').textContent(),/Entre em contato com o suporte/);
+    await context.close();
+    reports.push({legacyEmailReverificationRequired:true});
+  }
+  {
+    const context = await browser.newContext();
     await installAuthMock(context,{remainingMs:3000});
     const page = await context.newPage();
     await page.goto(target);

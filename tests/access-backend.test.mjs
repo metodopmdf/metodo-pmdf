@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  allowedOrigin, bearerToken, constantTimeEqual, isVerifiedUser, normalizeEmail,
+  allowedOrigin, bearerToken, constantTimeEqual, hasConfirmedAuthEmail, normalizeEmail,
   parseHotmartPurchase, readLimitedText, sha256,
 } from '../supabase/functions/_shared/access-domain.mjs';
 
@@ -18,12 +18,16 @@ function purchase(overrides = {}) {
   return Object.assign(base, overrides);
 }
 
-test('auth demands an actual verified user and ignores editable metadata', () => {
+test('Auth shape requires a finite confirmation timestamp and ignores editable metadata or last sign-in', () => {
   const id = '00000000-0000-4000-8000-000000000001';
-  assert.equal(isVerifiedUser({ id, email: 'a@example.com', user_metadata: { email_verified: true, paid: true } }), false);
-  assert.equal(isVerifiedUser({ id, email: 'a@example.com', email_confirmed_at: '2026-01-01', is_anonymous: true }), false);
-  assert.equal(isVerifiedUser({ id, email: 'a@example.com', email_confirmed_at: '2026-01-01', is_anonymous: false }), true);
-  assert.equal(isVerifiedUser({ id: 'not-user', email: 'a@example.com', email_confirmed_at: 'yes' }), false);
+  assert.equal(hasConfirmedAuthEmail({ id, email: 'a@example.com', user_metadata: { email_verified: true, paid: true } }), false);
+  assert.equal(hasConfirmedAuthEmail({ id, email: 'a@example.com', last_sign_in_at: '2026-11-25T20:00:00Z' }), false);
+  assert.equal(hasConfirmedAuthEmail({ id, email: 'a@example.com', email_confirmed_at: '2026-01-01', is_anonymous: true }), false);
+  // A valid legacy timestamp is not independent proof; the SQL cutoff test must reject it.
+  assert.equal(hasConfirmedAuthEmail({ id, email: 'a@example.com', email_confirmed_at: '2026-01-01', is_anonymous: false }), true);
+  assert.equal(hasConfirmedAuthEmail({ id, email: 'a@example.com', email_confirmed_at: 'yes' }), false);
+  assert.equal(hasConfirmedAuthEmail({ id, email: 'a@example.com', email_confirmed_at: new Date(now + 600000).toISOString() }, now), false);
+  assert.equal(hasConfirmedAuthEmail({ id: 'not-user', email: 'a@example.com', email_confirmed_at: '2026-01-01' }), false);
   assert.equal(normalizeEmail('  A+b@Example.com '), 'a+b@example.com');
   assert.equal(normalizeEmail('a@example.com\nattacker'), '');
 });

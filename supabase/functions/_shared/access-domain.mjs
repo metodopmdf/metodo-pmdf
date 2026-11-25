@@ -20,9 +20,13 @@ export function normalizeEmail(value) {
   return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '';
 }
 
-export function isVerifiedUser(user) {
+// This only checks the Auth record shape. The private database must also check
+// the mandatory-confirmation cutoff before trusting the email to claim a sale.
+export function hasConfirmedAuthEmail(user, now = Date.now()) {
+  const confirmedAt = typeof user?.email_confirmed_at === 'string' ? Date.parse(user.email_confirmed_at) : NaN;
   return Boolean(user && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.id)
-    && !user.is_anonymous && user.email_confirmed_at && normalizeEmail(user.email));
+    && !user.is_anonymous && Number.isFinite(confirmedAt) && confirmedAt > 0
+    && confirmedAt <= now + 300_000 && normalizeEmail(user.email));
 }
 
 export function bearerToken(header) {

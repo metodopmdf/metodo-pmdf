@@ -67,6 +67,7 @@
   }
   function friendlyError(error) {
     const code = error?.code || error?.error || '';
+    if (code === 'email_reverification_required') return 'Sua conta foi criada antes da verificação obrigatória de e-mail. Entre em contato com o suporte para validar seu acesso.';
     if (code === 'email_not_confirmed' || code === 'email_not_verified') return 'Confirme seu e-mail pelo link recebido antes de entrar. Confira também a pasta de spam.';
     if (code === 'invalid_credentials' || error?.status === 400 && /credentials/i.test(error?.message || '')) return 'Não foi possível entrar. Confira o e-mail e a senha.';
     if (code === 'weak_password') return 'Escolha uma senha mais forte, com pelo menos 12 caracteres.';
@@ -148,7 +149,7 @@
         if (error.status === 401) {
           state = {...state, user: null};
           revoke('invalid_session', 'Sua sessão terminou. Entre novamente para continuar.');
-        } else if (error.code === 'email_not_verified') revoke('email_not_verified', friendlyError(error));
+        } else if (error.code === 'email_not_verified' || error.code === 'email_reverification_required') revoke(error.code, friendlyError(error));
         else revoke(error.code || 'unavailable', 'Não foi possível validar seu acesso agora. Confira a conexão e clique em Verificar minha compra.');
         return false;
       } finally { running = null; planNextCheck(); }
@@ -163,7 +164,7 @@
       if (revision !== epoch || !isActive() || state.user?.id !== userId) throw new Error('access_changed');
       return catalog;
     } catch (error) {
-      if (revision === epoch) revoke(error.code || 'unavailable', 'O acesso ao acervo não pôde ser confirmado. Verifique sua compra para continuar.');
+      if (revision === epoch) revoke(error.code || 'unavailable', error.code === 'email_reverification_required' ? friendlyError(error) : 'O acesso ao acervo não pôde ser confirmado. Verifique sua compra para continuar.');
       throw new Error('Não foi possível carregar seu acervo autorizado.');
     }
   }

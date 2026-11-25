@@ -21,7 +21,8 @@ export function sessionFor(user = userFor()) {
 export async function installAuthMock(context, options = {}) {
   const model = {user: userFor(options.userId), active: options.active !== false, reason: options.reason || 'active',
     catalog: options.catalog || syntheticCatalog, statusCalls: 0, catalogCalls: 0, recoveryCalls: 0, signupCalls: 0, passwordUpdates: 0,
-    offline: false, delayCatalog: 0, remainingMs: options.remainingMs || 86400000, calls: []};
+    offline: false, delayCatalog: 0, emailReverificationRequired: options.legacyReverification === true,
+    remainingMs: options.remainingMs || 86400000, calls: []};
   if (options.verified === false) model.user.email_confirmed_at = null;
   if (options.signedIn !== false) {
     const session = sessionFor(model.user);
@@ -55,6 +56,8 @@ export async function installAuthMock(context, options = {}) {
       const action = request.postDataJSON()?.action;
       if (!request.headers().authorization?.startsWith('Bearer ')) return respond(401, {error: 'authentication_required'});
       if (!model.user.email_confirmed_at) return respond(403, {error: 'email_not_verified'});
+      if (model.emailReverificationRequired) return respond(403, {error: 'email_reverification_required',
+        active: false, reason: 'email_reverification_required', expires_at: null, server_time: new Date().toISOString()});
       if (action === 'status') {
         model.statusCalls++;
         return respond(200, {active: model.active, reason: model.reason,

@@ -27,6 +27,8 @@ O checkout verificado é `https://pay.hotmart.com/X108664161M`. O botão Comprar
 
 O backend foi provisionado no Supabase com o acervo privado completo e as duas funções de acesso/webhook publicadas. A autorização permanece desativada (`enabled=false`), o HOTTOK não foi configurado e nenhuma compra ou concessão de teste foi criada. As verificações remotas confirmaram o bloqueio de requisições sem autorização e os hashes do acervo. Os detalhes estão em `supabase/README.md`.
 
+A confirmação obrigatória de e-mail foi ativada no painel Auth. O SMTP próprio permanece desativado. A migração adicional `20261125194019_pmdf_legacy_email_guard.sql` prepara o bloqueio das contas legadas criadas antes dessa exigência, até validação do suporte; a interface explica o motivo sem prometer um fluxo de confirmação que ainda não existe. A aplicação remota dessa proteção adicional ainda aguarda confirmação e deve ser concluída antes de liberar compradores.
+
 O frontend está preparado para uma nova hospedagem; esta alteração não publica o site nem ativa vendas. Ainda faltam SMTP e URLs de retorno do Auth, HOTTOK, hospedagem definitiva, configuração do webhook e da entrega Hotmart, tratamento da exposição no histórico público e validação completa de um comprador antes do lançamento.
 
 ## Proteção do acervo
