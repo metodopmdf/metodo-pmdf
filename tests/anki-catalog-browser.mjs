@@ -157,15 +157,16 @@ try {
     await page.screenshot({path: path.join(artifacts, 'catalog-' + device.name + '-answer.png'), fullPage: true});
 
     if (device.name === 'desktop') {
-      const flagged = original.cards.find(card => card.flags.includes('texto_incompleto_na_fonte'));
+      const flagged = original.cards.find(card => card.flags.includes('imagem_do_original_nao_embutida'));
+      assert(flagged, 'Deve existir um cartão com aviso de imagem ausente no acervo');
       const group = original.cards.filter(card => card.disciplina === flagged.disciplina && card.assunto === flagged.assunto);
       await page.selectOption('#anki-cfo-disciplina', flagged.disciplina);
       await page.selectOption('#anki-cfo-assunto', flagged.assunto);
       await start(page, 'all', 'all');
       for (let index = 0; index < group.findIndex(card => card.id === flagged.id); index++) await page.click('#anki-nav-next');
       await assertFront(page, flagged);
-      assert.match(await page.locator('#anki-panel').innerText(), /incompleto/i,
-        'O aviso de fonte incompleta deve continuar visível no cartão original');
+      assert.match(await page.locator('#anki-panel').innerText(), /imagem referenciada/i,
+        'O aviso de imagem ausente deve continuar visível no cartão original');
     }
     assert.deepEqual(errors, []);
     assert.deepEqual(external, [], 'A base pronta deve funcionar apenas com arquivos do próprio site');
@@ -236,7 +237,8 @@ try {
   const hostile = '<img src=x onerror="window.__unsafe=true">';
   const literal = {...original, cards: original.cards.map((card, index) => index ? card : {...card,
     front: hostile + '\nJULGUE CERTO OU ERRADO\n' + hostile + ' Texto literal.',
-    back: 'CERTO — ' + hostile + ' Comentário literal.'})};
+    back: 'CERTO — ' + hostile + ' Comentário literal.',
+    flags: [...new Set([...card.flags, 'texto_incompleto_na_fonte'])]})};
   await escapedContext.route('**/assets/bancos/anki.json*', route => route.fulfill({status: 200,
     contentType: 'application/json', body: JSON.stringify(literal)}));
   const escapedPage = await escapedContext.newPage();
@@ -244,6 +246,7 @@ try {
   await ready(escapedPage);
   await start(escapedPage);
   assert.equal(await escapedPage.locator('#anki-panel img').count(), 0);
+  assert.match(await escapedPage.locator('#anki-panel').innerText(), /trecho incompleto/i);
   assert((await escapedPage.locator('#anki-panel').innerText()).includes(hostile));
   await escapedPage.click('#reveal-answer');
   assert.equal(await escapedPage.locator('#anki-panel img').count(), 0);
