@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; script-src-attr 'none'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://cdnjs.cloudflare.com; worker-src 'self' blob: https://cdnjs.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; script-src-attr 'none'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://cdnjs.cloudflare.com https://wskuhkvgipqwykbnuspk.supabase.co; worker-src 'self' blob: https://cdnjs.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'none'">
   <title>Método PMDF — Flashcards Anki</title>
   <meta name="description" content="Estude a base Anki do Método PMDF por disciplina e assunto, revise com repetição espaçada e exporte seus flashcards.">
   <meta name="theme-color" content="#17354d">
@@ -11,6 +11,9 @@
   <link rel="stylesheet" href="assets/pmdf-flashcards-standalone.css">
   <link rel="stylesheet" href="assets/pmdf-flashcards-visual.css">
   <link rel="stylesheet" href="assets/pmdf-flashcards-questions.css">
+  <script defer src="assets/vendor/supabase-2.119.2.js"></script>
+  <script defer src="assets/pmdf-access-config.js"></script>
+  <script defer src="assets/pmdf-access.js"></script>
   <script defer src="assets/pmdf-flashcard-classifier.js"></script>
   <script defer src="assets/pmdf-neural-flashcards.js"></script>
   <script defer src="assets/pmdf-flashcards-perguntas.js"></script>
@@ -20,7 +23,7 @@
   <script defer src="assets/pmdf-flashcards-app.js"></script>
 </head>
 <body>
-  <a class="skip-link" href="#anki-cfo-disciplina">Ir para a base de flashcards</a>
+  <a class="skip-link" href="#access-gate">Ir para o acesso</a>
   <header class="site-header">
     <a class="brand" href="./" aria-label="Método PMDF — Flashcards">
       <svg width="38" height="38" viewBox="0 0 44 44" fill="none" aria-hidden="true"><rect x="7" y="12" width="25" height="27" rx="4" stroke="currentColor" stroke-width="2"/><path d="M14 7h20a4 4 0 0 1 4 4v21M14 22h11M14 28h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -40,6 +43,36 @@
       <div class="anki-visual-intro-mark" aria-hidden="true">✦</div>
     </header>
 
+    <section id="access-account" class="access-account" aria-label="Minha conta" hidden>
+      <div><strong id="access-identity"></strong><span id="access-expiry"></span></div>
+      <button type="button" id="access-signout" class="button quiet">Sair da conta</button>
+    </section>
+    <section id="access-gate" class="panel access-gate" aria-labelledby="access-heading">
+      <div class="access-overview">
+        <span class="access-eyebrow">ÁREA DO ALUNO</span>
+        <h2 id="access-heading">Sua próxima revisão começa aqui.</h2>
+        <p>Entre com o mesmo e-mail usado na compra dos Flashcards Estratégicos. No primeiro acesso, crie sua conta e confirme o e-mail recebido.</p>
+        <ul><li>2.624 flashcards em 22 disciplinas</li><li>Revisão espaçada e filtros por assunto</li><li>Acesso individual por 6 meses</li></ul>
+        <div class="access-offer"><strong>R$ 39,99</strong><span>pagamento único · 6 meses</span></div>
+        <a id="access-buy" class="button" aria-disabled="true" tabindex="-1" rel="noopener" target="_blank">Comprar acesso</a>
+        <p id="access-purchase-note" class="help">A oferta estará disponível em breve.</p>
+      </div>
+      <div class="access-form-area">
+        <form id="access-auth-form">
+          <h3 id="access-form-title">Entrar na minha conta</h3>
+          <div id="access-email-field"><label for="access-email">E-mail da compra</label><input type="email" id="access-email" autocomplete="email" maxlength="254" required></div>
+          <div id="access-password-field"><label for="access-password">Senha</label><input type="password" id="access-password" autocomplete="current-password" required></div>
+          <p id="access-password-help" class="help" hidden>Use pelo menos 12 caracteres e uma senha exclusiva para esta conta.</p>
+          <div id="access-password-confirm-field" hidden><label for="access-password-confirm">Repita a senha</label><input type="password" id="access-password-confirm" autocomplete="new-password"></div>
+          <button type="submit" id="access-submit" class="button primary full">Entrar</button>
+        </form>
+        <div id="access-modes" class="access-modes"><button type="button" id="access-show-signup">Primeiro acesso: criar conta</button><button type="button" id="access-show-recovery">Esqueci minha senha</button><button type="button" id="access-show-login" hidden>Voltar para entrar</button></div>
+        <button type="button" id="access-check" class="button primary" hidden>Verificar minha compra</button>
+        <p id="access-status" class="status" role="status" aria-live="polite">Conferindo sua sessão…</p>
+        <p class="help access-support">Precisa de ajuda? Na sua compra Hotmart, consulte os dados de contato do produtor.</p>
+      </div>
+    </section>
+    <div id="member-workspace" hidden>
     <div class="workspace">
       <div class="source-column">
       <section class="panel catalog-panel" aria-labelledby="catalog-heading">
@@ -105,7 +138,8 @@
       <div id="anki-panel" class="panel anki-illustrated-panel"></div>
       <p class="keyboard-help">Atalhos: espaço para revelar · 1–4 para avaliar · ← e → para navegar.</p>
     </section>
-    <noscript><p class="panel">Ative o JavaScript do navegador para carregar a base Anki e revisar seus flashcards.</p></noscript>
+    </div>
+    <noscript><p class="panel">Ative o JavaScript do navegador para entrar e acessar seus flashcards.</p></noscript>
   </main>
   <footer class="site-footer"><span>MÉTODO PMDF · FLASHCARDS</span><span>Um conceito de cada vez.</span></footer>
   <p id="toast" role="status" aria-live="polite" hidden></p>

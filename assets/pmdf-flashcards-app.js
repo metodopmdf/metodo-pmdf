@@ -1,10 +1,16 @@
 /* Método PMDF — controlador exclusivo de criação, revisão e exportação.
- * Extraído dos fluxos Anki do pmdf-app.js original. Sem rotas, contas ou serviços
- * das outras ferramentas. O agendamento mantém as caixas Leitner originais.
+ * A inicialização depende de acesso confirmado; o progresso é isolado por conta.
+ * O agendamento mantém as caixas Leitner originais.
  */
-(function () {
+(async function () {
   'use strict';
   const $ = id => document.getElementById(id);
+  const ACCESS = window.PMDFAccess;
+  if (!ACCESS) return;
+  await ACCESS.ready();
+  if (!ACCESS.isActive()) return;
+  let accessLocked = false;
+  const permitted = () => !accessLocked && ACCESS.isActive();
   const IO = window.PMDFFlashcardIO;
   const ENGINE = window.PMDFNeuralFlashcards;
   const CATALOG = window.PMDFAnkiCatalog;
@@ -15,11 +21,10 @@
     return;
   }
   const esc = IO.escapeHtml;
-  const KEY = 'pmdf:flashcards:standalone:v1';
+  const KEY = ACCESS.storageKey('flashcards:standalone:v1');
   const DRAFT_KEY = KEY + ':draft';
-  const THEME_KEY = KEY + ':theme';
   const SOURCE_KEY = KEY + ':source';
-  const CATALOG_KEY = 'pmdf:flashcards:anki:v1';
+  const CATALOG_KEY = ACCESS.storageKey('flashcards:anki:v1');
   const RATINGS = {again: 'Errei', hard: 'Difícil', good: 'Bom', easy: 'Fácil'};
   const DAYS = [0, 1, 3, 7, 14];
   const intervalLabel = days => days + (days === 1 ? ' dia' : ' dias');
@@ -37,6 +42,7 @@
     try { return localStorage.getItem(key); } catch (_) { return null; }
   }
   function writeStorage(key, value) {
+    if (!permitted()) return false;
     try { localStorage.setItem(key, JSON.stringify(value)); return true; }
     catch (_) {
       storageFailed = true;
@@ -48,7 +54,7 @@
   function persistDeck() {
     if (!bank.length) return;
     const review = session ? {ids: session.cards.map(c => c.id), index: session.index, back: session.back, ratings: session.ratings} : null;
-    // O catálogo estático é carregado do site; somente progresso e seleção ficam
+    // O catálogo privado é carregado do servidor; somente progresso e seleção ficam
     // no navegador. O baralho pessoal continua na sua chave própria.
     const saved = activeCatalog ? writeStorage(CATALOG_KEY, {version: 1, revision: catalogData?.revision,
       filters: catalogFilters, schedule, cursors: catalogCursors, session: review,
@@ -62,6 +68,7 @@
     return saved;
   }
   function persistDraft() {
+    if (!permitted()) return;
     clearTimeout(draftTimer);
     writeStorage(DRAFT_KEY, {title: $('source-title').value, text: $('source-text').value,
       style: $('anki-card-style').value, guide: importedGuide});
@@ -194,13 +201,15 @@
     if (persist) { chooseSource('catalog'); persistDeck(); }
   }
   async function initializeCatalog(force = false) {
-    if (!CATALOG || catalogOpening) return;
+    if (!CATALOG || catalogOpening || !permitted()) return;
     const initialRevision = deckRevision;
     catalogOpening = true;
     catalogStatus('Carregando a base de flashcards…');
     updateCatalogControls();
     try {
-      catalogData = await CATALOG.load();
+      const loadedCatalog = await CATALOG.load();
+      if (!permitted()) return;
+      catalogData = loadedCatalog;
       const ids = new Set(catalogData.cards.map(card => card.id));
       let saved = null;
       try {
@@ -214,11 +223,6 @@
           if (ids.has(id) && item && Number.isFinite(item.box) && Number.isFinite(item.due))
             schedule[id] = {box: Math.max(0, Math.min(4, Math.trunc(item.box))), due: Math.max(0, item.due)};
         }
-      }
-      const legacy = window.PMDFFlashcardMigration?.readSchedules(
-        {getItem: key => localStorage.getItem(key)}, [...ids]);
-      for (const [id, item] of Object.entries(legacy?.schedule || {})) {
-        if (!Object.hasOwn(schedule, id)) schedule[id] = item;
       }
       if (saved?.cursors && typeof saved.cursors === 'object') {
         for (const [key, value] of Object.entries(saved.cursors)) {
@@ -245,6 +249,7 @@
     } finally { catalogOpening = false; updateCatalogControls(); }
   }
   function restorePersonalDeck() {
+    if (!permitted()) return;
     if (busy) return;
     try {
       const saved = JSON.parse(readStorage(KEY) || 'null');
@@ -261,6 +266,7 @@
     } catch (error) { toast(error.message || 'Não foi possível recuperar o baralho pessoal.', true); }
   }
   async function generate(event) {
+    if (!permitted()) { event?.preventDefault(); return; }
     event?.preventDefault();
     if (busy) return;
     const token = ++operation;
@@ -290,6 +296,7 @@
     }
   }
   async function importFile() {
+    if (!permitted()) return;
     const file = $('source-file').files?.[0];
     if (!file || busy) return;
     // Mantém o File em memória e permite escolher o mesmo arquivo após cancelar.
@@ -332,6 +339,7 @@
       due: Number.isFinite(Number(saved.due)) ? Math.max(0, Number(saved.due)) : 0};
   }
   function startReview() {
+    if (!permitted()) return;
     if (!bank.length) return;
     const mode = $('anki-mode').value;
     let eligible = bank.slice();
@@ -454,11 +462,13 @@
     target?.focus({preventScroll: true});
   }
   function reveal() {
+    if (!permitted()) return;
     if (!session || session.back || session.index >= session.cards.length) return;
     session.back = true;
     drawReview(); persistDeck(); focusReview();
   }
   function move(step) {
+    if (!permitted()) return;
     if (!session) return;
     const next = session.index + step;
     if (next < 0 || next > session.cards.length) return;
@@ -467,6 +477,7 @@
     drawReview(); persistDeck(); focusReview();
   }
   function grade(rating) {
+    if (!permitted()) return;
     if (!session || !session.back || session.index >= session.cards.length ||
       !Object.hasOwn(RATINGS, rating) || Object.hasOwn(session.ratings, session.index)) return;
     const card = session.cards[session.index], current = getCardBox(card.id).box;
@@ -476,6 +487,7 @@
     move(1);
   }
   function exportCards() {
+    if (!permitted()) return;
     try {
       const result = IO.serialize(bank, $('export-format').value, {title: deckTitle});
       const url = URL.createObjectURL(new Blob([result.content], {type: result.mime}));
@@ -499,23 +511,13 @@
       status('Não foi possível recuperar o texto em edição. Cole ou importe novamente o material.');
     }
     try {
-      // Uma chave existente, mesmo corrompida, nunca é substituída pela migração.
+      // Restaura somente o baralho da conta; registros inválidos são preservados.
       const raw = localStorage.getItem(KEY);
-      let saved = null, migrated = null;
+      let saved = null;
       if (raw !== null) {
         saved = JSON.parse(raw);
         if (saved?.version !== 1 || !Array.isArray(saved.cards) || !saved.cards.length)
           throw new Error('Baralho salvo inválido.');
-      } else {
-        const recovery = window.PMDFFlashcardMigration?.recover(
-          {getItem: key => localStorage.getItem(key)}, IO.validateCards);
-        if (recovery?.status === 'recovered') {
-          saved = recovery.state;
-          migrated = recovery;
-        } else if (recovery?.message) {
-          $('storage-status').dataset.error = 'true';
-          $('storage-status').textContent = recovery.message;
-        }
       }
       if (saved) {
         bank = IO.validateCards(saved.cards);
@@ -541,11 +543,6 @@
         }
         $('storage-status').textContent = 'Último baralho e progresso recuperados deste navegador.';
         $('review-status').textContent = session ? 'Sua última sessão foi recuperada.' : 'Baralho recuperado. Inicie uma revisão quando quiser.';
-        if (migrated) {
-          // A restauração em memória já terminou. Se a gravação falhar, os
-          // cartões continuam disponíveis para revisar e exportar nesta página.
-          if (persistDeck()) $('storage-status').textContent = migrated.message;
-        }
       }
     } catch (_) {
       $('storage-status').dataset.error = 'true';
@@ -553,18 +550,6 @@
     }
     renderDeck(); updateSourceCount();
   }
-  function applyTheme(dark) {
-    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-    $('theme-toggle').textContent = dark ? 'Tema claro' : 'Tema escuro';
-    $('theme-toggle').setAttribute('aria-pressed', String(dark));
-  }
-  const theme = readStorage(THEME_KEY);
-  applyTheme(theme ? theme === 'dark' : Boolean(window.matchMedia?.('(prefers-color-scheme: dark)').matches));
-  $('theme-toggle').addEventListener('click', () => {
-    const dark = document.documentElement.dataset.theme !== 'dark';
-    applyTheme(dark);
-    try { localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light'); } catch (_) { /* Tema da sessão. */ }
-  });
   $('create-form').addEventListener('submit', generate);
   $('stop-generation').addEventListener('click', cancelOperation);
   $('source-file').addEventListener('change', importFile);
@@ -626,6 +611,24 @@
       event.preventDefault(); grade(['again', 'hard', 'good', 'easy'][Number(event.key) - 1]);
     } else if (event.key === 'ArrowLeft') { event.preventDefault(); move(-1); }
     else if (event.key === 'ArrowRight') { event.preventDefault(); move(1); }
+  });
+  document.addEventListener('pmdf:access-lost', () => {
+    accessLocked = true;
+    operation++;
+    busy = false;
+    clearTimeout(draftTimer);
+    bank = []; session = null; catalogData = null; importedGuide = null;
+    schedule = Object.create(null); catalogCursors = Object.create(null);
+    activeCatalog = false; report = null; deckTitle = '';
+    CATALOG?.clear();
+    $('anki-panel').replaceChildren();
+    $('review-section').hidden = true;
+    $('deck-count').textContent = '0';
+    $('deck-title').textContent = 'Entre para acessar seu acervo.';
+    $('source-title').value = ''; $('source-text').value = '';
+    $('source-file').value = '';
+    $('start-review').disabled = true; $('export-cards').disabled = true;
+    $('generate-cards').disabled = true;
   });
   window.addEventListener('pagehide', persistDraft);
   restore();

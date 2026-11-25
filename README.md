@@ -1,215 +1,113 @@
-# Método PMDF — Flashcards Anki
+# Método PMDF — Flashcards Estratégicos
 
-Aplicação do Método PMDF dedicada exclusivamente aos flashcards, com a **base
-Anki carregada automaticamente**, revisão e exportação.
+Plataforma de revisão com acervo Anki, filtros, repetição espaçada e exportação, com acesso individual vinculado à compra Hotmart.
 
-**Site:** https://metodopmdf.github.io/metodo-pmdf/
+## Oferta
 
-A ferramenta foi extraída do projeto completo, a partir do commit
-`08bdb149428459583d170287feac5960519cffa9`, e passou a ser a aplicação principal
-do repositório.
+- Produto Hotmart: `9071720`.
+- Valor: **R$ 39,99**, pagamento único.
+- Prazo: **6 meses**, contados da aprovação da compra pelo servidor.
+- Produto principal complementar: Método PMDF — Preparação Estratégica para Soldado (`9062601`).
+- A compra das apostilas, isoladamente, não libera o produto de flashcards.
 
-Esta versão reúne **criação, revisão e exportação de flashcards**. Os motores de
-geração e os estilos dos cartões foram reaproveitados do projeto original, com
-um controlador próprio e somente suas dependências necessárias.
+## Acesso do aluno
 
-O acervo contém **2.624 cartões, 22 disciplinas e 130 combinações de disciplina
-e assunto**. O arquivo `assets/bancos/anki.json` mantém os identificadores, a ordem
-e a estrutura do catálogo original. Cartões selecionados receberam correções
-com fontes em 25/11/2026; as demais entradas foram mantidas. Para estudar essa base, basta
-selecionar a disciplina e o assunto e iniciar uma revisão.
+1. Criar a conta com o mesmo e-mail usado na compra.
+2. Confirmar o e-mail pelo link recebido.
+3. Entrar com e-mail e senha.
+4. A plataforma consulta o servidor e carrega o catálogo somente se existir uma compra ativa.
 
-## Usar
+A interface oferece recuperação de senha. Os links de confirmação e recuperação devem ser abertos no navegador que iniciou o processo, pois a autenticação usa PKCE. A disponibilidade dos e-mails depende da configuração SMTP do projeto Supabase.
 
-Não é necessário compilar, cadastrar uma conta ou configurar chaves de API.
+A aplicação usa o SDK oficial `@supabase/supabase-js`, fixado na versão **2.119.2** e distribuído localmente. A configuração pública fica em `assets/pmdf-access-config.js`; ela contém apenas a URL do projeto, uma chave publicável, o identificador do produto e o checkout. Nenhum segredo Hotmart ou chave de serviço pertence ao frontend.
 
-1. Clone o repositório:
+O checkout verificado é `https://pay.hotmart.com/X108664161M`. O botão Comprar acesso permanece desativado enquanto `salesEnabled` não for `true`, mesmo com o link configurado. O produto está em rascunho; habilite as vendas somente depois de validar a entrega e concluir a configuração Hotmart.
 
-   ```bash
-   git clone https://github.com/metodopmdf/metodo-pmdf.git flashcards
-   cd flashcards
-   ```
+## Estado da implantação em 25/11/2026
 
-2. Sirva a pasta com um servidor estático. Por exemplo, com Python:
+O backend foi provisionado no Supabase com o acervo privado completo e as duas funções de acesso/webhook publicadas. A autorização permanece desativada (`enabled=false`), o HOTTOK não foi configurado e nenhuma compra ou concessão de teste foi criada. As verificações remotas confirmaram o bloqueio de requisições sem autorização e os hashes do acervo. Os detalhes estão em `supabase/README.md`.
 
-   ```bash
-   python -m http.server 8000
-   ```
+O frontend está preparado para uma nova hospedagem; esta alteração não publica o site nem ativa vendas. Ainda faltam SMTP e URLs de retorno do Auth, HOTTOK, hospedagem definitiva, configuração do webhook e da entrega Hotmart, tratamento da exposição no histórico público e validação completa de um comprador antes do lançamento.
 
-3. Abra [http://localhost:8000](http://localhost:8000).
-4. Aguarde o carregamento automático da base Anki. Selecione uma disciplina e
-   um assunto, ou mantenha o acervo completo.
-5. Escolha **Novos e vencidos** ou **Todos (treino livre)**, o tamanho do lote e
-   clique em **Iniciar revisão**. A exportação inclui todos os cartões filtrados.
+## Proteção do acervo
 
-O painel **Criar flashcards com meu material — Opcional** mantém a criação de
-um baralho pessoal a partir de texto ou arquivo. Não é necessário abri-lo para
-estudar a base Anki. **Usar base Anki** retorna ao acervo após um baralho pessoal;
-**Retomar meu baralho salvo** recupera o material pessoal do navegador.
+O catálogo comercial **não faz parte da publicação estática**. O endpoint `pmdf-access` valida a sessão, a confirmação do e-mail e o direito de acesso no servidor antes de devolver cartões.
 
-O fluxo textual usa apenas arquivos locais da aplicação. Para ler PDF ou DOCX,
-o navegador baixa o leitor correspondente de `cdnjs.cloudflare.com` quando
-necessário. Os documentos são processados no navegador.
+- `POST {"action":"status"}` informa se a compra está ativa e quando expira.
+- `POST {"action":"catalog"}` entrega o catálogo apenas quando o acesso está ativo.
+- As requisições enviam o JWT do aluno e a chave publicável; as respostas privadas usam `Cache-Control: no-store`.
+- O cliente revalida o acesso a cada 30 segundos enquanto visível, ao retomar a aba e ao recuperar a conexão. Sem nova validação, a autorização local vence em até 60 segundos. A expiração do prazo é calculada a partir do horário fornecido pelo servidor.
+- Logout, revogação, falha de validação e expiração removem os cartões da interface e da memória do catálogo. As APIs continuam sendo a autoridade mesmo que alguém modifique o JavaScript local.
+- Reembolso e chargeback são tratados no backend. A lógica detalhada está em `supabase/`.
 
-## Funcionalidades
+Arquivos exportados pelo aluno não podem ser revogados depois do download. A proteção impede novos acessos ao serviço; ela não é DRM sobre cópias já obtidas.
 
-- Acervo Anki integrado, com carregamento automático do próprio site.
-- Filtros por disciplina e assunto; enunciado, gabarito e comentário do acervo.
-- Texto colado e arquivos TXT, Markdown, JSON, PDF textual e DOCX.
-- Perguntas e respostas, lacunas Cloze ou formato misto.
-- Referência ao trecho de origem, dicas e observações herdadas dos motores.
-- Cancelamento sem substituir o baralho anterior.
-- Revisão frente/verso, navegação e quatro avaliações: Errei, Difícil, Bom e Fácil.
-- Caixas Leitner com os intervalos originais de 1, 3, 7 e 14 dias; avaliação
-  Difícil agenda a revisão para 12 horas e Errei deixa o cartão disponível.
-- Seleção de cartões novos/vencidos ou treino livre, com lotes de 25, 50, 100,
-  200 ou todos. O treino livre percorre o acervo em sequência e mantém uma posição
-  independente para cada seleção de disciplina e assunto.
-- Recuperação do último baralho, rascunho, sessão e progresso neste navegador.
-- Exportação para Anki Basic/Cloze, planilhas CSV/TSV e backup JSON dos cartões.
-- Interface responsiva, tema claro/escuro e navegação por teclado.
+O repositório antigo publicou o acervo completo no histórico. Remover o JSON da versão atual não remove os commits anteriores. A visibilidade do repositório e a hospedagem precisam ser adequadas antes do lançamento comercial.
 
-### Importação e exportação
+## Acervo preservado
 
-| Formato | Uso |
-| --- | --- |
-| TXT / MD | Texto-base para geração |
-| PDF / DOCX | Extração textual local; leitor baixado sob demanda |
-| JSON de guia | Estrutura original com `lawName` e `articlesMapping` |
-| JSON com `text` e `title` | Texto-base com título opcional |
-| JSON `PMDF-FLASHCARDS-v1` | Backup dos cartões, reaberto sem geração |
-| Anki Basic `.txt` | Somente cartões sem lacunas |
-| Anki Cloze `.txt` | Somente cartões com marcação `{{c1::...}}` |
-| CSV / TSV | Todos os cartões, incluindo fonte e tags |
+A migração foi preparada a partir de **2.624 cartões**, **22 disciplinas** e **130 combinações de disciplina e assunto**. Os IDs, a ordem e os textos são preservados.
 
-No Anki, importe os arquivos Basic e Cloze separadamente. Os arquivos incluem
-cabeçalhos com separador de tabulação, tipo de nota, colunas, baralho e
-`#html:false`; confirme o tipo correspondente na sua instalação do Anki.
-CSV/TSV usam escape de aspas e proteção contra fórmulas de planilha.
+SHA-256 esperado do arquivo original:
 
-O backup JSON guarda os cartões e seus metadados. **O agendamento e o progresso
-da revisão permanecem no navegador e não fazem parte desse backup.**
-
-Limites de entrada: TXT/MD de até 2 MiB; JSON/PDF/DOCX de até 12 MiB; texto
-extraído de até 2 Mi caracteres; PDF de até 80 páginas. Os limites produzem uma
-mensagem explícita, sem cortar o restante do arquivo silenciosamente.
-PDFs protegidos ou páginas sem texto extraível precisam de uma versão textual.
-Não há OCR nesta extração.
-
-### Base Anki
-
-A base é publicada junto com a aplicação em `assets/bancos/anki.json`; não
-depende de envio de arquivos, geração de perguntas ou conexão a banco remoto.
-O teste de integridade confere o SHA-256 integral do arquivo publicado:
-`124e9f0f3b811a7b379fd0a4da2bc9fc8a55213bd1571bca61521a5803d191ae`.
-
-As observações sobre vigência jurídica, trechos incompletos, imagens ausentes e
-as fontes estão nos próprios cartões. A atualização de 25/11/2026 foi dirigida e
-não certifica a vigência ou a exatidão de todo o acervo.
-
-### Como funciona a geração opcional
-
-O código original reconhece padrões em português: definições, competências,
-prazos, condições e outras relações explícitas no texto. Um pequeno
-classificador local atribui escores de apoio.
-
-**Não é um modelo generativo nem uma API de IA.** A ferramenta não cria fatos
-ausentes da fonte e não garante cartões para todos os trechos. A cobertura
-mostrada na interface permite conferir quantos trechos produziram cartões.
-Revise o conteúdo gerado, especialmente a redação vigente de material jurídico.
-
-## O que foi extraído
-
-| Arquivo | Responsabilidade |
-| --- | --- |
-| `index.html` | Interface exclusiva de flashcards |
-| `assets/bancos/anki.json` | Base Anki com IDs originais e correções documentadas |
-| `assets/pmdf-anki-catalog.js` | Carregamento, filtros e adaptação dos cartões do acervo |
-| `assets/pmdf-flashcards-app.js` | Criação, estado, revisão, persistência e eventos |
-| `assets/pmdf-flashcard-classifier.js` | Classificador extraído do módulo compartilhado |
-| `assets/pmdf-neural-flashcards.js` | Motor original de lacunas, conceitos e contrastes |
-| `assets/pmdf-flashcards-perguntas.js` | Motor original de perguntas e seleção de formato |
-| `assets/pmdf-flashcard-io.js` | Entrada de arquivos, normalização e exportação |
-| `assets/pmdf-flashcard-migration.js` | Recuperação local da sessão anterior e dos agendamentos dos IDs do acervo |
-| `assets/pmdf-flashcards-standalone.css` | Estrutura e temas da aplicação independente |
-| `assets/pmdf-flashcards-visual.css` | Estilos originais dos cartões, com regras alheias removidas |
-| `assets/pmdf-flashcards-questions.css` | Apresentação original das perguntas de flashcards |
-
-Foram retirados da versão isolada os módulos de questões e simulados, mapeamento
-e resumos, mapas mentais, redação, infográficos, banco de questões, loja, pagamentos,
-autenticação, funções de backend, migrações e workflows correspondentes.
-`pmdf-flashcards-perguntas.js` contém **perguntas de flashcards**, não a ferramenta
-de questões de múltipla escolha.
-
-A dependência do gerador no módulo de questões foi substituída pelo classificador
-isolado, preservando a rede e os recursos originais. O modo Cloze foi corrigido
-para retornar somente lacunas, e o modo misto aproveita lacunas válidas mesmo
-quando o texto não produz perguntas estratégicas.
-
-## Dados e segurança
-
-Os arquivos são lidos localmente, e a aplicação não usa conta, banco remoto ou
-envio do material a APIs. O armazenamento usa chaves próprias. Outro domínio,
-navegador ou dispositivo tem armazenamento separado. Se o navegador bloquear
-o armazenamento ou atingir sua capacidade, a interface avisa para exportar os
-cartões antes de fechar.
-
-Na primeira abertura, quando ainda não existe um baralho desta versão, o criador
-tenta recuperar os cartões e agendamentos da sessão antiga salva neste mesmo
-navegador. Usa apenas a conta identificada na sessão local anterior ou, na
-ausência dela, os registros de visitante de versões antigas. Não percorre outras
-contas, não usa tokens nem consulta serviços remotos, e mantém os registros
-originais. Um baralho desta versão que já esteja salvo tem prioridade.
-
-A recuperação cobre somente os cartões que a versão antiga havia gravado na
-sessão de revisão, limitada ao lote selecionado. Ela não recupera cartões que
-nunca foram salvos, nem dados existentes apenas na nuvem ou em outro navegador.
-
-O catálogo completo é carregado independentemente dessa sessão: um lote antigo
-de 25 ou 50 cartões não limita o acesso aos 2.624 do acervo. Os agendamentos dos
-demais IDs também são recuperados dos registros locais compatíveis, com prioridade
-para as avaliações já gravadas pela nova versão.
-
-O progresso da base Anki usa armazenamento separado do baralho pessoal. Guarda
-filtros, posições dos lotes, agendamentos e IDs da sessão, sem duplicar os textos
-do acervo no armazenamento do navegador. O baralho pessoal permanece disponível
-ao alternar para a base Anki.
-
-Texto e metadados importados são escapados na apresentação, inclusive os trechos
-ao redor das lacunas. A política de conteúdo não permite handlers inline nem
-avaliação dinâmica; o leitor PDF também recebe `isEvalSupported: false`.
-
-## Verificar o código
-
-Requer Node.js 22 ou superior. Os testes de unidade não precisam de dependências:
-
-```bash
-npm test
+```text
+124e9f0f3b811a7b379fd0a4da2bc9fc8a55213bd1571bca61521a5803d191ae
 ```
 
-Para os testes reais de navegador:
+A revisão jurídica anterior foi dirigida e não certifica a exatidão ou vigência de todo o acervo. Os avisos e referências existentes nos cartões continuam sendo apresentados.
 
-```bash
+## Recursos de estudo
+
+- Base pronta, sem necessidade de colar lei ou enviar arquivos.
+- Filtros por disciplina e assunto.
+- Revisão frente/verso, treino livre e lotes de 25, 50, 100, 200 ou todos os cartões.
+- Caixas Leitner, com avaliações Errei, Difícil, Bom e Fácil.
+- Exportação Anki Basic/Cloze, CSV/TSV e backup JSON dos cartões.
+- Criação opcional de baralhos pessoais a partir de texto, TXT, Markdown, JSON, PDF textual ou DOCX.
+- Interface responsiva e temas claro/escuro.
+
+Os documentos pessoais são processados no navegador; leitores de PDF/DOCX são obtidos de `cdnjs.cloudflare.com` quando necessários. PDFs sem texto extraível não recebem OCR.
+
+## Progresso e privacidade local
+
+O progresso e os baralhos pessoais são separados por ID do usuário autenticado. Uma conta não herda a sessão de estudo de outra conta no mesmo navegador. Os registros globais de versões antigas não são importados automaticamente, pois não permitem identificar seu proprietário com segurança.
+
+O progresso continua local ao navegador, sem sincronização entre dispositivos. O backup JSON guarda cartões e metadados; ele não inclui os agendamentos de revisão. O logout limpa os cartões em memória e preserva o progresso da conta para uma próxima entrada no mesmo navegador.
+
+## Desenvolvimento
+
+Requer Node.js 22 ou superior.
+
+```sh
 npm ci
+npm run vendor:auth
+npm test
+npm run test:backend
 npx playwright install chromium
 npm run test:browser
+npm run build
 ```
 
-A suíte inicia seu próprio servidor local, testa o acervo sem entrada de texto,
-os filtros, as revisões e o fluxo pessoal em desktop e celular e
-salva capturas em `test-artifacts/`. `PMDF_TEST_URL` permite apontar para outro
-servidor; `PMDF_CHROMIUM_PATH` permite escolher um Chromium instalado.
+`npm run build` publica somente `index.html` e os arquivos permitidos de `assets/` em `dist/`. Backend, testes e acervo privado não entram no resultado. O Netlify utiliza esse diretório; outras hospedagens estáticas devem fazer o mesmo.
 
-O workflow `.github/workflows/qa.yml` executa esses testes no GitHub Actions.
-Ele não publica o site e não chama serviços de pagamento ou banco de dados.
+Os testes normais usam exclusivamente um catálogo sintético, sem conteúdo comercial. Os testes de navegador interceptam a API em seu próprio contexto de teste e usam o SDK real; não existe atalho de acesso no código de produção.
 
-## Publicação
+Para verificar novamente a integridade de uma cópia privada do catálogo, informe o caminho do arquivo somente ao processo de teste:
 
-A pasta pode ser publicada em qualquer hospedagem de arquivos estáticos.
-O `netlify.toml` aponta para a raiz e não exige build. No GitHub Pages, a aplicação
-fica na raiz do branch `main`, no endereço informado acima.
+```sh
+PMDF_PRIVATE_CATALOG=/caminho/privado/anki.json node tests/anki-catalog.test.cjs
+```
 
-O branch `main` contém exclusivamente os flashcards e seus arquivos de apoio.
-A versão completa anterior continua disponível no histórico, no commit
-`08bdb149428459583d170287feac5960519cffa9`. A recuperação de progresso é local;
-esta atualização não executa migrações nem altera dados em serviços remotos.
+Não copie esse arquivo para `assets/`, fixtures, commits ou artefatos públicos. `PMDF_CHROMIUM_PATH` permite usar um executável de Chromium instalado para QA.
+
+## Itens necessários para o lançamento
+
+- Configurar a URL definitiva do site nas URLs permitidas de autenticação.
+- Habilitar confirmação de e-mail e configurar SMTP apropriado para compradores externos.
+- Conferir a implantação das funções e da estrutura já provisionadas, conforme `supabase/`.
+- Manter o acervo privado e confirmar os hashes após qualquer nova importação.
+- Vincular o webhook ao produto **9071720**, com segredo mantido exclusivamente no servidor.
+- Configurar a área de membros externa e concluir a verificação Hotmart.
+- Publicar o Order Bump no checkout das apostilas depois da validação de acesso, entrega e reembolso.
+
+O status desses itens deve ser conferido na implantação. A existência do código local não comprova que uma integração esteja ativa em produção.
