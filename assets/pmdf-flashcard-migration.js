@@ -1,4 +1,4 @@
-/* Recupera apenas os flashcards da sessão anterior, sem autenticação ou rede.
+/* Recupera flashcards e agendamentos locais anteriores, sem autenticação ou rede.
  * Os registros antigos permanecem intactos; gravar o novo estado cabe ao app.
  */
 (function (root) {
@@ -18,21 +18,51 @@
   const invalid = () => ({status: 'invalid', message:
     'Não foi possível recuperar os flashcards da sessão anterior. Os registros antigos foram preservados.'});
 
+  function legacyPrefixes(storage) {
+    let accountId = null;
+    const accountRaw = storage.getItem(ACCOUNT_SESSION);
+    if (accountRaw != null) {
+      try {
+        const candidate = JSON.parse(accountRaw)?.user?.id;
+        if (typeof candidate === 'string' && UUID.test(candidate)) accountId = candidate;
+      } catch (_) { /* Sem identificação válida, apenas dados públicos locais. */ }
+    }
+    return accountId ? ['pmdf:account:' + accountId + ':'] : ['pmdf:visitor:', ''];
+  }
+
+  // O catálogo fornece os IDs explicitamente. Não percorre contas, não depende
+  // da última sessão e deixa a prioridade das avaliações novas para o chamador.
+  function readSchedules(storage, ids) {
+    const schedule = Object.create(null);
+    if (!Array.isArray(ids) || !ids.length) return {status: 'none', schedule};
+    try {
+      const prefixes = legacyPrefixes(storage);
+      for (const id of new Set(ids)) {
+        if (typeof id !== 'string' || !/^[A-Za-z0-9:_-]{1,160}$/u.test(id)) continue;
+        for (const prefix of prefixes) {
+          const fc = storage.getItem(prefix + 'fc:' + id);
+          const leitner = storage.getItem(prefix + 'leitner:' + id);
+          const due = storage.getItem(prefix + 'leitnerDue:' + id);
+          if (fc == null && leitner == null && due == null) continue;
+          schedule[id] = {box: Math.max(box(fc), box(leitner)), due: Math.max(0, number(due))};
+          // Um registro visitor, mesmo inválido, não incorpora dados sem prefixo.
+          break;
+        }
+      }
+      return {status: Object.keys(schedule).length ? 'recovered' : 'none', schedule};
+    } catch (_) {
+      return {status: 'unavailable', schedule, message:
+        'Não foi possível ler todos os agendamentos anteriores neste navegador. Os registros antigos foram preservados.'};
+    }
+  }
+
   function recover(storage, validateCards) {
     try {
       // Até um registro vazio ou inválido pertence à versão nova. A migração
       // nunca o substitui nem tenta recuperar outra conta como alternativa.
       if (storage.getItem(KEY) != null) return {status: 'existing'};
 
-      let accountId = null;
-      const accountRaw = storage.getItem(ACCOUNT_SESSION);
-      if (accountRaw != null) {
-        try {
-          const candidate = JSON.parse(accountRaw)?.user?.id;
-          if (typeof candidate === 'string' && UUID.test(candidate)) accountId = candidate;
-        } catch (_) { /* Sem identificação válida, apenas dados públicos locais. */ }
-      }
-      const prefixes = accountId ? ['pmdf:account:' + accountId + ':'] : ['pmdf:visitor:', ''];
+      const prefixes = legacyPrefixes(storage);
       let prefix, raw = null;
       for (const candidate of prefixes) {
         raw = storage.getItem(candidate + LEGACY_SESSION);
@@ -82,5 +112,5 @@
     }
   }
 
-  root.PMDFFlashcardMigration = Object.freeze({recover, version: '20261124-session-v4'});
+  root.PMDFFlashcardMigration = Object.freeze({recover, readSchedules, version: '20261125-catalog-schedules'});
 })(typeof window === 'undefined' ? globalThis : window);

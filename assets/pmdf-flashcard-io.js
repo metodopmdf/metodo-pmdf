@@ -128,7 +128,8 @@
   }
 
   const STRING_FIELDS = ['kind', 'modality', 'law', 'article', 'reference', 'source', 'sourceQuote', 'extra',
-    'scope', 'warning', 'tip', 'pitfall', 'application', 'priority', 'difficulty', 'difficultyLevel', 'family', 'hint', 'tags'];
+    'scope', 'warning', 'tip', 'pitfall', 'application', 'priority', 'difficulty', 'difficultyLevel', 'family', 'hint', 'tags',
+    'answer', 'reviewed_source', 'origin'];
 
   function validateCards(cards) {
     if (!Array.isArray(cards) || !cards.length) throw new Error('Não existem flashcards para importar ou exportar.');
@@ -149,6 +150,12 @@
         if (original[field] == null) continue;
         if (typeof original[field] !== 'string' || original[field].length > MAX_TEXT) throw new Error(label + ': metadado ' + field + ' inválido.');
         card[field] = original[field];
+      }
+      if (original.editorialFlags != null) {
+        if (!Array.isArray(original.editorialFlags) || original.editorialFlags.length > 30 ||
+          original.editorialFlags.some(flag => typeof flag !== 'string' || flag.length > 200))
+          throw new Error(label + ': observações editoriais inválidas.');
+        card.editorialFlags = original.editorialFlags.slice();
       }
       if (original.cloze != null) {
         if (typeof original.cloze !== 'string' || original.cloze.length > 20000 ||

@@ -128,6 +128,95 @@ for (const malformed of ['{inválido', 'null', JSON.stringify({version: 3, anki:
 assert.equal(recover(storage(account({...old(), anki: null}))).status, 'none');
 assert.equal(recover(storage({}, {blockReads: true})).status, 'unavailable');
 
+// O acervo completo recupera a agenda de IDs conhecidos fora da última sessão,
+// inclusive quando a versão nova já salvou um baralho ou não há sessão antiga.
+{
+  const outside = 'cfo-gst-1770888888888';
+  const input = {...account(), [KEY]: JSON.stringify({version: 1, cards}),
+    [PREFIX + 'fc:' + outside]: '1', [PREFIX + 'leitner:' + outside]: '3',
+    [PREFIX + 'leitnerDue:' + outside]: '1893456123456'};
+  const store = storage(input), result = migration.readSchedules(store, [outside, 'missing']);
+  assert.equal(result.status, 'recovered');
+  assert.equal(Object.getPrototypeOf(result.schedule), null);
+  assert.deepEqual({...result.schedule}, {[outside]: {box: 3, due: 1893456123456}});
+  assert(!store.reads.includes(KEY) && !store.reads.includes(PREFIX + SESSION),
+    'Ler a agenda do catálogo não deve depender de um baralho ou de uma sessão');
+  assert(store.reads.every(key => key === AUTH || key.startsWith(PREFIX)));
+  assert.deepEqual(Object.fromEntries(store.data), input);
+  assert.deepEqual(store.writes, []);
+}
+{
+  const input = {[AUTH]: account()[AUTH], [PREFIX + 'leitnerDue:outside-session']: '1893456000000'};
+  const store = storage(input), result = migration.readSchedules(store, ['outside-session']);
+  assert.equal(result.status, 'recovered');
+  assert.deepEqual(result.schedule['outside-session'], {box: 0, due: 1893456000000});
+  assert.equal(store.data.has(PREFIX + SESSION), false);
+}
+
+// Uma conta identificada nunca recebe agenda de outra conta ou de visitantes.
+{
+  const input = {[AUTH]: account()[AUTH],
+    ['pmdf:account:' + OTHER + ':leitner:only-other']: '4',
+    'pmdf:visitor:leitner:only-other': '3', 'leitner:only-other': '2'};
+  const store = storage(input), result = migration.readSchedules(store, ['only-other']);
+  assert.equal(result.status, 'none');
+  assert.deepEqual({...result.schedule}, {});
+  assert(store.reads.every(key => key === AUTH || key.startsWith(PREFIX)));
+  assert.deepEqual(store.writes, []);
+}
+
+// Sem conta válida, os dois formatos históricos públicos são aceitos. Um mesmo
+// cartão usa um único namespace, com preferência por visitor, sem mesclar campos.
+for (const auth of [undefined, '{inválido', JSON.stringify({user: {id: '../other'}})]) {
+  const input = {
+    'pmdf:visitor:fc:visitor-card': '2',
+    'leitner:visitor-card': '4', 'leitnerDue:visitor-card': '1893456000000',
+    'leitner:unprefixed-card': '3', 'leitnerDue:unprefixed-card': '1893456123456',
+    ['pmdf:account:' + OTHER + ':leitner:private-card']: '4'
+  };
+  if (auth !== undefined) input[AUTH] = auth;
+  const store = storage(input), result = migration.readSchedules(store, ['visitor-card', 'unprefixed-card', 'private-card']);
+  assert.equal(result.status, 'recovered');
+  assert.deepEqual({...result.schedule}, {
+    'visitor-card': {box: 2, due: 0}, 'unprefixed-card': {box: 3, due: 1893456123456}
+  });
+  assert(!store.reads.some(key => key.startsWith('pmdf:account:')));
+  assert(!store.reads.includes('leitner:visitor-card'));
+  assert.deepEqual(store.writes, []);
+}
+
+// Entradas inválidas são normalizadas individualmente, sem perder a agenda dos
+// demais cartões e sem fabricar registros para IDs que não tenham dados.
+{
+  const store = storage({[AUTH]: account()[AUTH],
+    [PREFIX + 'fc:bad']: 'NaN', [PREFIX + 'leitner:bad']: 'Infinity',
+    [PREFIX + 'leitnerDue:bad']: '-20',
+    [PREFIX + 'fc:bounded']: '-9', [PREFIX + 'leitner:bounded']: '8.4',
+    [PREFIX + 'leitnerDue:bounded']: '1893456123456',
+    [PREFIX + 'fc:empty']: ''});
+  const result = migration.readSchedules(store, ['bad', 'bounded', 'empty', 'absent', 'bounded', null, '../bad']);
+  assert.equal(result.status, 'recovered');
+  assert.deepEqual({...result.schedule}, {
+    bad: {box: 0, due: 0}, bounded: {box: 4, due: 1893456123456}, empty: {box: 0, due: 0}
+  });
+  assert.equal(store.reads.filter(key => key === PREFIX + 'fc:bounded').length, 1);
+  assert(!store.reads.some(key => key.includes('../bad') || key.endsWith(':null')));
+}
+{
+  const store = storage(), result = migration.readSchedules(store, ['unknown']);
+  assert.equal(result.status, 'none');
+  assert.deepEqual({...result.schedule}, {});
+  assert.deepEqual(store.writes, []);
+}
+{
+  const store = storage({}, {blockReads: true}), result = migration.readSchedules(store, ['old-basic']);
+  assert.equal(result.status, 'unavailable');
+  assert.deepEqual({...result.schedule}, {});
+  assert.match(result.message, /preservados/);
+  assert.deepEqual(store.writes, []);
+  assert.equal(migration.readSchedules(store, []).status, 'none');
+}
+
 // Executa o controlador real com elementos mínimos para conferir recuperação e
 // falha de gravação sem depender de Chromium. A suíte browser cobre a interface.
 function restoreApp(store) {
@@ -183,4 +272,4 @@ for (const existing of ['', '{corrompido', '{}']) {
   assert(!store.reads.includes(AUTH));
 }
 assert.equal(restoreApp(storage({}, {blockReads: true}))('deck-count').textContent, '0');
-console.log('QA MIGRATION PASS: sessão v4, isolamento entre contas, agendamentos, dados inválidos e falha de armazenamento');
+console.log('QA MIGRATION PASS: sessão v4, agenda do catálogo completo, isolamento entre contas, dados inválidos e falha de armazenamento');

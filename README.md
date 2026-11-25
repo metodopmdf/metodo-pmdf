@@ -1,7 +1,7 @@
-# Método PMDF — Criador de Flashcards
+# Método PMDF — Flashcards Anki
 
-Aplicação do Método PMDF dedicada exclusivamente à criação, revisão e
-exportação de flashcards.
+Aplicação do Método PMDF dedicada exclusivamente aos flashcards, com a **base
+Anki original carregada automaticamente**, revisão e exportação.
 
 **Site:** https://metodopmdf.github.io/metodo-pmdf/
 
@@ -12,6 +12,12 @@ do repositório.
 Esta versão reúne **criação, revisão e exportação de flashcards**. Os motores de
 geração e os estilos dos cartões foram reaproveitados do projeto original, com
 um controlador próprio e somente suas dependências necessárias.
+
+O acervo contém **2.624 cartões, 22 disciplinas e 130 combinações de disciplina
+e assunto**. O arquivo `assets/bancos/anki.json` foi restaurado sem alterações
+do commit anterior à extração: mesmos identificadores, ordem, enunciados,
+respostas, fontes e observações editoriais. Para estudar essa base, basta
+selecionar a disciplina e o assunto e iniciar uma revisão.
 
 ## Usar
 
@@ -31,9 +37,15 @@ Não é necessário compilar, cadastrar uma conta ou configurar chaves de API.
    ```
 
 3. Abra [http://localhost:8000](http://localhost:8000).
-4. Cole um texto ou importe um arquivo, escolha o formato e clique em **Criar
-   flashcards**. O botão **Usar exemplo** carrega um regulamento fictício.
-5. Inicie uma revisão ou baixe o baralho.
+4. Aguarde o carregamento automático da base Anki. Selecione uma disciplina e
+   um assunto, ou mantenha o acervo completo.
+5. Escolha **Novos e vencidos** ou **Todos (treino livre)**, o tamanho do lote e
+   clique em **Iniciar revisão**. A exportação inclui todos os cartões filtrados.
+
+O painel **Criar flashcards com meu material — Opcional** mantém a criação de
+um baralho pessoal a partir de texto ou arquivo. Não é necessário abri-lo para
+estudar a base Anki. **Usar base Anki** retorna ao acervo após um baralho pessoal;
+**Retomar meu baralho salvo** recupera o material pessoal do navegador.
 
 O fluxo textual usa apenas arquivos locais da aplicação. Para ler PDF ou DOCX,
 o navegador baixa o leitor correspondente de `cdnjs.cloudflare.com` quando
@@ -41,6 +53,8 @@ necessário. Os documentos são processados no navegador.
 
 ## Funcionalidades
 
+- Acervo Anki original integrado, com carregamento automático do próprio site.
+- Filtros por disciplina e assunto; enunciado, gabarito e comentário originais.
 - Texto colado e arquivos TXT, Markdown, JSON, PDF textual e DOCX.
 - Perguntas e respostas, lacunas Cloze ou formato misto.
 - Referência ao trecho de origem, dicas e observações herdadas dos motores.
@@ -48,8 +62,9 @@ necessário. Os documentos são processados no navegador.
 - Revisão frente/verso, navegação e quatro avaliações: Errei, Difícil, Bom e Fácil.
 - Caixas Leitner com os intervalos originais de 1, 3, 7 e 14 dias; avaliação
   Difícil agenda a revisão para 12 horas e Errei deixa o cartão disponível.
-- Seleção de cartões novos/vencidos ou treino livre, com lotes de 25, 50, 100 ou
-  todos. Lotes de treino livre percorrem o baralho em sequência.
+- Seleção de cartões novos/vencidos ou treino livre, com lotes de 25, 50, 100,
+  200 ou todos. O treino livre percorre o acervo em sequência e mantém uma posição
+  independente para cada seleção de disciplina e assunto.
 - Recuperação do último baralho, rascunho, sessão e progresso neste navegador.
 - Exportação para Anki Basic/Cloze, planilhas CSV/TSV e backup JSON dos cartões.
 - Interface responsiva, tema claro/escuro e navegação por teclado.
@@ -81,7 +96,18 @@ mensagem explícita, sem cortar o restante do arquivo silenciosamente.
 PDFs protegidos ou páginas sem texto extraível precisam de uma versão textual.
 Não há OCR nesta extração.
 
-### Como funciona a geração
+### Base Anki original
+
+A base é publicada junto com a aplicação em `assets/bancos/anki.json`; não
+depende de envio de arquivos, geração de perguntas ou conexão a banco remoto.
+O teste de integridade confere o SHA-256 integral do arquivo restaurado:
+`4a409138090c14e580de4e6b4bedfcba490cf1c03c699a8cbfd99f30a291f427`.
+
+As observações sobre vigência jurídica, trechos incompletos, imagens ausentes e
+as fontes de correções documentadas foram preservadas. Esta restauração não é
+uma nova revisão jurídica do conteúdo.
+
+### Como funciona a geração opcional
 
 O código original reconhece padrões em português: definições, competências,
 prazos, condições e outras relações explícitas no texto. Um pequeno
@@ -97,18 +123,20 @@ Revise o conteúdo gerado, especialmente a redação vigente de material jurídi
 | Arquivo | Responsabilidade |
 | --- | --- |
 | `index.html` | Interface exclusiva de flashcards |
+| `assets/bancos/anki.json` | Base Anki original, preservada integralmente |
+| `assets/pmdf-anki-catalog.js` | Carregamento, filtros e adaptação dos cartões do acervo |
 | `assets/pmdf-flashcards-app.js` | Criação, estado, revisão, persistência e eventos |
 | `assets/pmdf-flashcard-classifier.js` | Classificador extraído do módulo compartilhado |
 | `assets/pmdf-neural-flashcards.js` | Motor original de lacunas, conceitos e contrastes |
 | `assets/pmdf-flashcards-perguntas.js` | Motor original de perguntas e seleção de formato |
 | `assets/pmdf-flashcard-io.js` | Entrada de arquivos, normalização e exportação |
-| `assets/pmdf-flashcard-migration.js` | Recuperação local dos cartões e agendamentos da sessão anterior |
+| `assets/pmdf-flashcard-migration.js` | Recuperação local da sessão anterior e dos agendamentos dos IDs do acervo |
 | `assets/pmdf-flashcards-standalone.css` | Estrutura e temas da aplicação independente |
 | `assets/pmdf-flashcards-visual.css` | Estilos originais dos cartões, com regras alheias removidas |
 | `assets/pmdf-flashcards-questions.css` | Apresentação original das perguntas de flashcards |
 
 Foram retirados da versão isolada os módulos de questões e simulados, mapeamento
-e resumos, mapas mentais, redação, infográficos, acervos prontos, loja, pagamentos,
+e resumos, mapas mentais, redação, infográficos, banco de questões, loja, pagamentos,
 autenticação, funções de backend, migrações e workflows correspondentes.
 `pmdf-flashcards-perguntas.js` contém **perguntas de flashcards**, não a ferramenta
 de questões de múltipla escolha.
@@ -137,6 +165,16 @@ A recuperação cobre somente os cartões que a versão antiga havia gravado na
 sessão de revisão, limitada ao lote selecionado. Ela não recupera cartões que
 nunca foram salvos, nem dados existentes apenas na nuvem ou em outro navegador.
 
+O catálogo completo é carregado independentemente dessa sessão: um lote antigo
+de 25 ou 50 cartões não limita o acesso aos 2.624 do acervo. Os agendamentos dos
+demais IDs também são recuperados dos registros locais compatíveis, com prioridade
+para as avaliações já gravadas pela nova versão.
+
+O progresso da base Anki usa armazenamento separado do baralho pessoal. Guarda
+filtros, posições dos lotes, agendamentos e IDs da sessão, sem duplicar os textos
+do acervo no armazenamento do navegador. O baralho pessoal permanece disponível
+ao alternar para a base Anki.
+
 Texto e metadados importados são escapados na apresentação, inclusive os trechos
 ao redor das lacunas. A política de conteúdo não permite handlers inline nem
 avaliação dinâmica; o leitor PDF também recebe `isEvalSupported: false`.
@@ -157,7 +195,8 @@ npx playwright install chromium
 npm run test:browser
 ```
 
-A suíte inicia seu próprio servidor local, testa o fluxo em desktop e celular e
+A suíte inicia seu próprio servidor local, testa o acervo sem entrada de texto,
+os filtros, as revisões e o fluxo pessoal em desktop e celular e
 salva capturas em `test-artifacts/`. `PMDF_TEST_URL` permite apontar para outro
 servidor; `PMDF_CHROMIUM_PATH` permite escolher um Chromium instalado.
 

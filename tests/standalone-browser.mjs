@@ -46,11 +46,20 @@ const fixture = 'O protocolo é registro sequencial das solicitações recebidas
 async function waitForCards(page) {
   await page.waitForFunction(() => {
     const count = Number(document.getElementById('deck-count')?.textContent?.replace(/\D/g, ''));
-    return count > 0 && !document.getElementById('generate-cards')?.disabled;
+    const status = document.getElementById('generation-status');
+    return count > 0 && !document.getElementById('generate-cards')?.disabled &&
+      status?.dataset.error !== 'true' && status?.textContent.includes('flashcards criados');
   });
 }
 async function deckSize(page) {
   return Number((await page.locator('#deck-count').innerText()).replace(/\D/g, ''));
+}
+async function openCustom(page) {
+  await page.waitForFunction(() => document.getElementById('anki-cfo-disciplina')?.options.length > 1);
+  if (!(await page.locator('#custom-source').evaluate(element => element.open))) {
+    await page.locator('#custom-source > summary').click();
+  }
+  await page.locator('#source-text').waitFor({state: 'visible'});
 }
 async function download(page, format) {
   await page.selectOption('#export-format', format);
@@ -87,7 +96,7 @@ try {
       document.addEventListener('securitypolicyviolation', event => window.__cspViolations.push(event.violatedDirective));
     });
     await page.goto(target, {waitUntil: 'networkidle'});
-    await page.locator('#source-text').waitFor({state: 'visible'});
+    await openCustom(page);
     await page.fill('#source-title', 'Regulamento fictício de teste');
     await page.fill('#source-text', fixture);
     await page.selectOption('#anki-card-style', 'questions');
@@ -127,6 +136,7 @@ try {
     assert.notEqual(await page.locator('#anki-panel .anki-question').innerText(), firstQuestion,
       'Cartão avaliado como Bom não deve aparecer entre vencidos imediatamente');
 
+    await openCustom(page);
     await page.fill('#source-text', fixture);
     await page.selectOption('#anki-card-style', 'cloze');
     await page.click('#generate-cards');
@@ -191,6 +201,7 @@ try {
     cards: legacyCards, index: 1, back: true, ratings: {'0': 'good'}
   }});
   await legacyPage.evaluate(({cards, prefix, savedSession, due}) => {
+    localStorage.setItem('pmdf:flashcards:standalone:v1:source', 'custom');
     localStorage.setItem('pmdf:supabase:session:v1', JSON.stringify({user: {id: '11111111-1111-4111-8111-111111111111'}}));
     localStorage.setItem(prefix + 'pmdf:session:v4', savedSession);
     localStorage.setItem(prefix + 'fc:legacy-first', '2');
@@ -236,6 +247,7 @@ try {
     document.addEventListener('securitypolicyviolation', event => window.__cspViolations.push(event.violatedDirective));
   });
   await documentPage.goto(target, {waitUntil: 'networkidle'});
+  await openCustom(documentPage);
   for (const extension of ['pdf', 'docx']) {
     await documentPage.locator('#source-file').setInputFiles(path.join(root, 'tests/fixtures/material.' + extension));
     await documentPage.waitForFunction(() => !document.getElementById('generate-cards').disabled &&

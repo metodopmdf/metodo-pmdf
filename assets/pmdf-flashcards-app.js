@@ -7,6 +7,7 @@
   const $ = id => document.getElementById(id);
   const IO = window.PMDFFlashcardIO;
   const ENGINE = window.PMDFNeuralFlashcards;
+  const CATALOG = window.PMDFAnkiCatalog;
   if (!IO || !ENGINE) {
     $('generation-status').textContent = 'Não foi possível carregar o criador. Atualize a página ou confira os arquivos da aplicação.';
     $('generation-status').dataset.error = 'true';
@@ -17,6 +18,8 @@
   const KEY = 'pmdf:flashcards:standalone:v1';
   const DRAFT_KEY = KEY + ':draft';
   const THEME_KEY = KEY + ':theme';
+  const SOURCE_KEY = KEY + ':source';
+  const CATALOG_KEY = 'pmdf:flashcards:anki:v1';
   const RATINGS = {again: 'Errei', hard: 'Difícil', good: 'Bom', easy: 'Fácil'};
   const DAYS = [0, 1, 3, 7, 14];
   const intervalLabel = days => days + (days === 1 ? ' dia' : ' dias');
@@ -27,6 +30,8 @@
   let bank = [], deckTitle = '', report = null, session = null;
   let schedule = Object.create(null), cursor = 0, importedGuide = null;
   let operation = 0, busy = false, storageFailed = false, draftTimer, toastTimer;
+  let catalogData = null, catalogOpening = false, activeCatalog = false, deckRevision = 0;
+  let catalogFilters = {discipline: '', topic: ''}, catalogCursors = Object.create(null);
 
   function readStorage(key) {
     try { return localStorage.getItem(key); } catch (_) { return null; }
@@ -42,11 +47,17 @@
   }
   function persistDeck() {
     if (!bank.length) return;
-    const saved = writeStorage(KEY, {version: 1, title: deckTitle, cards: bank, report, schedule, cursor,
-      session: session ? {ids: session.cards.map(c => c.id), index: session.index, back: session.back, ratings: session.ratings} : null});
+    const review = session ? {ids: session.cards.map(c => c.id), index: session.index, back: session.back, ratings: session.ratings} : null;
+    // O catálogo estático é carregado do site; somente progresso e seleção ficam
+    // no navegador. O baralho pessoal continua na sua chave própria.
+    const saved = activeCatalog ? writeStorage(CATALOG_KEY, {version: 1, revision: catalogData?.revision,
+      filters: catalogFilters, schedule, cursors: catalogCursors, session: review,
+      mode: $('anki-mode').value, batchSize: $('anki-batch-size').value}) :
+      writeStorage(KEY, {version: 1, title: deckTitle, cards: bank, report, schedule, cursor, session: review});
     if (saved && !storageFailed) {
       $('storage-status').dataset.error = 'false';
-      $('storage-status').textContent = 'Baralho e progresso salvos neste navegador.';
+      $('storage-status').textContent = activeCatalog ? 'Seleção e progresso da base Anki salvos neste navegador.' :
+        'Baralho e progresso salvos neste navegador.';
     }
     return saved;
   }
@@ -74,6 +85,7 @@
     for (const id of ['generate-cards', 'source-file', 'source-title', 'source-text', 'anki-card-style', 'load-example']) $(id).disabled = value;
     $('stop-generation').hidden = !value;
     $('create-form').setAttribute('aria-busy', String(value));
+    updateCatalogControls();
   }
   function cancelOperation() {
     if (!busy) return;
@@ -84,11 +96,12 @@
   }
   function renderDeck() {
     $('deck-count').textContent = String(bank.length);
-    $('deck-title').textContent = deckTitle || 'Pronto para o primeiro cartão.';
+    $('deck-title').textContent = deckTitle || 'Preparando a base Anki.';
     const cloze = bank.filter(c => c.cloze).length;
     $('deck-breakdown').textContent = bank.length ?
       (bank.length - cloze) + ' perguntas e respostas · ' + cloze + ' lacunas.' :
-      'Crie cartões a partir do texto ou importe um backup JSON.';
+      'Escolha uma disciplina e um assunto na base Anki.';
+    if (activeCatalog && bank.length) $('deck-breakdown').textContent = bank.length.toLocaleString('pt-BR') + ' cartões originais na seleção atual.';
     $('start-review').disabled = !bank.length;
     $('export-cards').disabled = !bank.length;
     $('coverage-details').hidden = !report;
@@ -99,9 +112,14 @@
     }
     if (bank.length && !bank.some(c => !c.cloze)) $('export-format').value = 'cloze';
     else if (bank.length && $('export-format').value === 'cloze' && !cloze) $('export-format').value = 'basic';
+    if ($('restore-custom')) $('restore-custom').disabled = busy || readStorage(KEY) == null;
+    updateCatalogControls();
   }
   function acceptDeck(cards, title, coverage) {
     bank = IO.validateCards(cards);
+    activeCatalog = false;
+    deckRevision++;
+    chooseSource('custom');
     deckTitle = title || 'Material personalizado';
     report = coverage || null;
     cursor = 0;
@@ -111,6 +129,136 @@
     $('review-status').textContent = 'Baralho pronto. Inicie uma sessão para revisar seus cartões.';
     renderDeck();
     persistDeck();
+    if ($('restore-custom')) $('restore-custom').disabled = false;
+  }
+
+  function chooseSource(source) {
+    try { localStorage.setItem(SOURCE_KEY, source); } catch (_) { /* Escolha válida nesta sessão. */ }
+  }
+  function catalogStatus(message, error = false) {
+    const element = $('anki-catalog-status');
+    if (element) { element.textContent = message; element.dataset.error = String(error); }
+  }
+  function updateCatalogControls() {
+    if (!CATALOG) return;
+    for (const id of ['anki-cfo-disciplina', 'anki-cfo-assunto', 'reset-anki-filters']) {
+      if ($(id)) $(id).disabled = busy || !catalogData;
+    }
+    const button = $('use-anki-catalog');
+    if (button) {
+      button.hidden = activeCatalog && Boolean(catalogData);
+      button.disabled = busy || catalogOpening;
+      button.textContent = catalogData ? 'Usar base Anki' : catalogOpening ? 'Carregando…' : 'Tentar novamente';
+    }
+  }
+  function fillCatalogSelect(element, values, label, selected = '') {
+    element.replaceChildren(new Option(label, ''));
+    for (const value of values) element.append(new Option(value, value));
+    element.value = values.includes(selected) ? selected : '';
+  }
+  function refreshCatalogTopics(selected = '') {
+    fillCatalogSelect($('anki-cfo-assunto'), CATALOG.topics(catalogData, $('anki-cfo-disciplina').value), 'Todos os assuntos', selected);
+  }
+  function currentCatalogFilters() {
+    return {discipline: $('anki-cfo-disciplina').value, topic: $('anki-cfo-assunto').value};
+  }
+  function catalogCursorKey() { return JSON.stringify([catalogFilters.discipline, catalogFilters.topic]); }
+  function reviewFromIds(saved, cards) {
+    if (!Array.isArray(saved?.ids) || saved.ids.length > cards.length) return null;
+    const byId = new Map(cards.map(card => [card.id, card]));
+    if (new Set(saved.ids).size !== saved.ids.length || saved.ids.some(id => !byId.has(id))) return null;
+    const ratings = Object.create(null);
+    for (const [index, value] of Object.entries(saved.ratings || {})) {
+      if (/^(0|[1-9]\d*)$/.test(index) && Number(index) < saved.ids.length && Object.hasOwn(RATINGS, value)) ratings[index] = value;
+    }
+    return {cards: saved.ids.map(id => byId.get(id)),
+      index: Math.max(0, Math.min(saved.ids.length, Math.trunc(Number(saved.index) || 0))),
+      back: saved.back === true, ratings};
+  }
+  function activateCatalog(savedReview = null, persist = true) {
+    if (!catalogData || busy) return;
+    catalogFilters = currentCatalogFilters();
+    const rows = CATALOG.filtered(catalogData, catalogFilters);
+    bank = rows.length ? IO.validateCards(CATALOG.toCards(rows)) : [];
+    activeCatalog = true;
+    deckRevision++;
+    deckTitle = [catalogFilters.discipline, catalogFilters.topic].filter(Boolean).join(' · ') || 'Base Anki completa';
+    report = null;
+    session = reviewFromIds(savedReview, bank);
+    $('review-section').hidden = !session;
+    if (session) drawReview(); else $('anki-panel').replaceChildren();
+    $('catalog-selection').textContent = bank.length.toLocaleString('pt-BR') + ' cartões nesta seleção.';
+    $('review-status').textContent = session ? 'Sua sessão da base Anki foi recuperada.' : 'Escolha o tipo e o tamanho da sessão e clique em Iniciar revisão.';
+    renderDeck();
+    catalogStatus('Base Anki pronta para estudar. Escolha uma disciplina e um assunto ou revise o acervo completo.');
+    if (persist) { chooseSource('catalog'); persistDeck(); }
+  }
+  async function initializeCatalog(force = false) {
+    if (!CATALOG || catalogOpening) return;
+    const initialRevision = deckRevision;
+    catalogOpening = true;
+    catalogStatus('Carregando a base de flashcards…');
+    updateCatalogControls();
+    try {
+      catalogData = await CATALOG.load();
+      const ids = new Set(catalogData.cards.map(card => card.id));
+      let saved = null;
+      try {
+        const value = JSON.parse(readStorage(CATALOG_KEY) || 'null');
+        if (value?.version === 1) saved = value;
+      } catch (_) { /* Um novo estudo continua possível; dados antigos não são apagados. */ }
+      if (saved?.schedule && typeof saved.schedule === 'object') {
+        const preserveCurrent = readStorage(SOURCE_KEY) === 'custom' || deckRevision !== initialRevision;
+        for (const [id, item] of Object.entries(saved.schedule)) {
+          if (preserveCurrent && Object.hasOwn(schedule, id)) continue;
+          if (ids.has(id) && item && Number.isFinite(item.box) && Number.isFinite(item.due))
+            schedule[id] = {box: Math.max(0, Math.min(4, Math.trunc(item.box))), due: Math.max(0, item.due)};
+        }
+      }
+      const legacy = window.PMDFFlashcardMigration?.readSchedules(
+        {getItem: key => localStorage.getItem(key)}, [...ids]);
+      for (const [id, item] of Object.entries(legacy?.schedule || {})) {
+        if (!Object.hasOwn(schedule, id)) schedule[id] = item;
+      }
+      if (saved?.cursors && typeof saved.cursors === 'object') {
+        for (const [key, value] of Object.entries(saved.cursors)) {
+          if (key.length <= 1000 && Number.isSafeInteger(value) && value >= 0 && value <= ids.size) catalogCursors[key] = value;
+        }
+      }
+      fillCatalogSelect($('anki-cfo-disciplina'), CATALOG.disciplines(catalogData), 'Todas as disciplinas', saved?.filters?.discipline);
+      refreshCatalogTopics(saved?.filters?.topic);
+      $('catalog-total').textContent = catalogData.cards.length.toLocaleString('pt-BR');
+      $('catalog-disciplines').textContent = String(CATALOG.disciplines(catalogData).length);
+      $('catalog-topics').textContent = String(new Set(catalogData.cards.map(card => JSON.stringify([card.disciplina, card.assunto]))).size);
+      $('catalog-review-note').textContent = catalogData.review_status || '';
+      $('catalog-selection').textContent = CATALOG.filtered(catalogData, currentCatalogFilters()).length.toLocaleString('pt-BR') + ' cartões nesta seleção.';
+      if (deckRevision === initialRevision && !busy && (force || readStorage(SOURCE_KEY) !== 'custom')) {
+        const prior = session && session.cards.every(card => ids.has(card.id)) ?
+          {ids: session.cards.map(card => card.id), index: session.index, back: session.back, ratings: session.ratings} : null;
+        if (['due', 'all'].includes(saved?.mode)) $('anki-mode').value = saved.mode;
+        if (['25', '50', '100', '200', 'all'].includes(saved?.batchSize)) $('anki-batch-size').value = saved.batchSize;
+        activateCatalog(saved?.session || prior, force);
+      } else catalogStatus('Base Anki disponível. Use os filtros para voltar aos cartões do acervo.');
+    } catch (error) {
+      catalogData = null;
+      catalogStatus('Não foi possível carregar a base Anki. Confira a conexão e tente novamente. ' + (error.message || ''), true);
+    } finally { catalogOpening = false; updateCatalogControls(); }
+  }
+  function restorePersonalDeck() {
+    if (busy) return;
+    try {
+      const saved = JSON.parse(readStorage(KEY) || 'null');
+      if (saved?.version !== 1) throw new Error('Não há baralho pessoal salvo neste navegador.');
+      IO.validateCards(saved.cards);
+      activeCatalog = false; bank = []; session = null; report = null; cursor = 0;
+      $('review-section').hidden = true;
+      $('anki-panel').replaceChildren();
+      deckRevision++;
+      restore();
+      chooseSource('custom');
+      persistDeck();
+      renderDeck();
+    } catch (error) { toast(error.message || 'Não foi possível recuperar o baralho pessoal.', true); }
   }
   async function generate(event) {
     event?.preventDefault();
@@ -195,15 +343,18 @@
     const limit = requested === 'all' ? eligible.length : Number(requested) || 50;
     let cards;
     if (mode === 'all') {
-      if (cursor >= eligible.length || requested === 'all') cursor = 0;
-      cards = eligible.slice(cursor, cursor + limit);
-      cursor += cards.length;
+      let position = activeCatalog ? catalogCursors[catalogCursorKey()] || 0 : cursor;
+      if (position >= eligible.length || requested === 'all') position = 0;
+      cards = eligible.slice(position, position + limit);
+      if (activeCatalog) catalogCursors[catalogCursorKey()] = position + cards.length;
+      else cursor = position + cards.length;
     } else cards = eligible.slice(0, limit);
     session = {cards, index: 0, back: false, ratings: Object.create(null)};
     $('review-status').textContent = cards.length + ' cartões nesta sessão · ' + eligible.length + ' disponíveis nesta seleção.';
     $('review-section').hidden = false;
     drawReview();
     persistDeck();
+    chooseSource(activeCatalog ? 'catalog' : 'custom');
     $('review-heading').focus({preventScroll: true});
     $('review-section').scrollIntoView({behavior: 'auto', block: 'start'});
   }
@@ -220,6 +371,25 @@
       previous = match.index + match[0].length;
     }
     return output ? output + esc(source.slice(previous)) : esc(revealed ? card.back : card.front);
+  }
+  function renderCatalogCard(card, revealed) {
+    const lines = card.front.split(/\r?\n/);
+    const marker = lines.findIndex(line => /^JULGUE\s+CERTO\s+OU\s+ERRADO\s*$/i.test(line.trim()));
+    const title = marker > 0 ? lines.slice(0, marker).join(' ').trim() : 'Revisão do assunto';
+    const statement = marker >= 0 ? lines.slice(marker + 1).join('\n').trim() : card.front;
+    const warning = card.editorialFlags?.includes('texto_incompleto_na_fonte') ?
+      '<p class="anki-imported-warning" role="note">Trecho incompleto no material original. Confira a fonte antes de estudar.</p>' : '';
+    if (!revealed) return '<section class="anki-imported-editorial"><h3 class="anki-imported-title">' + esc(title) +
+      '</h3><span class="anki-imported-command">JULGUE CERTO OU ERRADO</span><p class="anki-imported-statement">' +
+      esc(statement) + '</p>' + warning + '</section>';
+    const prefix = /^(?:✅\s*CERTO|❌\s*ERRADO|CERTO|ERRADO)\s*(?:[—–:\-]\s*)?/u.exec(card.back);
+    const verdict = card.answer || (prefix ? (/ERRADO/.test(prefix[0]) ? 'ERRADO' : 'CERTO') : 'GABARITO');
+    const tone = verdict === 'CERTO' ? 'right' : verdict === 'ERRADO' ? 'wrong' : 'neutral';
+    return '<section class="anki-imported-editorial"><h3 class="anki-imported-title">' + esc(title) + '</h3>' +
+      '<div class="anki-imported-verdict" data-verdict="' + tone + '"><strong>' + esc(verdict) +
+      '</strong><span>Gabarito do acervo</span></div><div class="anki-imported-commentary"><h4>Comentário e fundamentação</h4><p>' +
+      esc(prefix ? card.back.slice(prefix[0].length).trim() : card.back) + '</p></div>' +
+      '<details class="anki-imported-recap"><summary>Rever a assertiva</summary><p>' + esc(statement) + '</p></details>' + warning + '</section>';
   }
   function drawReview() {
     if (!session) return;
@@ -239,10 +409,11 @@
       return;
     }
     const card = s.cards[s.index], state = getCardBox(card.id);
+    const isImported = card.id.startsWith('cfo-gst-');
     const evaluated = Object.hasOwn(s.ratings, s.index);
     const law = esc(card.law || deckTitle), article = esc(card.reference || card.article || 'Material fornecido');
     const kind = esc(card.kind || (card.cloze ? 'Lacuna contextual' : 'Pergunta de revisão'));
-    const proof = s.back ? '<div class="anki-proof"><b>Fundamento do cartão</b><p class="anki-source-note">' + law + ' · ' + article + '</p>' +
+    const proof = s.back ? '<div class="anki-proof"><b>' + (isImported ? 'Origem e observações' : 'Fundamento do cartão') + '</b><p class="anki-source-note">' + law + ' · ' + article + '</p>' +
       (card.tip ? '<div class="anki-learn-aid"><strong>Dica de estudo</strong><p>' + esc(card.tip) + '</p></div>' : '') +
       (card.pitfall ? '<div class="anki-learn-aid anki-exam-trap"><strong>Ponto de atenção</strong><p>' + esc(card.pitfall) + '</p></div>' : '') +
       (card.application ? '<div class="anki-learn-aid"><strong>Aplicação</strong><p>' + esc(card.application) + '</p></div>' : '') +
@@ -269,8 +440,8 @@
       '</div><span class="anki-visual-art-caption">' + kind + '</span><span class="anki-visual-art-subtitle">' + article + '</span></aside>' +
       '<div class="anki-visual-body-wrap"><div class="anki-study-surface"><p class="anki-kicker">' +
       (s.back ? 'VERSO · RESPOSTA' : 'FRENTE · RECUPERAÇÃO ATIVA') + '</p>' +
-      '<p class="anki-question ' + (card.cloze ? 'anki-question-cloze' : '') + '">' +
-      (s.back ? '<strong class="anki-short-answer">' + esc(card.back) + '</strong>' : renderStatement(card, false)) + '</p>' +
+      '<div class="anki-question ' + (card.cloze ? 'anki-question-cloze' : '') + '">' +
+      (isImported ? renderCatalogCard(card, s.back) : s.back ? '<strong class="anki-short-answer">' + esc(card.back) + '</strong>' : renderStatement(card, false)) + '</div>' +
       (s.back && card.cloze ? '<p class="anki-restored">' + renderStatement(card, true) + '</p>' : '') +
       (!s.back && card.hint ? '<p class="anki-card-hint">Pista: ' + esc(card.hint) + '</p>' : '') + '</div>' + proof + '</div></div>' +
       '<div class="anki-study-controls"><div class="anki-actions ' + (s.back && !evaluated ? 'anki-grade-choices' : '') + '">' +
@@ -351,7 +522,7 @@
         report = saved.report && typeof saved.report === 'object' ? saved.report : null;
         if (saved.schedule && typeof saved.schedule === 'object') {
           for (const [id, item] of Object.entries(saved.schedule)) {
-            if (item && Number.isFinite(item.box) && Number.isFinite(item.due)) schedule[id] = item;
+            if (!Object.hasOwn(schedule, id) && item && Number.isFinite(item.box) && Number.isFinite(item.due)) schedule[id] = item;
           }
         }
         cursor = Math.max(0, Math.min(bank.length, Math.trunc(Number(saved.cursor) || 0)));
@@ -411,6 +582,30 @@
   });
   $('start-review').addEventListener('click', startReview);
   $('export-cards').addEventListener('click', exportCards);
+  if (CATALOG) {
+    $('anki-cfo-disciplina').addEventListener('change', () => {
+      if (!catalogData || busy) return;
+      refreshCatalogTopics();
+      activateCatalog();
+    });
+    $('anki-cfo-assunto').addEventListener('change', () => activateCatalog());
+    $('reset-anki-filters').addEventListener('click', () => {
+      if (!catalogData || busy) return;
+      $('anki-cfo-disciplina').value = '';
+      refreshCatalogTopics();
+      $('anki-mode').value = 'due';
+      $('anki-batch-size').value = '50';
+      activateCatalog();
+    });
+    $('use-anki-catalog').addEventListener('click', () => {
+      if (busy) return;
+      if (catalogData) activateCatalog(); else initializeCatalog(true);
+    });
+    $('restore-custom').addEventListener('click', restorePersonalDeck);
+    for (const id of ['anki-mode', 'anki-batch-size']) $(id).addEventListener('change', () => {
+      if (activeCatalog) persistDeck();
+    });
+  }
   $('anki-panel').addEventListener('click', event => {
     const button = event.target.closest('button');
     if (!button || button.disabled) return;
@@ -433,4 +628,5 @@
   });
   window.addEventListener('pagehide', persistDraft);
   restore();
+  if (CATALOG) initializeCatalog();
 })();
