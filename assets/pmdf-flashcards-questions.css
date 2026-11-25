@@ -38,12 +38,16 @@ body #tab-anki #anki-panel .anki-visual-card-qa .anki-kicker{
  letter-spacing:.1em!important;text-align:center!important;
  margin:0 0 18px!important;
 }
-body #tab-anki #anki-panel .anki-visual-card-qa:not(.anki-visual-is-answer) .anki-question{
+body #tab-anki #anki-panel .anki-visual-card-qa:not(.anki-visual-is-answer):not(.anki-visual-card-imported) .anki-question{
  color:#172f50!important;font-weight:850!important;
  font-size:clamp(19px,2.4vw,27px)!important;line-height:1.48!important;
  text-align:center!important;text-transform:uppercase!important;
  letter-spacing:.006em!important;hyphens:auto;overflow-wrap:anywhere;
  padding:5px 0!important;margin:0!important;
+}
+body #tab-anki #anki-panel .anki-visual-card-qa.anki-visual-card-imported .anki-question{
+ text-transform:none!important;text-align:left!important;
+ font-weight:400!important;letter-spacing:normal!important;
 }
 body #tab-anki #anki-panel .anki-visual-card-qa .anki-study-surface{
  max-width:820px!important;width:100%!important;margin:auto!important;

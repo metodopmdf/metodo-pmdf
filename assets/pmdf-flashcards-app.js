@@ -435,6 +435,7 @@
       state.box + '</span></div><div class="anki-tags"><span>' + kind + '</span><span>' + article + '</span>' +
       (card.difficulty ? '<span>' + esc(card.difficulty) + '</span>' : '') + '</div><p class="anki-law">' + law + '</p></div>' +
       '<div class="anki-visual-card ' + (card.family === 'question' ? 'anki-visual-card-qa ' : '') +
+      (isImported ? 'anki-visual-card-imported ' : '') +
       (s.back ? 'anki-visual-is-answer' : '') + '"><aside class="anki-visual-aside"><div class="anki-visual-illustration">' +
       '<svg viewBox="0 0 124 132" width="124" height="132" fill="none" aria-hidden="true"><rect x="33" y="12" width="65" height="90" rx="9" fill="#e5eee7" transform="rotate(10 65 57)"/><rect x="18" y="25" width="65" height="90" rx="9" fill="#fff" stroke="#244b67" stroke-width="2"/><path d="M33 53h36M33 65h25M33 77h31" stroke="#16655d" stroke-width="3" stroke-linecap="round"/><path d="m57 94 5 5 11-14" stroke="#be984b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
       '</div><span class="anki-visual-art-caption">' + kind + '</span><span class="anki-visual-art-subtitle">' + article + '</span></aside>' +
