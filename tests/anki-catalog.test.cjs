@@ -42,14 +42,14 @@ const expected = {
   'Raciocínio Lógico': [71, 6]
 };
 
-// A comparação integral impede qualquer alteração acidental no acervo original,
+// A comparação integral impede qualquer alteração acidental no acervo publicado,
 // incluindo texto, gabaritos, referências, ordem e IDs de revisão.
 assert.equal(createHash('sha256').update(bytes).digest('hex'),
-  '4a409138090c14e580de4e6b4bedfcba490cf1c03c699a8cbfd99f30a291f427');
+  '124e9f0f3b811a7b379fd0a4da2bc9fc8a55213bd1571bca61521a5803d191ae');
 assert.equal(api.validate(data), data);
 assert.equal(data.cards.length, 2624);
 assert.equal(new Set(data.cards.map(card => card.id)).size, 2624);
-assert.equal(data.revision, '2026-11-17-anki-editorial-v3');
+assert.equal(data.revision, '2026-11-25-anki-conteudo-v4');
 assert.equal(api.disciplines(data).length, 22);
 assert.deepEqual(api.disciplines(data), Object.keys(expected).sort((a, b) => a.localeCompare(b, 'pt-BR')));
 assert.equal(new Set(data.cards.map(card => card.disciplina + '|' + card.assunto)).size, 130);
@@ -74,6 +74,11 @@ for (const [discipline, [count, topicCount]] of Object.entries(expected)) {
   }
 }
 assert.equal(covered.size, 2624, 'Todos os cartões devem ser alcançáveis pelos filtros');
+
+const height = data.cards.find(card => card.id === 'cfo-gst-1772291158857');
+assert.equal(height.answer, 'CERTO');
+assert.match(height.front, /1,60 m para homens e 1,55 m para mulheres/);
+assert.match(height.reviewed_source, /lei-15395/);
 
 const original = JSON.stringify(data);
 const mapped = api.toCards(data.cards), validated = io.validateCards(mapped);
@@ -108,10 +113,10 @@ for (let index = 0; index < data.cards.length; index++) {
   if (row.flags.includes('verso_extenso')) assert.match(card.warning, /comentário original.*extenso/);
 }
 assert.equal(JSON.stringify(data), original, 'Filtrar/adaptar não pode modificar a base');
-assert.equal(data.cards.filter(card => card.answer === 'CERTO').length, 1513);
-assert.equal(data.cards.filter(card => card.answer === 'ERRADO').length, 1111);
-assert.equal(data.cards.filter(card => card.reviewed_source).length, 2);
-assert.equal(data.cards.filter(card => card.flags.includes('texto_incompleto_na_fonte')).length, 3);
+assert.equal(data.cards.filter(card => card.answer === 'CERTO').length, 1495);
+assert.equal(data.cards.filter(card => card.answer === 'ERRADO').length, 1129);
+assert.equal(data.cards.filter(card => card.reviewed_source).length, 178);
+assert.equal(data.cards.filter(card => card.flags.includes('texto_incompleto_na_fonte')).length, 0);
 
 // O adaptador conserva o texto literal; o renderizador escapa e o Anki recebe
 // #html:false, impedindo que trechos de material se tornem marcação executável.
@@ -147,7 +152,7 @@ for (const wrong of [null, {}, {format: 'outro', cards: data.cards}, {format: da
   assert.equal(alsoLoaded, data);
   assert.equal(await cached.load(), data);
   assert.equal(count, 1);
-  assert.equal(requested.url, PAGE + 'assets/bancos/anki.json?v=20261117-anki-editorial-v3');
+  assert.equal(requested.url, PAGE + 'assets/bancos/anki.json?v=20261125-anki-conteudo-v4');
   assert.equal(requested.options.cache, 'default');
 
   // Falhas de rede, HTTP, JSON ou validação não podem envenenar o cache.
@@ -180,5 +185,5 @@ for (const wrong of [null, {}, {format: 'outro', cards: data.cards}, {format: da
   sameSite.root.document.baseURI = PAGE;
   assert.equal(await sameSite.api.load(), data);
   assert.equal(externalCalls, 1);
-  console.log('QA ANKI CATALOG PASS: base original íntegra, 2624 cartões, 22 disciplinas, 130 assuntos, filtros, IO e retry');
+  console.log('QA ANKI CATALOG PASS: base publicada íntegra, 2624 cartões, 22 disciplinas, 130 assuntos, filtros, IO e retry');
 })().catch(error => { console.error(error); process.exitCode = 1; });

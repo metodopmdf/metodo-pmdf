@@ -1,7 +1,7 @@
 # Método PMDF — Flashcards Anki
 
 Aplicação do Método PMDF dedicada exclusivamente aos flashcards, com a **base
-Anki original carregada automaticamente**, revisão e exportação.
+Anki carregada automaticamente**, revisão e exportação.
 
 **Site:** https://metodopmdf.github.io/metodo-pmdf/
 
@@ -14,9 +14,9 @@ geração e os estilos dos cartões foram reaproveitados do projeto original, co
 um controlador próprio e somente suas dependências necessárias.
 
 O acervo contém **2.624 cartões, 22 disciplinas e 130 combinações de disciplina
-e assunto**. O arquivo `assets/bancos/anki.json` foi restaurado sem alterações
-do commit anterior à extração: mesmos identificadores, ordem, enunciados,
-respostas, fontes e observações editoriais. Para estudar essa base, basta
+e assunto**. O arquivo `assets/bancos/anki.json` mantém os identificadores, a ordem
+e a estrutura do catálogo original. Cartões selecionados receberam correções
+com fontes em 25/11/2026; as demais entradas foram mantidas. Para estudar essa base, basta
 selecionar a disciplina e o assunto e iniciar uma revisão.
 
 ## Usar
@@ -53,8 +53,8 @@ necessário. Os documentos são processados no navegador.
 
 ## Funcionalidades
 
-- Acervo Anki original integrado, com carregamento automático do próprio site.
-- Filtros por disciplina e assunto; enunciado, gabarito e comentário originais.
+- Acervo Anki integrado, com carregamento automático do próprio site.
+- Filtros por disciplina e assunto; enunciado, gabarito e comentário do acervo.
 - Texto colado e arquivos TXT, Markdown, JSON, PDF textual e DOCX.
 - Perguntas e respostas, lacunas Cloze ou formato misto.
 - Referência ao trecho de origem, dicas e observações herdadas dos motores.
@@ -96,16 +96,16 @@ mensagem explícita, sem cortar o restante do arquivo silenciosamente.
 PDFs protegidos ou páginas sem texto extraível precisam de uma versão textual.
 Não há OCR nesta extração.
 
-### Base Anki original
+### Base Anki
 
 A base é publicada junto com a aplicação em `assets/bancos/anki.json`; não
 depende de envio de arquivos, geração de perguntas ou conexão a banco remoto.
-O teste de integridade confere o SHA-256 integral do arquivo restaurado:
-`4a409138090c14e580de4e6b4bedfcba490cf1c03c699a8cbfd99f30a291f427`.
+O teste de integridade confere o SHA-256 integral do arquivo publicado:
+`124e9f0f3b811a7b379fd0a4da2bc9fc8a55213bd1571bca61521a5803d191ae`.
 
 As observações sobre vigência jurídica, trechos incompletos, imagens ausentes e
-as fontes de correções documentadas foram preservadas. Esta restauração não é
-uma nova revisão jurídica do conteúdo.
+as fontes estão nos próprios cartões. A atualização de 25/11/2026 foi dirigida e
+não certifica a vigência ou a exatidão de todo o acervo.
 
 ### Como funciona a geração opcional
 
@@ -123,7 +123,7 @@ Revise o conteúdo gerado, especialmente a redação vigente de material jurídi
 | Arquivo | Responsabilidade |
 | --- | --- |
 | `index.html` | Interface exclusiva de flashcards |
-| `assets/bancos/anki.json` | Base Anki original, preservada integralmente |
+| `assets/bancos/anki.json` | Base Anki com IDs originais e correções documentadas |
 | `assets/pmdf-anki-catalog.js` | Carregamento, filtros e adaptação dos cartões do acervo |
 | `assets/pmdf-flashcards-app.js` | Criação, estado, revisão, persistência e eventos |
 | `assets/pmdf-flashcard-classifier.js` | Classificador extraído do módulo compartilhado |

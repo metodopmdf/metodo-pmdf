@@ -4,7 +4,7 @@
  */
 (function (root) {
   'use strict';
-  const ASSET = 'assets/bancos/anki.json?v=20261117-anki-editorial-v3';
+  const ASSET = 'assets/bancos/anki.json?v=20261125-anki-conteudo-v4';
   const FLAG_MESSAGES = Object.freeze({
     verificar_vigencia_juridica: 'Texto com dispositivo, prazo ou referência jurídica: confira a norma ou jurisprudência vigente.',
     imagem_do_original_nao_embutida: 'Imagem referenciada no Anki original não foi incluída na versão textual.',
@@ -98,5 +98,5 @@
     });
   }
   root.PMDFAnkiCatalog = Object.freeze({load, validate, disciplines, topics, filtered, toCards,
-    version: '20261117-anki-editorial-v3'});
+    version: '20261125-anki-conteudo-v4'});
 })(typeof window === 'undefined' ? globalThis : window);
