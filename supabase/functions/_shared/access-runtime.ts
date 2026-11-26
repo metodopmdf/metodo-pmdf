@@ -16,7 +16,9 @@ function envKey(jsonName: string, legacyName: string): string {
 export const projectUrl = (Deno.env.get('SUPABASE_URL') || Deno.env.get('SUPABASE_PUBLIC_URL') || '').replace(/\/$/, '');
 const serviceKey = envKey('SUPABASE_SECRET_KEYS', 'SUPABASE_SERVICE_ROLE_KEY');
 const publicKey = envKey('SUPABASE_PUBLISHABLE_KEYS', 'SUPABASE_ANON_KEY');
-const origins = (Deno.env.get('PMDF_ALLOWED_ORIGINS') || ALLOWED_ORIGINS.join(','))
+// Keep configured origins; add only the dedicated sales-disabled Render preview.
+const previewOrigin = 'https://metodo-pmdf-flashcards-homologacao.onrender.com';
+const origins = ((Deno.env.get('PMDF_ALLOWED_ORIGINS') || ALLOWED_ORIGINS.join(',')) + ',' + previewOrigin)
   .split(',').map(value => value.trim()).filter(value => /^https:\/\/[^/?#]+$/.test(value));
 
 export function configured(requirePublicKey = true): boolean {
