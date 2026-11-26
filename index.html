@@ -20,6 +20,7 @@
   <script defer src="assets/pmdf-flashcard-io.js"></script>
   <script defer src="assets/pmdf-flashcard-migration.js"></script>
   <script defer src="assets/pmdf-anki-catalog.js?v=20261125-anki-conteudo-v4"></script>
+  <script defer src="assets/pmdf-catalog-progress.js"></script>
   <script defer src="assets/pmdf-flashcards-app.js"></script>
 </head>
 <body>
@@ -86,6 +87,7 @@
         <div class="catalog-actions"><button type="button" id="use-anki-catalog" class="button primary" disabled>Usar base Anki</button><button type="button" id="reset-anki-filters" class="button quiet" disabled>Limpar filtros</button></div>
         <p id="anki-catalog-status" class="status" role="status" aria-live="polite">Carregando a base de flashcards…</p>
         <details class="method-help"><summary>Sobre esta base</summary><p>Este é o acervo Anki original do Método PMDF, com os mesmos enunciados, respostas e identificadores dos cartões.</p><p id="catalog-review-note"></p></details>
+        <details class="method-help"><summary>Trazer meu progresso Anki</summary><p>Importe o arquivo de progresso baixado da versão pública. Agendamentos que já existem nesta conta e neste navegador não são substituídos. O arquivo fica no navegador.</p><label for="import-catalog-progress">Backup de progresso (JSON)</label><input type="file" id="import-catalog-progress" accept=".json,application/json"><p id="catalog-progress-status" role="status"></p></details>
       </section>
       <details class="panel source-panel" id="custom-source">
         <summary>Criar flashcards com meu material <span>Opcional</span></summary>

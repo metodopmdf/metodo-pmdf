@@ -592,6 +592,37 @@
       if (activeCatalog) persistDeck();
     });
   }
+  $('import-catalog-progress')?.addEventListener('change', async event => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file || !permitted()) return;
+    const message = $('catalog-progress-status');
+    const progress = window.PMDFCatalogProgress;
+    if (!catalogData) { message.textContent = 'Aguarde o carregamento do acervo e tente novamente.'; return; }
+    const catalogAtStart = catalogData;
+    try {
+      if (file.size > progress.maxBytes) throw new Error('O backup de progresso ultrapassa 512 KB.');
+      const raw = await file.text();
+      if (!permitted() || catalogData !== catalogAtStart) return;
+      const ids = new Set(catalogData.cards.map(c => c.id));
+      const incoming = progress.parse(raw, ids);
+      const previous = progress.schedules(localStorage, CATALOG_KEY);
+      let state;
+      try { state = JSON.parse(readStorage(CATALOG_KEY) || 'null'); }
+      catch (_) { throw new Error('Não foi possível ler seu progresso atual. Os dados existentes foram preservados.'); }
+      if (state && state.version !== 1) throw new Error('Seu progresso atual usa um formato não reconhecido.');
+      const merged = Object.assign(Object.create(null), previous);
+      for (const id of ids) if (Object.hasOwn(schedule, id)) merged[id] = schedule[id];
+      const additions = Object.entries(incoming).filter(([id]) => !Object.hasOwn(merged, id));
+      if (!additions.length) { message.textContent = 'Nenhum agendamento novo para o acervo desta conta.'; return; }
+      for (const [id, item] of additions) merged[id] = item;
+      if (!writeStorage(CATALOG_KEY, {...state, version: 1, revision: catalogData.revision, schedule: merged}))
+        throw new Error('Não foi possível salvar o progresso neste navegador.');
+      for (const [id, item] of additions) schedule[id] = item;
+      message.textContent = additions.length + (additions.length === 1 ? ' agendamento importado.' : ' agendamentos importados.');
+    } catch (error) { if (permitted()) message.textContent = error.message || 'Não foi possível importar o progresso.'; }
+  });
   $('anki-panel').addEventListener('click', event => {
     const button = event.target.closest('button');
     if (!button || button.disabled) return;

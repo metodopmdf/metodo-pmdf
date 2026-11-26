@@ -76,6 +76,8 @@ O progresso e os baralhos pessoais são separados por ID do usuário autenticado
 
 O progresso continua local ao navegador, sem sincronização entre dispositivos. O backup JSON guarda cartões e metadados; ele não inclui os agendamentos de revisão. O logout limpa os cartões em memória e preserva o progresso da conta para uma próxima entrada no mesmo navegador.
 
+Um arquivo de migração pode ser importado na seção **Trazer meu progresso Anki**, depois de entrar e carregar o acervo. Apenas IDs do acervo, caixas e prazos são recuperados, sem sobrescrever o progresso que já existe nessa conta local. O arquivo não é enviado ao servidor e não transfere baralhos pessoais, respostas nem sessão em andamento.
+
 ## Desenvolvimento
 
 A validação desta preparação passou em **25 testes backend/SQL** e no QA de acesso em Chromium, incluindo o bloqueio das contas legadas. A renomeação da migração preserva o mesmo conteúdo SQL já testado.

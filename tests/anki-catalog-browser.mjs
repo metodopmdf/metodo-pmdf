@@ -201,6 +201,36 @@ try {
   assert.equal(await escapedPage.evaluate(() => Boolean(window.__unsafe)), false);
   await escapedContext.close();
   report.push({catalogContentEscaped: true});
+  const progressContext = await browser.newContext();
+  await installAuthMock(progressContext);
+  const progressPage = await progressContext.newPage();
+  const [first, second] = original.cards;
+  const alternateKey = keyFor('flashcards:anki:v1', '22222222-3333-4444-8555-666666666666');
+  await progressPage.addInitScript(({key, alternateKey,id}) => {
+    if (localStorage.getItem('qa:progress-initialized')) return;
+    localStorage.setItem('qa:progress-initialized','1');
+    localStorage.setItem(key, JSON.stringify({version:1,schedule:{[id]:{box:4,due:1980000000000}}}));
+    localStorage.setItem(alternateKey, JSON.stringify({version:1,schedule:{}}));
+  }, {key:CATALOG_KEY,alternateKey,id:first.id});
+  await progressPage.goto(target, {waitUntil:'networkidle'});
+  await ready(progressPage);
+  await progressPage.getByText('Trazer meu progresso Anki',{exact:true}).click();
+  const input = progressPage.locator('#import-catalog-progress');
+  const sendProgress = entries => input.setInputFiles({name:'progress.json',mimeType:'application/json',
+    buffer:Buffer.from(JSON.stringify({format:'PMDF-CATALOG-PROGRESS-v1',entries}))});
+  await sendProgress([{id:first.id,box:1,due:100},{id:second.id,box:2,due:1980000000000},
+    {id:'cfo-gst-9999999999999999',box:3,due:1980000000000}]);
+  await progressPage.getByText('1 agendamento importado.',{exact:true}).waitFor();
+  const rows = (await state(progressPage)).schedule;
+  assert.deepEqual(rows,{[first.id]:{box:4,due:1980000000000},[second.id]:{box:2,due:1980000000000}});
+  assert.deepEqual(await progressPage.evaluate(key=>JSON.parse(localStorage.getItem(key)).schedule,alternateKey),{});
+  await sendProgress([{id:first.id,box:1,due:100,back:'texto proibido'}]);
+  await progressPage.getByText(/registro de progresso inválido/).waitFor();
+  assert.deepEqual((await state(progressPage)).schedule,rows);
+  await progressPage.reload({waitUntil:'networkidle'}); await ready(progressPage);
+  assert.deepEqual((await state(progressPage)).schedule,rows);
+  await progressContext.close();
+  report.push({progressOnly:true,unknownIgnored:true,accountLocal:true,existingPreserved:true});
   console.log('QA ANKI CATALOG BROWSER PASS', JSON.stringify(report));
 } finally {
   await browser?.close();
