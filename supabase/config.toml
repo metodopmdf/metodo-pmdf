@@ -1,0 +1,10 @@
+project_id = "metodo-pmdf-flashcards"
+
+[functions.pmdf-access]
+# The function validates the user with Auth and checks entitlement on every call.
+# Manual verification also allows browsers to complete unauthenticated OPTIONS.
+verify_jwt = false
+
+[functions.pmdf-flashcards-webhook]
+# Hotmart uses X-HOTMART-HOTTOK. The raw secret is never stored in source.
+verify_jwt = false

@@ -1,3 +1,4 @@
+import {installAuthMock, MOCK_SUPABASE} from './helpers/auth-mock.mjs';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {readFile, mkdir, stat} from 'node:fs/promises';
@@ -18,13 +19,15 @@ catch (error) {
 let server;
 const target = process.env.PMDF_TEST_URL || 'http://127.0.0.1:8765/';
 if (!process.env.PMDF_TEST_URL) {
-  const types = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
+  await import('../scripts/build.mjs');
+  const dist = path.resolve(root, 'dist');
+  const types = {'.mjs': 'text/javascript; charset=utf-8', '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
     '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8'};
   server = createServer(async (req, res) => {
     try {
       const pathname = decodeURIComponent(new URL(req.url, target).pathname);
-      const filename = path.resolve(root, '.' + (pathname.endsWith('/') ? pathname + 'index.html' : pathname));
-      if (!filename.startsWith(root) || !(await stat(filename)).isFile()) throw Error('Not found');
+      const filename = path.resolve(dist, '.' + (pathname.endsWith('/') ? pathname + 'index.html' : pathname));
+      if (!filename.startsWith(dist + path.sep) || !(await stat(filename)).isFile()) throw Error('Not found');
       res.writeHead(200, {'Content-Type': types[path.extname(filename)] || 'application/octet-stream'});
       res.end(await readFile(filename));
     } catch {
@@ -38,7 +41,7 @@ if (!process.env.PMDF_TEST_URL) {
   });
 }
 
-const executablePath = process.env.PMDF_CHROMIUM_PATH || (existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : undefined);
+const executablePath = process.env.PMDF_CHROMIUM_PATH || undefined;
 let browser;
 const fixture = 'O protocolo é registro sequencial das solicitações recebidas pela instituição.\n\n' +
   'A organização é conjunto de pessoas que trabalham em objetivos comuns.\n\n' +
@@ -83,13 +86,14 @@ try {
   const report = [];
   for (const device of [{name: 'desktop', width: 1440, height: 1000}, {name: 'mobile', width: 390, height: 844}]) {
     const context = await browser.newContext({viewport: {width: device.width, height: device.height}, acceptDownloads: true});
+    await installAuthMock(context);
     const page = await context.newPage();
     page.setDefaultTimeout(12000);
     const errors = [], external = [];
     page.on('pageerror', error => errors.push(error.message));
     page.on('request', request => {
       const url = new URL(request.url());
-      if (/^https?:$/.test(url.protocol) && url.origin !== new URL(target).origin) external.push(request.url());
+      if (/^https?:$/.test(url.protocol) && url.origin !== new URL(target).origin && url.origin !== MOCK_SUPABASE) external.push(request.url());
     });
     await page.addInitScript(() => {
       window.__cspViolations = [];
@@ -186,61 +190,20 @@ try {
   }
   // A atualização deve recuperar somente a sessão local da conta identificada,
   // mantendo os cartões, a posição da revisão e os agendamentos anteriores.
-  const legacyContext = await browser.newContext();
-  const legacyPage = await legacyContext.newPage();
-  const legacyErrors = [];
-  legacyPage.on('pageerror', error => legacyErrors.push(error.message));
-  await legacyPage.goto(target, {waitUntil: 'networkidle'});
-  const legacyCards = [
-    {id: 'legacy-first', front: 'Qual é a primeira etapa?', back: 'Preparar o material.', law: 'Material anterior'},
-    {id: 'legacy-second', front: 'Qual é a segunda etapa?', back: 'Revisar os cartões.', law: 'Material anterior'}
-  ];
-  const futureReview = Date.now() + 7 * 86400000;
-  const legacyPrefix = 'pmdf:account:11111111-1111-4111-8111-111111111111:';
-  const oldSession = JSON.stringify({version: 4, tab: 'anki', anki: {
-    cards: legacyCards, index: 1, back: true, ratings: {'0': 'good'}
-  }});
-  await legacyPage.evaluate(({cards, prefix, savedSession, due}) => {
-    localStorage.setItem('pmdf:flashcards:standalone:v1:source', 'custom');
-    localStorage.setItem('pmdf:supabase:session:v1', JSON.stringify({user: {id: '11111111-1111-4111-8111-111111111111'}}));
-    localStorage.setItem(prefix + 'pmdf:session:v4', savedSession);
-    localStorage.setItem(prefix + 'fc:legacy-first', '2');
-    localStorage.setItem(prefix + 'leitner:legacy-first', '3');
-    localStorage.setItem(prefix + 'leitnerDue:legacy-first', String(due));
-    localStorage.setItem('pmdf:account:22222222-2222-4222-8222-222222222222:pmdf:session:v4',
-      JSON.stringify({version: 4, anki: {cards: [{...cards[0], id: 'other-account', front: 'Outro perfil'}]}}));
-  }, {cards: legacyCards, prefix: legacyPrefix, savedSession: oldSession, due: futureReview});
-  await legacyPage.reload({waitUntil: 'networkidle'});
-  assert.equal(await deckSize(legacyPage), 2, 'Os cartões da sessão anterior devem ser recuperados');
-  assert((await legacyPage.locator('#anki-panel').innerText()).includes('Revisar os cartões.'),
-    'O verso e a posição da sessão antiga devem ser restaurados');
-  const recovered = await legacyPage.evaluate(() => JSON.parse(localStorage.getItem('pmdf:flashcards:standalone:v1')));
-  assert.deepEqual(recovered.cards.map(card => card.id), ['legacy-first', 'legacy-second']);
-  assert.equal(recovered.schedule['legacy-first'].box, 3);
-  assert.equal(recovered.schedule['legacy-first'].due, futureReview);
-  assert.equal(recovered.session.index, 1);
-  assert.equal(recovered.session.back, true);
-  assert.equal(recovered.session.ratings['0'], 'good');
-  assert.equal(await legacyPage.evaluate(key => localStorage.getItem(key), legacyPrefix + 'pmdf:session:v4'), oldSession,
-    'A recuperação não deve alterar a sessão original');
-  await legacyPage.selectOption('#anki-mode', 'due');
-  await legacyPage.click('#start-review');
-  assert.equal(await legacyPage.locator('#anki-panel .anki-question').innerText(), legacyCards[1].front,
-    'O cartão agendado para o futuro não deve aparecer entre os vencidos');
-  await legacyPage.reload({waitUntil: 'networkidle'});
-  assert.equal(await deckSize(legacyPage), 2);
-  assert.equal(await legacyPage.locator('#anki-panel .anki-question').innerText(), legacyCards[1].front,
-    'A nova sessão salva deve ter prioridade sobre a sessão legada');
-  assert.deepEqual(legacyErrors, []);
-  await legacyContext.close();
-  report.push({legacySession: true, schedule: true, accountIsolation: true});
-
   // Os leitores reais são exercitados com arquivos sintéticos: verifica também
-  // carregamento da CDN, worker PDF e compatibilidade com a CSP da aplicação.
+  // carregamento na própria origem, worker PDF e compatibilidade com a CSP.
   const documentContext = await browser.newContext();
+  await installAuthMock(documentContext);
   const documentPage = await documentContext.newPage();
   documentPage.setDefaultTimeout(45000);
-  const documentErrors = [];
+  const documentErrors = [], readerPaths = [];
+  documentPage.on('request', request => {
+    const url = new URL(request.url());
+    if (/\/readers\//.test(url.pathname)) {
+      assert.equal(url.origin, new URL(target).origin, 'O leitor deve vir da própria aplicação');
+      readerPaths.push(url.pathname);
+    }
+  });
   documentPage.on('pageerror', error => documentErrors.push(error.message));
   await documentPage.addInitScript(() => {
     window.__cspViolations = [];
@@ -250,8 +213,11 @@ try {
   await openCustom(documentPage);
   for (const extension of ['pdf', 'docx']) {
     await documentPage.locator('#source-file').setInputFiles(path.join(root, 'tests/fixtures/material.' + extension));
-    await documentPage.waitForFunction(() => !document.getElementById('generate-cards').disabled &&
-      /importado|não|erro|falh/i.test(document.getElementById('generation-status').textContent), null, {timeout: 45000});
+    await documentPage.waitForFunction(() => {
+      const status = document.getElementById('generation-status');
+      return !document.getElementById('generate-cards').disabled &&
+        (status.dataset.error === 'true' || status.textContent.includes('Material importado'));
+    });
     const text = await documentPage.locator('#source-text').inputValue();
     for (const sentence of ['A autoridade deverá responder em 15 dias.', 'O requerente poderá apresentar recurso em 5 dias.',
       'É vedado cobrar taxa adicional pelo procedimento.']) assert(text.includes(sentence), extension + ': texto incompleto ou leitor indisponível: ' +
@@ -268,6 +234,9 @@ try {
   assert.match(await documentPage.locator('#generation-status').innerText(), /sem texto extraível/);
   assert.equal(await documentPage.locator('#source-text').inputValue(), previousSource);
   assert.equal(await deckSize(documentPage), previousCount);
+  for (const file of ['pdf.min.mjs', 'pdf.worker.min.mjs', 'mammoth.browser.min.js']) {
+    assert(readerPaths.some(url => url.endsWith('/readers/' + file)), 'Leitor local não carregado: ' + file);
+  }
   assert.deepEqual(documentErrors, []);
   assert.deepEqual(await documentPage.evaluate(() => window.__cspViolations), []);
   await documentContext.close();

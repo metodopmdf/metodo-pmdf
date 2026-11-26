@@ -8,10 +8,11 @@ const modules = {};
 for (const name of ['pmdf-flashcard-io.js', 'pmdf-flashcard-migration.js', 'pmdf-anki-catalog.js'])
   new Function('window', source(name))(modules);
 const catalog = modules.PMDFAnkiCatalog;
-const complete = JSON.parse(fs.readFileSync(path.join(assets, 'bancos', 'anki.json'), 'utf8'));
+const complete = require('./fixtures/catalog.cjs');
 const data = {...complete, cards: complete.cards.slice(0, 3)};
 const card = catalog.toCards([data.cards[0]])[0];
-const KEY = 'pmdf:flashcards:standalone:v1', CATALOG_KEY = 'pmdf:flashcards:anki:v1';
+const PREFIX = 'pmdf:member:test-user:';
+const KEY = PREFIX + 'flashcards:standalone:v1', CATALOG_KEY = PREFIX + 'flashcards:anki:v1';
 const SOURCE_KEY = KEY + ':source';
 const personal = (schedule, session = null) => ({version: 1, title: 'Baralho pessoal salvo',
   cards: [card], schedule: {[card.id]: schedule}, cursor: 0, session});
@@ -40,7 +41,7 @@ function app(initial = {}, load = async () => data) {
   get('anki-card-style').value = 'questions'; get('export-format').value = 'basic';
   const document = {getElementById: get, documentElement: {dataset: {}}, addEventListener() {}};
   const custom = {id: 'personal-generated', front: 'Qual é o prazo?', back: 'Quinze dias.'};
-  const window = {...modules, PMDFAnkiCatalog: {...catalog, load},
+  const window = {...modules, PMDFAccess: {ready: async () => ({id:'test-user'}), isActive: () => true, storageKey: key => PREFIX + key}, PMDFAnkiCatalog: {...catalog, load},
     PMDFNeuralFlashcards: {buildAsync: async () => ({cards: [custom]})},
     matchMedia: () => ({matches: false}), addEventListener() {}};
   const storage = {getItem: key => store.has(key) ? store.get(key) : null,

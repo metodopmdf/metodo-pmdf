@@ -4,7 +4,6 @@
  */
 (function (root) {
   'use strict';
-  const ASSET = 'assets/bancos/anki.json?v=20261125-anki-conteudo-v4';
   const FLAG_MESSAGES = Object.freeze({
     verificar_vigencia_juridica: 'Texto com dispositivo, prazo ou referência jurídica: confira a norma ou jurisprudência vigente.',
     imagem_do_original_nao_embutida: 'Imagem referenciada no Anki original não foi incluída na versão textual.',
@@ -14,7 +13,7 @@
   const text = (value, limit, required = true) => typeof value === 'string' &&
     value.length <= limit && (!required || Boolean(value.trim()));
   const unique = values => [...new Set(values)].sort((a, b) => a.localeCompare(b, 'pt-BR'));
-  let memory = null, opening = null;
+  let memory = null, opening = null, generation = 0;
 
   function validateRows(cards, allowEmpty = false) {
     if (!Array.isArray(cards) || (!cards.length && !allowEmpty) || cards.length > 30000)
@@ -41,22 +40,19 @@
     return data;
   }
   function load() {
+    if (!root.PMDFAccess?.isActive()) return Promise.reject(new Error('Entre e confirme uma compra ativa para acessar o acervo.'));
     if (memory) return Promise.resolve(memory);
     if (opening) return opening;
+    const revision = generation;
     opening = Promise.resolve().then(async () => {
-      const base = root.document?.baseURI || root.location?.href;
-      const url = new URL(ASSET, base);
-      const page = root.location?.href || base;
-      if (!page || new URL(page).origin !== url.origin)
-        throw new Error('O acervo ANKI deve ser carregado do próprio site.');
-      const response = await root.fetch(url.toString(), {cache: 'default'});
-      if (!response.ok)
-        throw new Error('Não foi possível obter o acervo publicado (HTTP ' + response.status + ').');
-      memory = validate(await response.json());
+      const data = await root.PMDFAccess.fetchCatalog();
+      if (revision !== generation || !root.PMDFAccess.isActive()) throw new Error('O acesso mudou durante o carregamento.');
+      memory = validate(data);
       return memory;
-    }).finally(() => { opening = null; });
+    }).finally(() => { if (revision === generation) opening = null; });
     return opening;
   }
+  function clear() { memory = null; opening = null; generation++; }
   function disciplines(data) {
     return unique(validate(data).cards.map(card => card.disciplina));
   }
@@ -97,6 +93,6 @@
       };
     });
   }
-  root.PMDFAnkiCatalog = Object.freeze({load, validate, disciplines, topics, filtered, toCards,
-    version: '20261125-anki-conteudo-v4'});
+  root.PMDFAnkiCatalog = Object.freeze({load, clear, validate, disciplines, topics, filtered, toCards,
+    version: '20261125-acesso-exclusivo-v1'});
 })(typeof window === 'undefined' ? globalThis : window);

@@ -1,0 +1,20 @@
+'use strict';
+const assert = require('node:assert/strict');
+require('../assets/pmdf-catalog-progress.js');
+const api = globalThis.PMDFCatalogProgress;
+const id = 'cfo-gst-1770924593102', other = 'cfo-gst-1770928290926';
+const fixture = {version:1, schedule:{[id]:{box:2,due:400,front:'texto que não deve sair'},
+  [other]:{box:1,due:650}, 'pessoal-1':{box:2,due:600}}};
+const newer = {version:1,schedule:{[id]:{box:3,due:700}}};
+const raw = api.serialize(api.schedules({getItem:k=>k==='legacy'?JSON.stringify(fixture):JSON.stringify(newer)},'legacy','sample'));
+const {format,entries} = JSON.parse(raw);
+assert.equal(format,'PMDF-CATALOG-PROGRESS-v1');
+assert.deepEqual(entries,[{id,box:3,due:700},{id:other,box:1,due:650}]);
+assert(!raw.includes('texto que não deve sair'));
+assert.deepEqual({...api.parse(raw,new Set([id]))},{[id]:{box:3,due:700}});
+assert.throws(()=>api.parse(JSON.stringify({format,entries:[{id,box:2,due:3,front:'pergunta'}]}),new Set([id])),/inválido/);
+assert.throws(()=>api.parse(JSON.stringify({format,entries:[entries[0],entries[0]]}),new Set([id])),/duplicado/);
+assert.throws(()=>api.parse(JSON.stringify({format,entries:[{id:'__proto__',box:2,due:3}]}),new Set()),/inválido/);
+assert.throws(()=>api.parse(' '.repeat(api.maxBytes+1),new Set()),/512 KB/);
+assert.throws(()=>api.parse(JSON.stringify({format:'outro',entries}),new Set()),/não um baralho/);
+console.log('QA PROGRESS PASS: IDs, caixa e vencimento apenas; validação, isolamento de acervo e tamanho');

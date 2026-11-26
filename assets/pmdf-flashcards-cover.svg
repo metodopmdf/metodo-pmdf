@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+  <defs>
+    <linearGradient id="background" x1="0" x2="1" y1="0" y2="1">
+      <stop stop-color="#102238"/><stop offset="1" stop-color="#07111f"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" x2="1" y1="0" y2="1">
+      <stop stop-color="#f0d49a"/><stop offset="1" stop-color="#b38a45"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1080" fill="url(#background)"/>
+  <rect x="36" y="36" width="1008" height="1008" rx="8" fill="none" stroke="#c7a260" stroke-opacity=".45"/>
+  <circle cx="1030" cy="805" r="440" fill="none" stroke="#ceb073" stroke-opacity=".08" stroke-width="2"/>
+  <circle cx="1030" cy="805" r="350" fill="none" stroke="#ceb073" stroke-opacity=".08" stroke-width="2"/>
+  <path d="M88 133h54" stroke="#d7b578" stroke-width="4"/>
+  <text x="166" y="146" fill="#e5c78e" font-family="DejaVu Sans, sans-serif" font-size="32" font-weight="700" letter-spacing="5">MÉTODO PMDF</text>
+  <text x="84" y="286" fill="#f8f3e9" font-family="DejaVu Sans, sans-serif" font-size="81" font-weight="700" letter-spacing="-3">FLASHCARDS</text>
+  <text x="84" y="375" fill="url(#gold)" font-family="DejaVu Sans, sans-serif" font-size="69" font-weight="700" letter-spacing="-2">ESTRATÉGICOS</text>
+  <g transform="translate(258 497) rotate(-10 300 175)">
+    <rect x="0" y="42" width="570" height="316" rx="23" fill="#0b192b" stroke="#7e6742" stroke-width="2"/>
+    <rect x="26" y="20" width="570" height="316" rx="23" fill="#11243a" stroke="#a08450" stroke-width="2"/>
+    <rect x="52" y="0" width="570" height="316" rx="23" fill="#162d45" stroke="url(#gold)" stroke-width="3"/>
+    <rect x="91" y="39" width="54" height="54" rx="12" fill="#e1c28a"/>
+    <path d="m105 66 10 10 18-22" fill="none" stroke="#14283d" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M91 145h380M91 184h440M91 223h300" stroke="#d8c7a5" stroke-opacity=".6" stroke-width="9" stroke-linecap="round"/>
+    <path d="M517 269h64" stroke="#e5c78e" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <rect x="84" y="923" width="420" height="60" rx="30" fill="#d8b97f"/>
+  <text x="294" y="962" text-anchor="middle" fill="#0d1c2d" font-family="DejaVu Sans, sans-serif" font-size="25" font-weight="700" letter-spacing="1.4">6 MESES DE ACESSO</text>
+</svg>

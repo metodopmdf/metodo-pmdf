@@ -4,9 +4,23 @@
   "private": true,
   "description": "Criação independente de flashcards a partir do Método PMDF",
   "scripts": {
-    "test": "node tests/neural-flashcards.test.cjs && node tests/flashcard-modes.test.cjs && node tests/flashcard-io.test.cjs && node tests/flashcard-migration.test.cjs && node tests/anki-catalog.test.cjs && node tests/catalog-controller.test.cjs",
-    "test:browser": "node tests/standalone-browser.mjs && node tests/anki-catalog-browser.mjs"
+    "test": "node tests/neural-flashcards.test.cjs && node tests/flashcard-modes.test.cjs && node tests/flashcard-io.test.cjs && node tests/flashcard-migration.test.cjs && node tests/anki-catalog.test.cjs && node tests/catalog-controller.test.cjs && node tests/catalog-progress.test.cjs",
+    "test:browser": "node tests/access-browser.mjs && node tests/standalone-browser.mjs && node tests/anki-catalog-browser.mjs",
+    "vendor:auth": "node scripts/vendor-auth.mjs",
+    "test:backend": "node --test tests/access-backend.test.mjs tests/access-database.test.mjs",
+    "test:access": "node tests/access-browser.mjs",
+    "build": "node scripts/build.mjs"
   },
-  "engines": { "node": ">=22" },
-  "devDependencies": { "playwright": "1.57.0" }
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.6.0",
+    "playwright": "1.57.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.119.2",
+    "mammoth": "1.13.0",
+    "pdfjs-dist": "6.5.438"
+  }
 }

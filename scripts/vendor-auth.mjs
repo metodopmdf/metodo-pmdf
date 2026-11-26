@@ -1,0 +1,10 @@
+import {copyFile, mkdir, readFile, writeFile} from 'node:fs/promises';
+import {fileURLToPath} from 'node:url';
+const root = new URL('../', import.meta.url);
+const pkg = JSON.parse(await readFile(new URL('node_modules/@supabase/supabase-js/package.json', root), 'utf8'));
+if (pkg.version !== '2.119.2') throw new Error('Atualize o pin e o nome do bundle em conjunto.');
+await mkdir(new URL('assets/vendor/', root), {recursive: true});
+const source = await readFile(new URL('node_modules/@supabase/supabase-js/dist/umd/supabase.js', root), 'utf8');
+await writeFile(new URL('assets/vendor/supabase-2.119.2.js', root), source.replace(/\/\/# sourceMappingURL=.*\n?$/, ''));
+await copyFile(new URL('node_modules/@supabase/supabase-js/LICENSE', root), new URL('assets/vendor/SUPABASE-LICENSE', root));
+console.log('SDK de autenticação copiado:', fileURLToPath(new URL('assets/vendor/supabase-2.119.2.js', root)));

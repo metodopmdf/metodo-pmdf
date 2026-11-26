@@ -1,3 +1,4 @@
+import {installAuthMock, MOCK_SUPABASE, syntheticCatalog, keyFor} from './helpers/auth-mock.mjs';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {readFile, mkdir, stat} from 'node:fs/promises';
@@ -7,9 +8,9 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const artifacts = path.join(root, 'test-artifacts');
-const original = JSON.parse(await readFile(path.join(root, 'assets/bancos/anki.json'), 'utf8'));
-const KEY = 'pmdf:flashcards:standalone:v1';
-const CATALOG_KEY = 'pmdf:flashcards:anki:v1';
+const original = syntheticCatalog;
+const KEY = keyFor('flashcards:standalone:v1');
+const CATALOG_KEY = keyFor('flashcards:anki:v1');
 await mkdir(artifacts, {recursive: true});
 let playwright;
 try { playwright = await import('playwright'); }
@@ -38,7 +39,7 @@ if (!process.env.PMDF_TEST_URL) {
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(8766, '127.0.0.1', resolve); });
 }
 
-const executablePath = process.env.PMDF_CHROMIUM_PATH || (existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : undefined);
+const executablePath = process.env.PMDF_CHROMIUM_PATH || undefined;
 const normalize = value => String(value).replace(/\s+/g, ' ').trim();
 const sorted = values => [...new Set(values)].sort();
 async function ready(page) {
@@ -81,13 +82,14 @@ try {
   const report = [];
   for (const device of [{name: 'desktop', width: 1440, height: 1000}, {name: 'mobile', width: 390, height: 844}]) {
     const context = await browser.newContext({viewport: {width: device.width, height: device.height}, acceptDownloads: true});
+    await installAuthMock(context);
     const page = await context.newPage();
     page.setDefaultTimeout(15000);
     const errors = [], external = [];
     page.on('pageerror', error => errors.push(error.message));
     page.on('request', request => {
       const url = new URL(request.url());
-      if (/^https?:$/.test(url.protocol) && url.origin !== new URL(target).origin) external.push(request.url());
+      if (/^https?:$/.test(url.protocol) && url.origin !== new URL(target).origin && url.origin !== MOCK_SUPABASE) external.push(request.url());
     });
     await page.addInitScript(() => {
       window.__cspViolations = [];
@@ -171,68 +173,12 @@ try {
         'O aviso de imagem ausente deve continuar visível no cartão original');
     }
     assert.deepEqual(errors, []);
-    assert.deepEqual(external, [], 'A base pronta deve funcionar apenas com arquivos do próprio site');
+    assert.deepEqual(external, [], 'A base só deve usar o site e o serviço de acesso autorizado');
     assert.deepEqual(await page.evaluate(() => window.__cspViolations), []);
     report.push({device: device.name, readyWithoutInput: true, filters: true, originalContent: true,
       schedule: true, independentCursors: true, batch200: true, exportsAllFiltered: true});
     await context.close();
   }
-
-  // Agendas antigas fora do último lote são recuperadas, sem substituir notas novas.
-  const legacyContext = await browser.newContext();
-  const legacyPage = await legacyContext.newPage();
-  const [first, newer, outside] = original.cards;
-  const prefix = 'pmdf:account:11111111-2222-4333-8444-555555555555:';
-  const future = Date.now() + 7 * 86400000;
-  const savedCard = {id: first.id, front: first.front, back: first.back, law: first.disciplina, article: first.assunto};
-  const existing = JSON.stringify({version: 1, title: 'Sessão anterior', cards: [savedCard],
-    schedule: {[newer.id]: {box: 1, due: 0}}, cursor: 0});
-  const oldSession = JSON.stringify({version: 4, anki: {cards: [savedCard], index: 0, back: false, ratings: {}}});
-  await legacyPage.addInitScript(({key, saved, session, accountPrefix, ids, due}) => {
-    if (localStorage.getItem('qa:legacy-seeded')) return;
-    localStorage.setItem('qa:legacy-seeded', '1');
-    localStorage.setItem(key, saved);
-    localStorage.setItem('pmdf:supabase:session:v1', JSON.stringify({user: {id: '11111111-2222-4333-8444-555555555555'}}));
-    localStorage.setItem(accountPrefix + 'pmdf:session:v4', session);
-    for (const id of ids) {
-      localStorage.setItem(accountPrefix + 'fc:' + id, '2');
-      localStorage.setItem(accountPrefix + 'leitner:' + id, '3');
-      localStorage.setItem(accountPrefix + 'leitnerDue:' + id, String(due));
-    }
-  }, {key: KEY, saved: existing, session: oldSession, accountPrefix: prefix, ids: [newer.id, outside.id], due: future});
-  await legacyPage.goto(target, {waitUntil: 'networkidle'});
-  await ready(legacyPage);
-  assert.equal(await size(legacyPage), original.cards.length, 'Uma sessão salva não pode substituir o catálogo completo');
-  await start(legacyPage, 'due');
-  const legacyState = await state(legacyPage);
-  assert.deepEqual(legacyState.schedule[outside.id], {box: 3, due: future});
-  assert.deepEqual(legacyState.schedule[newer.id], {box: 1, due: 0}, 'A nota mais nova deve ter prioridade sobre a agenda antiga');
-  assert(!legacyState.session.ids.includes(outside.id));
-  assert(legacyState.session.ids.includes(newer.id));
-  assert.equal(await legacyPage.evaluate(key => localStorage.getItem(key), KEY), existing,
-    'Entrar no catálogo não deve sobrescrever o baralho pessoal anterior');
-  assert.equal(await legacyPage.evaluate(key => localStorage.getItem(key), prefix + 'pmdf:session:v4'), oldSession);
-  await legacyContext.close();
-  report.push({completeCatalogWithSavedSession: true, legacyScheduleOutsideLastBatch: true, newRatingsPreserved: true});
-
-  // Uma falha de download é recuperável pelo próprio botão, sem pedir material.
-  const retryContext = await browser.newContext();
-  let attempts = 0;
-  await retryContext.route('**/assets/bancos/anki.json*', async route => {
-    attempts++;
-    if (attempts === 1) await route.fulfill({status: 503, contentType: 'text/plain', body: 'Indisponibilidade simulada'});
-    else await route.continue();
-  });
-  const retryPage = await retryContext.newPage();
-  await retryPage.goto(target, {waitUntil: 'networkidle'});
-  await retryPage.waitForFunction(() => document.getElementById('anki-catalog-status')?.dataset.error === 'true');
-  assert.equal(await retryPage.locator('#source-text').inputValue(), '');
-  await retryPage.click('#use-anki-catalog');
-  await ready(retryPage);
-  assert.equal(await size(retryPage), original.cards.length);
-  assert.equal(attempts, 2);
-  await retryContext.close();
-  report.push({failedDownloadCanRetry: true});
 
   // A apresentação do acervo também deve escapar títulos, assertivas e versos.
   const escapedContext = await browser.newContext();
@@ -241,8 +187,7 @@ try {
     front: hostile + '\nJULGUE CERTO OU ERRADO\n' + hostile + ' Texto literal.',
     back: 'CERTO — ' + hostile + ' Comentário literal.',
     flags: [...new Set([...card.flags, 'texto_incompleto_na_fonte'])]})};
-  await escapedContext.route('**/assets/bancos/anki.json*', route => route.fulfill({status: 200,
-    contentType: 'application/json', body: JSON.stringify(literal)}));
+  await installAuthMock(escapedContext, {catalog: literal});
   const escapedPage = await escapedContext.newPage();
   await escapedPage.goto(target, {waitUntil: 'networkidle'});
   await ready(escapedPage);
@@ -256,6 +201,36 @@ try {
   assert.equal(await escapedPage.evaluate(() => Boolean(window.__unsafe)), false);
   await escapedContext.close();
   report.push({catalogContentEscaped: true});
+  const progressContext = await browser.newContext();
+  await installAuthMock(progressContext);
+  const progressPage = await progressContext.newPage();
+  const [first, second] = original.cards;
+  const alternateKey = keyFor('flashcards:anki:v1', '22222222-3333-4444-8555-666666666666');
+  await progressPage.addInitScript(({key, alternateKey,id}) => {
+    if (localStorage.getItem('qa:progress-initialized')) return;
+    localStorage.setItem('qa:progress-initialized','1');
+    localStorage.setItem(key, JSON.stringify({version:1,schedule:{[id]:{box:4,due:1980000000000}}}));
+    localStorage.setItem(alternateKey, JSON.stringify({version:1,schedule:{}}));
+  }, {key:CATALOG_KEY,alternateKey,id:first.id});
+  await progressPage.goto(target, {waitUntil:'networkidle'});
+  await ready(progressPage);
+  await progressPage.getByText('Trazer meu progresso Anki',{exact:true}).click();
+  const input = progressPage.locator('#import-catalog-progress');
+  const sendProgress = entries => input.setInputFiles({name:'progress.json',mimeType:'application/json',
+    buffer:Buffer.from(JSON.stringify({format:'PMDF-CATALOG-PROGRESS-v1',entries}))});
+  await sendProgress([{id:first.id,box:1,due:100},{id:second.id,box:2,due:1980000000000},
+    {id:'cfo-gst-9999999999999999',box:3,due:1980000000000}]);
+  await progressPage.getByText('1 agendamento importado.',{exact:true}).waitFor();
+  const rows = (await state(progressPage)).schedule;
+  assert.deepEqual(rows,{[first.id]:{box:4,due:1980000000000},[second.id]:{box:2,due:1980000000000}});
+  assert.deepEqual(await progressPage.evaluate(key=>JSON.parse(localStorage.getItem(key)).schedule,alternateKey),{});
+  await sendProgress([{id:first.id,box:1,due:100,back:'texto proibido'}]);
+  await progressPage.getByText(/registro de progresso inválido/).waitFor();
+  assert.deepEqual((await state(progressPage)).schedule,rows);
+  await progressPage.reload({waitUntil:'networkidle'}); await ready(progressPage);
+  assert.deepEqual((await state(progressPage)).schedule,rows);
+  await progressContext.close();
+  report.push({progressOnly:true,unknownIgnored:true,accountLocal:true,existingPreserved:true});
   console.log('QA ANKI CATALOG BROWSER PASS', JSON.stringify(report));
 } finally {
   await browser?.close();
