@@ -11,9 +11,8 @@
  *     -> {content, mime, filename, count}
  *
  * TXT, Markdown e JSON são lidos localmente sem bibliotecas externas. PDF/DOCX
- * carregam somente leitores, sob demanda, de https://cdnjs.cloudflare.com.
- * CSP: script-src inclui esse domínio; worker-src inclui esse domínio e blob:;
- * connect-src inclui esse domínio. Nenhum arquivo é enviado a um servidor.
+ * carregam sob demanda leitores distribuídos com a aplicação.
+ * Todos os arquivos dos leitores vêm da mesma origem. Nenhum documento é enviado.
  */
 (function (root) {
   'use strict';
@@ -22,11 +21,16 @@
   const MAX_TEXT = 2 * 1024 * 1024;
   const MAX_FILE = 12 * 1024 * 1024;
   const MAX_CARDS = 30000;
+  const readersBase = root.document?.currentScript?.src
+    ? new URL('readers/', root.document.currentScript.src)
+    : null;
+  const readerUrl = name => readersBase ? new URL(name, readersBase).href : '';
   const READERS = Object.freeze({
-    pdf: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
-    pdfWorker: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
-    docx: 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js'
+    pdf: readerUrl('pdf.min.mjs'),
+    pdfWorker: readerUrl('pdf.worker.min.mjs'),
+    docx: readerUrl('mammoth.browser.min.js')
   });
+  let pdfLoad;
   const loading = new Map();
   const text = value => String(value == null ? '' : value);
   const clean = value => text(value).replace(/\s+/g, ' ').trim();
@@ -238,6 +242,16 @@
     return request;
   }
 
+  function loadPdfReader() {
+    if (root.pdfjsLib?.getDocument) return Promise.resolve(root.pdfjsLib);
+    if (!readersBase) return Promise.reject(new Error('A leitura de PDF requer um navegador.'));
+    pdfLoad ||= import(READERS.pdf).catch(() => {
+      pdfLoad = null;
+      throw new Error('Não foi possível carregar o leitor PDF. Recarregue a página ou cole o texto do arquivo.');
+    });
+    return pdfLoad;
+  }
+
   async function readFile(file, options = {}) {
     if (!file || typeof file.name !== 'string') throw new Error('Selecione um arquivo para importar.');
     const extension = file.name.split('.').pop().toLowerCase();
@@ -254,17 +268,21 @@
       options.onProgress?.('Carregando leitor DOCX…');
       if (!root.mammoth?.extractRawText) await loadScript(READERS.docx);
       if (!root.mammoth?.extractRawText) throw new Error('O leitor DOCX não ficou disponível. Cole o texto do documento.');
-      try { source = (await root.mammoth.extractRawText({arrayBuffer: await file.arrayBuffer()})).value; }
+      try { source = (await root.mammoth.extractRawText({arrayBuffer: await file.arrayBuffer()}, {externalFileAccess: false})).value; }
       catch (_) { throw new Error('Não foi possível ler este DOCX. Verifique se o arquivo é válido ou cole seu conteúdo.'); }
     } else {
       options.onProgress?.('Carregando leitor PDF…');
-      if (!root.pdfjsLib?.getDocument) await loadScript(READERS.pdf);
-      if (!root.pdfjsLib?.getDocument) throw new Error('O leitor PDF não ficou disponível. Cole o texto do documento.');
-      root.pdfjsLib.GlobalWorkerOptions.workerSrc = READERS.pdfWorker;
-      let pdf;
+      const pdfjs = await loadPdfReader();
+      if (!pdfjs?.getDocument) throw new Error('O leitor PDF não ficou disponível. Cole o texto do documento.');
+      pdfjs.GlobalWorkerOptions.workerSrc = READERS.pdfWorker;
+      let loadingTask;
       try {
-        // Desativa avaliação dinâmica também em PDFs fornecidos por terceiros.
-        pdf = await root.pdfjsLib.getDocument({data: await file.arrayBuffer(), isEvalSupported: false}).promise;
+        loadingTask = pdfjs.getDocument({
+          data: await file.arrayBuffer(), isEvalSupported: false, useWasm: false,
+          cMapUrl: readerUrl('cmaps/'), cMapPacked: true,
+          standardFontDataUrl: readerUrl('standard_fonts/')
+        });
+        const pdf = await loadingTask.promise;
         if (pdf.numPages > 80) throw new Error('PDF com mais de 80 páginas. Divida o documento em partes menores.');
         const pages = [], unreadable = [];
         for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
@@ -281,7 +299,7 @@
       } catch (error) {
         if (error?.name === 'PasswordException') throw new Error('O PDF está protegido por senha. Envie uma cópia desbloqueada ou cole o texto.');
         throw error;
-      } finally { if (pdf) await pdf.destroy(); }
+      } finally { await loadingTask?.destroy(); }
     }
     source = text(source).replace(/^\uFEFF/u, '').trim();
     if (!source) throw new Error('Nenhum texto extraível foi encontrado. Cole o conteúdo do documento para gerar os flashcards.');

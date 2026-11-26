@@ -68,7 +68,7 @@ A revisão jurídica anterior foi dirigida e não certifica a exatidão ou vigê
 - Criação opcional de baralhos pessoais a partir de texto, TXT, Markdown, JSON, PDF textual ou DOCX.
 - Interface responsiva e temas claro/escuro.
 
-Os documentos pessoais são processados no navegador; leitores de PDF/DOCX são obtidos de `cdnjs.cloudflare.com` quando necessários. PDFs sem texto extraível não recebem OCR.
+Os documentos pessoais são processados no navegador; leitores de PDF/DOCX são carregados da própria aplicação, sob demanda, e nenhum documento pessoal é enviado para processamento externo. PDFs sem texto extraível não recebem OCR.
 
 ## Progresso e privacidade local
 
@@ -80,7 +80,7 @@ O progresso continua local ao navegador, sem sincronização entre dispositivos.
 
 A validação desta preparação passou em **25 testes backend/SQL** e no QA de acesso em Chromium, incluindo o bloqueio das contas legadas. A renomeação da migração preserva o mesmo conteúdo SQL já testado.
 
-Requer Node.js 22 ou superior.
+Requer Node.js 22.13 ou superior.
 
 ```sh
 npm ci
@@ -92,7 +92,7 @@ npm run test:browser
 npm run build
 ```
 
-`npm run build` publica somente `index.html` e os arquivos permitidos de `assets/` em `dist/`. Backend, testes e acervo privado não entram no resultado. A configuração `netlify.toml` está preparada para utilizar esse diretório; outras hospedagens estáticas devem fazer o mesmo.
+`npm run build` publica `index.html`, os arquivos permitidos de `assets/` e os leitores PDF/DOCX fixados no lock em `dist/`. Backend, testes e acervo privado não entram no resultado. A configuração `netlify.toml` está preparada para utilizar esse diretório; outras hospedagens estáticas devem fazer o mesmo.
 
 Os testes normais usam exclusivamente um catálogo sintético, sem conteúdo comercial. Os testes de navegador interceptam a API em seu próprio contexto de teste e usam o SDK real; não existe atalho de acesso no código de produção.
 

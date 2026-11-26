@@ -118,21 +118,26 @@ function ankiRows(content) {
   }
   assert.equal(io.escapeHtml(hostile), '&lt;img src=x onerror=&quot;alert(1)&quot;&gt;');
 
-  // Bibliotecas simuladas testam o contrato de leitura, sem depender da CDN.
+  // Bibliotecas simuladas testam o contrato de leitura e encerramento do worker.
   let destroyed = 0;
   const pdfIO = load({pdfjsLib: {GlobalWorkerOptions: {}, getDocument(options) {
     assert.equal(options.isEvalSupported, false);
+    assert.equal(options.useWasm, false);
     return {promise: Promise.resolve({numPages: 2,
-      getPage: async number => ({getTextContent: async () => ({items: [{str: "Texto integral da página " + number, hasEOL: true}]}), cleanup() {}}),
-      destroy: async () => { destroyed++; }})};
+      getPage: async number => ({getTextContent: async () => ({items: [{str: "Texto integral da página " + number, hasEOL: true}]}), cleanup() {}})}),
+      destroy: async () => { destroyed++; }};
   }}});
   const pdf = await pdfIO.readFile(file("exemplo.pdf", "%PDF"));
   assert(pdf.text.includes("página 1") && pdf.text.includes("página 2"));
   assert.equal(destroyed, 1, "Leitor PDF deve liberar o documento");
   const scanned = load({pdfjsLib: {GlobalWorkerOptions: {}, getDocument: () => ({promise: Promise.resolve({numPages: 1,
-    getPage: async () => ({getTextContent: async () => ({items: []})}), destroy: async () => {}})})}});
+    getPage: async () => ({getTextContent: async () => ({items: []})})}), destroy: async () => { destroyed++; }})}});
   await assert.rejects(() => scanned.readFile(file("escaneado.pdf", "%PDF")), /sem texto extraível/);
-  const docx = load({mammoth: {extractRawText: async () => ({value: fixture})}});
+  assert.equal(destroyed, 2, "Leitor PDF deve encerrar mesmo se a extração falhar");
+  const docx = load({mammoth: {extractRawText: async (_, options) => {
+    assert.deepEqual(options, {externalFileAccess: false});
+    return {value: fixture};
+  }}});
   assert.equal((await docx.readFile(file("exemplo.docx", "PK"))).text, fixture);
   console.log("QA IO PASS: texto integral, JSON, PDF/DOCX, escape e exportações Basic/Cloze/CSV/TSV");
 })().catch(error => { console.error(error); process.exitCode = 1; });

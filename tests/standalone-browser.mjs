@@ -19,13 +19,15 @@ catch (error) {
 let server;
 const target = process.env.PMDF_TEST_URL || 'http://127.0.0.1:8765/';
 if (!process.env.PMDF_TEST_URL) {
-  const types = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
+  await import('../scripts/build.mjs');
+  const dist = path.resolve(root, 'dist');
+  const types = {'.mjs': 'text/javascript; charset=utf-8', '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
     '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8'};
   server = createServer(async (req, res) => {
     try {
       const pathname = decodeURIComponent(new URL(req.url, target).pathname);
-      const filename = path.resolve(root, '.' + (pathname.endsWith('/') ? pathname + 'index.html' : pathname));
-      if (!filename.startsWith(root) || !(await stat(filename)).isFile()) throw Error('Not found');
+      const filename = path.resolve(dist, '.' + (pathname.endsWith('/') ? pathname + 'index.html' : pathname));
+      if (!filename.startsWith(dist + path.sep) || !(await stat(filename)).isFile()) throw Error('Not found');
       res.writeHead(200, {'Content-Type': types[path.extname(filename)] || 'application/octet-stream'});
       res.end(await readFile(filename));
     } catch {
@@ -189,12 +191,19 @@ try {
   // A atualização deve recuperar somente a sessão local da conta identificada,
   // mantendo os cartões, a posição da revisão e os agendamentos anteriores.
   // Os leitores reais são exercitados com arquivos sintéticos: verifica também
-  // carregamento da CDN, worker PDF e compatibilidade com a CSP da aplicação.
+  // carregamento na própria origem, worker PDF e compatibilidade com a CSP.
   const documentContext = await browser.newContext();
   await installAuthMock(documentContext);
   const documentPage = await documentContext.newPage();
   documentPage.setDefaultTimeout(45000);
-  const documentErrors = [];
+  const documentErrors = [], readerPaths = [];
+  documentPage.on('request', request => {
+    const url = new URL(request.url());
+    if (/\/readers\//.test(url.pathname)) {
+      assert.equal(url.origin, new URL(target).origin, 'O leitor deve vir da própria aplicação');
+      readerPaths.push(url.pathname);
+    }
+  });
   documentPage.on('pageerror', error => documentErrors.push(error.message));
   await documentPage.addInitScript(() => {
     window.__cspViolations = [];
@@ -204,8 +213,11 @@ try {
   await openCustom(documentPage);
   for (const extension of ['pdf', 'docx']) {
     await documentPage.locator('#source-file').setInputFiles(path.join(root, 'tests/fixtures/material.' + extension));
-    await documentPage.waitForFunction(() => !document.getElementById('generate-cards').disabled &&
-      /importado|não|erro|falh/i.test(document.getElementById('generation-status').textContent), null, {timeout: 45000});
+    await documentPage.waitForFunction(() => {
+      const status = document.getElementById('generation-status');
+      return !document.getElementById('generate-cards').disabled &&
+        (status.dataset.error === 'true' || status.textContent.includes('Material importado'));
+    });
     const text = await documentPage.locator('#source-text').inputValue();
     for (const sentence of ['A autoridade deverá responder em 15 dias.', 'O requerente poderá apresentar recurso em 5 dias.',
       'É vedado cobrar taxa adicional pelo procedimento.']) assert(text.includes(sentence), extension + ': texto incompleto ou leitor indisponível: ' +
@@ -222,6 +234,9 @@ try {
   assert.match(await documentPage.locator('#generation-status').innerText(), /sem texto extraível/);
   assert.equal(await documentPage.locator('#source-text').inputValue(), previousSource);
   assert.equal(await deckSize(documentPage), previousCount);
+  for (const file of ['pdf.min.mjs', 'pdf.worker.min.mjs', 'mammoth.browser.min.js']) {
+    assert(readerPaths.some(url => url.endsWith('/readers/' + file)), 'Leitor local não carregado: ' + file);
+  }
   assert.deepEqual(documentErrors, []);
   assert.deepEqual(await documentPage.evaluate(() => window.__cspViolations), []);
   await documentContext.close();
