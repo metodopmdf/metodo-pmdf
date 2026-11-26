@@ -19,7 +19,8 @@
   const DRAFT_KEY = KEY + ':draft';
   const THEME_KEY = KEY + ':theme';
   const SOURCE_KEY = KEY + ':source';
-  const CATALOG_KEY = 'pmdf:flashcards:anki:v1';
+  const LEGACY_CATALOG_KEY = 'pmdf:flashcards:anki:v1';
+  const CATALOG_KEY = 'pmdf:flashcards:amostra:v1';
   const RATINGS = {again: 'Errei', hard: 'Difícil', good: 'Bom', easy: 'Fácil'};
   const DAYS = [0, 1, 3, 7, 14];
   const intervalLabel = days => days + (days === 1 ? ' dia' : ' dias');
@@ -182,7 +183,7 @@
     bank = rows.length ? IO.validateCards(CATALOG.toCards(rows)) : [];
     activeCatalog = true;
     deckRevision++;
-    deckTitle = [catalogFilters.discipline, catalogFilters.topic].filter(Boolean).join(' · ') || 'Base Anki completa';
+    deckTitle = [catalogFilters.discipline, catalogFilters.topic].filter(Boolean).join(' · ') || 'Amostra Anki';
     report = null;
     session = reviewFromIds(savedReview, bank);
     $('review-section').hidden = !session;
@@ -190,7 +191,7 @@
     $('catalog-selection').textContent = bank.length.toLocaleString('pt-BR') + ' cartões nesta seleção.';
     $('review-status').textContent = session ? 'Sua sessão da base Anki foi recuperada.' : 'Escolha o tipo e o tamanho da sessão e clique em Iniciar revisão.';
     renderDeck();
-    catalogStatus('Base Anki pronta para estudar. Escolha uma disciplina e um assunto ou revise o acervo completo.');
+    catalogStatus('Amostra Anki pronta para estudar. Escolha uma disciplina e um assunto ou revise todos os 52 cartões da amostra.');
     if (persist) { chooseSource('catalog'); persistDeck(); }
   }
   async function initializeCatalog(force = false) {
@@ -204,7 +205,7 @@
       const ids = new Set(catalogData.cards.map(card => card.id));
       let saved = null;
       try {
-        const value = JSON.parse(readStorage(CATALOG_KEY) || 'null');
+        const value = JSON.parse(readStorage(CATALOG_KEY) || readStorage(LEGACY_CATALOG_KEY) || 'null');
         if (value?.version === 1) saved = value;
       } catch (_) { /* Um novo estudo continua possível; dados antigos não são apagados. */ }
       if (saved?.schedule && typeof saved.schedule === 'object') {
@@ -558,6 +559,19 @@
     $('theme-toggle').textContent = dark ? 'Tema claro' : 'Tema escuro';
     $('theme-toggle').setAttribute('aria-pressed', String(dark));
   }
+  $('export-catalog-progress')?.addEventListener('click', () => {
+    const progress = window.PMDFCatalogProgress;
+    const message = $('catalog-progress-status');
+    try {
+      const state = progress.schedules(localStorage, LEGACY_CATALOG_KEY, CATALOG_KEY);
+      if (!Object.keys(state).length) { message.textContent = 'Não há agendamentos Anki salvos neste navegador.'; return; }
+      const url = URL.createObjectURL(new Blob([progress.serialize(state)], {type:'application/json;charset=utf-8'}));
+      const link = document.createElement('a');
+      link.href = url; link.download = 'pmdf-progresso-anki.json'; link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      message.textContent = 'Arquivo de progresso baixado. Guarde-o para importar no novo acesso.';
+    } catch (_) { message.textContent = 'Não foi possível baixar o progresso neste navegador.'; }
+  });
   const theme = readStorage(THEME_KEY);
   applyTheme(theme ? theme === 'dark' : Boolean(window.matchMedia?.('(prefers-color-scheme: dark)').matches));
   $('theme-toggle').addEventListener('click', () => {

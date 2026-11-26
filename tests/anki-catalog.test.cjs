@@ -5,7 +5,7 @@ const path = require('node:path');
 const {createHash} = require('node:crypto');
 const assets = path.join(__dirname, '..', 'assets');
 const source = fs.readFileSync(path.join(assets, 'pmdf-anki-catalog.js'), 'utf8');
-const bytes = fs.readFileSync(path.join(assets, 'bancos', 'anki.json'));
+const bytes = fs.readFileSync(path.join(assets, 'bancos', 'amostra-anki.json'));
 const data = JSON.parse(bytes);
 const ioRoot = {};
 new Function('window', fs.readFileSync(path.join(assets, 'pmdf-flashcard-io.js'), 'utf8'))(ioRoot);
@@ -18,42 +18,108 @@ function loadModule(extra = {}) {
 }
 const {api} = loadModule();
 const expected = {
-  'Direito Penal Militar': [87, 8],
-  'Direito Administrativo': [241, 8],
-  'Direito Processual Penal Militar': [188, 17],
-  'Direito Processual Penal': [185, 8],
-  'Distrito Federal e Política Para Mulheres': [47, 2],
-  'Administração': [199, 8],
-  'Legislação PMDF': [85, 6],
-  'Noções de Criminologia': [101, 4],
-  'Língua Portuguesa': [211, 9],
-  'Legislação Penal e Processual Penal Extravagante': [338, 15],
-  'Direitos Humanos': [142, 5],
-  'Direito Constitucional': [301, 12],
-  'Direito Penal': [314, 14],
-  'Jurisprudência Direito Administrativo': [31, 1],
-  'Jurisprudência Direito Penal': [15, 1],
-  'Jurisprudência Direito Penal Militar': [6, 1],
-  'Jurisprudência Direito Constitucional': [25, 1],
-  'Jurisprudência Legislação Penal Especial': [10, 1],
-  'Jurisprudência Direito Processual Penal': [15, 1],
-  'Jurisprudência Direito Processual Penal Militar': [6, 1],
-  'Jurisprudência Direitos Humanos': [6, 1],
-  'Raciocínio Lógico': [71, 6]
+  "Direito Penal Militar": [
+    3,
+    3
+  ],
+  "Distrito Federal e Política Para Mulheres": [
+    2,
+    2
+  ],
+  "Administração": [
+    2,
+    2
+  ],
+  "Legislação PMDF": [
+    3,
+    3
+  ],
+  "Noções de Criminologia": [
+    2,
+    2
+  ],
+  "Direitos Humanos": [
+    2,
+    2
+  ],
+  "Direito Administrativo": [
+    3,
+    3
+  ],
+  "Língua Portuguesa": [
+    3,
+    3
+  ],
+  "Direito Constitucional": [
+    3,
+    3
+  ],
+  "Direito Penal": [
+    3,
+    3
+  ],
+  "Jurisprudência Direito Administrativo": [
+    2,
+    1
+  ],
+  "Jurisprudência Direito Penal": [
+    2,
+    1
+  ],
+  "Jurisprudência Direito Penal Militar": [
+    2,
+    1
+  ],
+  "Jurisprudência Direito Constitucional": [
+    2,
+    1
+  ],
+  "Jurisprudência Legislação Penal Especial": [
+    2,
+    1
+  ],
+  "Jurisprudência Direito Processual Penal": [
+    2,
+    1
+  ],
+  "Jurisprudência Direito Processual Penal Militar": [
+    2,
+    1
+  ],
+  "Jurisprudência Direitos Humanos": [
+    2,
+    1
+  ],
+  "Direito Processual Penal": [
+    2,
+    2
+  ],
+  "Legislação Penal e Processual Penal Extravagante": [
+    2,
+    2
+  ],
+  "Direito Processual Penal Militar": [
+    3,
+    3
+  ],
+  "Raciocínio Lógico": [
+    3,
+    3
+  ]
 };
 
 // A comparação integral impede qualquer alteração acidental no acervo publicado,
 // incluindo texto, gabaritos, referências, ordem e IDs de revisão.
 assert.equal(createHash('sha256').update(bytes).digest('hex'),
-  '124e9f0f3b811a7b379fd0a4da2bc9fc8a55213bd1571bca61521a5803d191ae');
+  'd5a20103fd67e1860a3f7cf6a5fdc8b7d4675fa5f819189449223786d69f754e');
 assert.equal(api.validate(data), data);
-assert.equal(data.cards.length, 2624);
-assert.equal(new Set(data.cards.map(card => card.id)).size, 2624);
-assert.equal(data.revision, '2026-11-25-anki-conteudo-v4');
+assert.equal(data.cards.length, 52);
+assert.equal(new Set(data.cards.map(card => card.id)).size, 52);
+assert.equal(data.revision, '20261126-amostra-v1');
 assert.equal(api.disciplines(data).length, 22);
 assert.deepEqual(api.disciplines(data), Object.keys(expected).sort((a, b) => a.localeCompare(b, 'pt-BR')));
-assert.equal(new Set(data.cards.map(card => card.disciplina + '|' + card.assunto)).size, 130);
-assert.equal(api.topics(data).length, 121, 'Nomes repetidos entre disciplinas aparecem uma vez no seletor geral');
+assert.equal(new Set(data.cards.map(card => card.disciplina + '|' + card.assunto)).size, 44);
+assert.equal(api.topics(data).length, 37, 'Nomes repetidos entre disciplinas aparecem uma vez no seletor geral');
 assert.deepEqual(api.filtered(data), data.cards);
 assert.deepEqual(api.filtered(data, {discipline: 'Não existe'}), []);
 assert.deepEqual(api.topics(data, 'Não existe'), []);
@@ -73,17 +139,12 @@ for (const [discipline, [count, topicCount]] of Object.entries(expected)) {
     }
   }
 }
-assert.equal(covered.size, 2624, 'Todos os cartões devem ser alcançáveis pelos filtros');
-
-const height = data.cards.find(card => card.id === 'cfo-gst-1772291158857');
-assert.equal(height.answer, 'CERTO');
-assert.match(height.front, /1,60 m para homens e 1,55 m para mulheres/);
-assert.match(height.reviewed_source, /lei-15395/);
+assert.equal(covered.size, 52, 'Todos os cartões devem ser alcançáveis pelos filtros');
 
 const original = JSON.stringify(data);
 const mapped = api.toCards(data.cards), validated = io.validateCards(mapped);
-assert.equal(mapped.length, 2624);
-assert.equal(validated.length, 2624);
+assert.equal(mapped.length, 52);
+assert.equal(validated.length, 52);
 assert.deepEqual(api.toCards([]), []);
 for (let index = 0; index < data.cards.length; index++) {
   const row = data.cards[index], card = mapped[index];
@@ -113,9 +174,9 @@ for (let index = 0; index < data.cards.length; index++) {
   if (row.flags.includes('verso_extenso')) assert.match(card.warning, /comentário original.*extenso/);
 }
 assert.equal(JSON.stringify(data), original, 'Filtrar/adaptar não pode modificar a base');
-assert.equal(data.cards.filter(card => card.answer === 'CERTO').length, 1495);
-assert.equal(data.cards.filter(card => card.answer === 'ERRADO').length, 1129);
-assert.equal(data.cards.filter(card => card.reviewed_source).length, 178);
+assert.equal(data.cards.filter(card => card.answer === 'CERTO').length, 29);
+assert.equal(data.cards.filter(card => card.answer === 'ERRADO').length, 23);
+assert.equal(data.cards.filter(card => card.reviewed_source).length, 45);
 assert.equal(data.cards.filter(card => card.flags.includes('texto_incompleto_na_fonte')).length, 0);
 
 // O adaptador conserva o texto literal; o renderizador escapa e o Anki recebe
@@ -152,7 +213,7 @@ for (const wrong of [null, {}, {format: 'outro', cards: data.cards}, {format: da
   assert.equal(alsoLoaded, data);
   assert.equal(await cached.load(), data);
   assert.equal(count, 1);
-  assert.equal(requested.url, PAGE + 'assets/bancos/anki.json?v=20261125-anki-conteudo-v4');
+  assert.equal(requested.url, PAGE + 'assets/bancos/amostra-anki.json?v=amostra-v1');
   assert.equal(requested.options.cache, 'default');
 
   // Falhas de rede, HTTP, JSON ou validação não podem envenenar o cache.
@@ -185,5 +246,5 @@ for (const wrong of [null, {}, {format: 'outro', cards: data.cards}, {format: da
   sameSite.root.document.baseURI = PAGE;
   assert.equal(await sameSite.api.load(), data);
   assert.equal(externalCalls, 1);
-  console.log('QA ANKI CATALOG PASS: base publicada íntegra, 2624 cartões, 22 disciplinas, 130 assuntos, filtros, IO e retry');
+  console.log('QA ANKI CATALOG PASS: base publicada íntegra, 52 cartões, 22 disciplinas, 44 assuntos, filtros, IO e retry');
 })().catch(error => { console.error(error); process.exitCode = 1; });

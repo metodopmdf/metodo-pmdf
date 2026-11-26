@@ -4,9 +4,18 @@
   "private": true,
   "description": "Criação independente de flashcards a partir do Método PMDF",
   "scripts": {
-    "test": "node tests/neural-flashcards.test.cjs && node tests/flashcard-modes.test.cjs && node tests/flashcard-io.test.cjs && node tests/flashcard-migration.test.cjs && node tests/anki-catalog.test.cjs && node tests/catalog-controller.test.cjs",
-    "test:browser": "node tests/standalone-browser.mjs && node tests/anki-catalog-browser.mjs"
+    "test": "node tests/neural-flashcards.test.cjs && node tests/flashcard-modes.test.cjs && node tests/flashcard-io.test.cjs && node tests/flashcard-migration.test.cjs && node tests/anki-catalog.test.cjs && node tests/catalog-controller.test.cjs && node tests/catalog-progress.test.cjs",
+    "test:browser": "node tests/sample-browser.mjs",
+    "build": "node scripts/build.mjs"
   },
-  "engines": { "node": ">=22" },
-  "devDependencies": { "playwright": "1.57.0" }
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "devDependencies": {
+    "playwright": "1.57.0"
+  },
+  "dependencies": {
+    "mammoth": "1.13.0",
+    "pdfjs-dist": "6.5.438"
+  }
 }

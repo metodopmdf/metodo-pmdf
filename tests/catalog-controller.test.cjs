@@ -8,10 +8,10 @@ const modules = {};
 for (const name of ['pmdf-flashcard-io.js', 'pmdf-flashcard-migration.js', 'pmdf-anki-catalog.js'])
   new Function('window', source(name))(modules);
 const catalog = modules.PMDFAnkiCatalog;
-const complete = JSON.parse(fs.readFileSync(path.join(assets, 'bancos', 'anki.json'), 'utf8'));
+const complete = JSON.parse(fs.readFileSync(path.join(assets, 'bancos', 'amostra-anki.json'), 'utf8'));
 const data = {...complete, cards: complete.cards.slice(0, 3)};
 const card = catalog.toCards([data.cards[0]])[0];
-const KEY = 'pmdf:flashcards:standalone:v1', CATALOG_KEY = 'pmdf:flashcards:anki:v1';
+const KEY = 'pmdf:flashcards:standalone:v1', CATALOG_KEY = 'pmdf:flashcards:amostra:v1';
 const SOURCE_KEY = KEY + ':source';
 const personal = (schedule, session = null) => ({version: 1, title: 'Baralho pessoal salvo',
   cards: [card], schedule: {[card.id]: schedule}, cursor: 0, session});

@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; script-src-attr 'none'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://cdnjs.cloudflare.com; worker-src 'self' blob: https://cdnjs.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'none'">
-  <title>Método PMDF — Flashcards Anki</title>
-  <meta name="description" content="Estude a base Anki do Método PMDF por disciplina e assunto, revise com repetição espaçada e exporte seus flashcards.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>Método PMDF — Amostra grátis de flashcards Anki</title>
+  <meta name="description" content="Experimente 52 flashcards gratuitos em 22 disciplinas, com revisão espaçada e exportação para Anki.">
   <meta name="theme-color" content="#17354d">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2317354d'/%3E%3Cpath d='M17 20h30v29H17zM23 14h30v29' fill='none' stroke='%23f2d38f' stroke-width='4'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="assets/pmdf-flashcards-standalone.css">
@@ -16,8 +16,9 @@
   <script defer src="assets/pmdf-flashcards-perguntas.js"></script>
   <script defer src="assets/pmdf-flashcard-io.js"></script>
   <script defer src="assets/pmdf-flashcard-migration.js"></script>
-  <script defer src="assets/pmdf-anki-catalog.js?v=20261125-anki-conteudo-v4"></script>
-  <script defer src="assets/pmdf-flashcards-app.js"></script>
+  <script defer src="assets/pmdf-anki-catalog.js?v=amostra-v1"></script>
+  <script defer src="assets/pmdf-catalog-progress.js"></script>
+  <script defer src="assets/pmdf-flashcards-app.js?v=amostra-v1"></script>
 </head>
 <body>
   <a class="skip-link" href="#anki-cfo-disciplina">Ir para a base de flashcards</a>
@@ -33,9 +34,9 @@
     <header class="anki-visual-intro">
       <div class="anki-visual-intro-content">
         <span class="anki-visual-intro-kicker">✦ MEMORIZAÇÃO ESTRATÉGICA</span>
-        <h1>Sua base Anki, pronta para <em>revisar.</em></h1>
-        <p>Escolha a disciplina e o assunto para estudar os flashcards já disponíveis. Revele o gabarito, acompanhe suas revisões e leve o baralho para o Anki.</p>
-        <div class="anki-visual-intro-pills"><span>Flashcards prontos</span><span>Revisão espaçada</span><span>Exportação para Anki</span></div>
+        <h1>Experimente os <em>flashcards.</em></h1>
+        <p>Amostra gratuita com 52 flashcards em 22 disciplinas. Revele o gabarito, pratique com repetição espaçada e leve a seleção para o Anki.</p>
+        <div class="anki-visual-intro-pills"><span>Amostra gratuita</span><span>Revisão espaçada</span><span>Exportação para Anki</span></div>
       </div>
       <div class="anki-visual-intro-mark" aria-hidden="true">✦</div>
     </header>
@@ -43,16 +44,17 @@
     <div class="workspace">
       <div class="source-column">
       <section class="panel catalog-panel" aria-labelledby="catalog-heading">
-        <div class="section-heading"><span class="step">01</span><div><h2 id="catalog-heading">Base Anki do Método PMDF</h2><p>Selecione o que deseja estudar e inicie a revisão.</p></div></div>
+        <div class="section-heading"><span class="step">01</span><div><h2 id="catalog-heading">Amostra Anki do Método PMDF</h2><p>Selecione o que deseja estudar e inicie a revisão.</p></div></div>
         <div class="catalog-stats"><div><strong id="catalog-total">—</strong><span>flashcards</span></div><div><strong id="catalog-disciplines">—</strong><span>disciplinas</span></div><div><strong id="catalog-topics">—</strong><span>assuntos</span></div></div>
         <label for="anki-cfo-disciplina">Disciplina</label>
         <select id="anki-cfo-disciplina" disabled><option value="">Todas as disciplinas</option></select>
         <label for="anki-cfo-assunto">Assunto</label>
         <select id="anki-cfo-assunto" disabled><option value="">Todos os assuntos</option></select>
         <p id="catalog-selection" class="help">Os cartões serão carregados automaticamente.</p>
-        <div class="catalog-actions"><button type="button" id="use-anki-catalog" class="button primary" disabled>Usar base Anki</button><button type="button" id="reset-anki-filters" class="button quiet" disabled>Limpar filtros</button></div>
+        <div class="catalog-actions"><button type="button" id="use-anki-catalog" class="button primary" disabled>Usar amostra Anki</button><button type="button" id="reset-anki-filters" class="button quiet" disabled>Limpar filtros</button></div>
         <p id="anki-catalog-status" class="status" role="status" aria-live="polite">Carregando a base de flashcards…</p>
-        <details class="method-help"><summary>Sobre esta base</summary><p>Este é o acervo Anki original do Método PMDF, com os mesmos enunciados, respostas e identificadores dos cartões.</p><p id="catalog-review-note"></p></details>
+        <details class="method-help"><summary>Sobre a amostra</summary><p>Esta página contém somente uma amostra. Os cartões mantêm os mesmos identificadores do acervo.</p><p id="catalog-review-note"></p></details>
+        <details class="method-help"><summary>Levar meu progresso</summary><p>Baixe os agendamentos da base Anki salvos neste navegador, inclusive os da versão anterior. O arquivo não leva respostas, textos ou baralhos pessoais.</p><button type="button" id="export-catalog-progress" class="button quiet">Baixar progresso Anki</button><p id="catalog-progress-status" role="status"></p></details>
       </section>
       <details class="panel source-panel" id="custom-source">
         <summary>Criar flashcards com meu material <span>Opcional</span></summary>

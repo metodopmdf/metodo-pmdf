@@ -4,7 +4,7 @@
  */
 (function (root) {
   'use strict';
-  const ASSET = 'assets/bancos/anki.json?v=20261125-anki-conteudo-v4';
+  const ASSET = 'assets/bancos/amostra-anki.json?v=amostra-v1';
   const FLAG_MESSAGES = Object.freeze({
     verificar_vigencia_juridica: 'Texto com dispositivo, prazo ou referência jurídica: confira a norma ou jurisprudência vigente.',
     imagem_do_original_nao_embutida: 'Imagem referenciada no Anki original não foi incluída na versão textual.',
