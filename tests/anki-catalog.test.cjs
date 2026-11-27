@@ -118,8 +118,7 @@ assert.equal(data.cards.filter(card => card.answer === 'ERRADO').length, 1129);
 assert.equal(data.cards.filter(card => card.reviewed_source).length, 178);
 assert.equal(data.cards.filter(card => card.flags.includes('texto_incompleto_na_fonte')).length, 0);
 
-// O adaptador conserva o texto literal; o renderizador escapa e o Anki recebe
-// #html:false, impedindo que trechos de material se tornem marcação executável.
+// O adaptador conserva o texto literal; o renderizador escapa a marcação.
 const hostile = {...data.cards[0], id: 'cfo-gst-123456789',
   front: '<img src=x onerror="alert(1)">', back: '<script>alert(2)</script>',
   flags: ['__proto__'], reviewed_source: ''};
@@ -127,7 +126,7 @@ const escapedCard = io.validateCards(api.toCards([hostile]))[0];
 assert.equal(escapedCard.front, hostile.front);
 assert.equal(escapedCard.back, hostile.back);
 assert.equal(io.escapeHtml(escapedCard.front), '&lt;img src=x onerror=&quot;alert(1)&quot;&gt;');
-assert.match(io.serialize([escapedCard], 'basic').content, /#html:false/);
+assert.equal(io.serialize, undefined, 'O catálogo não deve expor um exportador');
 assert.match(escapedCard.warning, /Observação do acervo: __proto__/);
 
 for (const wrong of [null, {}, {format: 'outro', cards: data.cards}, {format: data.format, cards: []},

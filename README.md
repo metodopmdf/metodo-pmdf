@@ -1,7 +1,7 @@
 # Método PMDF — Flashcards Anki
 
 Aplicação do Método PMDF dedicada exclusivamente aos flashcards, com a **base
-Anki carregada automaticamente**, revisão e exportação.
+Anki carregada automaticamente**, revisão.
 
 **Site:** https://metodopmdf.github.io/metodo-pmdf/
 
@@ -9,7 +9,7 @@ A ferramenta foi extraída do projeto completo, a partir do commit
 `08bdb149428459583d170287feac5960519cffa9`, e passou a ser a aplicação principal
 do repositório.
 
-Esta versão reúne **criação, revisão e exportação de flashcards**. Os motores de
+Esta versão reúne **criação e revisão de flashcards**. Os motores de
 geração e os estilos dos cartões foram reaproveitados do projeto original, com
 um controlador próprio e somente suas dependências necessárias.
 
@@ -40,7 +40,7 @@ Não é necessário compilar, cadastrar uma conta ou configurar chaves de API.
 4. Aguarde o carregamento automático da base Anki. Selecione uma disciplina e
    um assunto, ou mantenha o acervo completo.
 5. Escolha **Novos e vencidos** ou **Todos (treino livre)**, o tamanho do lote e
-   clique em **Iniciar revisão**. A exportação inclui todos os cartões filtrados.
+   clique em **Iniciar revisão**.
 
 O painel **Criar flashcards com meu material — Opcional** mantém a criação de
 um baralho pessoal a partir de texto ou arquivo. Não é necessário abri-lo para
@@ -66,10 +66,9 @@ necessário. Os documentos são processados no navegador.
   200 ou todos. O treino livre percorre o acervo em sequência e mantém uma posição
   independente para cada seleção de disciplina e assunto.
 - Recuperação do último baralho, rascunho, sessão e progresso neste navegador.
-- Exportação para Anki Basic/Cloze, planilhas CSV/TSV e backup JSON dos cartões.
 - Interface responsiva, tema claro/escuro e navegação por teclado.
 
-### Importação e exportação
+### Importação
 
 | Formato | Uso |
 | --- | --- |
@@ -78,17 +77,8 @@ necessário. Os documentos são processados no navegador.
 | JSON de guia | Estrutura original com `lawName` e `articlesMapping` |
 | JSON com `text` e `title` | Texto-base com título opcional |
 | JSON `PMDF-FLASHCARDS-v1` | Backup dos cartões, reaberto sem geração |
-| Anki Basic `.txt` | Somente cartões sem lacunas |
-| Anki Cloze `.txt` | Somente cartões com marcação `{{c1::...}}` |
-| CSV / TSV | Todos os cartões, incluindo fonte e tags |
-
-No Anki, importe os arquivos Basic e Cloze separadamente. Os arquivos incluem
-cabeçalhos com separador de tabulação, tipo de nota, colunas, baralho e
-`#html:false`; confirme o tipo correspondente na sua instalação do Anki.
-CSV/TSV usam escape de aspas e proteção contra fórmulas de planilha.
-
-O backup JSON guarda os cartões e seus metadados. **O agendamento e o progresso
-da revisão permanecem no navegador e não fazem parte desse backup.**
+O JSON é aceito somente para importar um baralho salvo anteriormente.
+O site não oferece exportação de cartões. O catálogo continua público e é carregado pelo navegador.
 
 Limites de entrada: TXT/MD de até 2 MiB; JSON/PDF/DOCX de até 12 MiB; texto
 extraído de até 2 Mi caracteres; PDF de até 80 páginas. Os limites produzem uma
@@ -129,7 +119,7 @@ Revise o conteúdo gerado, especialmente a redação vigente de material jurídi
 | `assets/pmdf-flashcard-classifier.js` | Classificador extraído do módulo compartilhado |
 | `assets/pmdf-neural-flashcards.js` | Motor original de lacunas, conceitos e contrastes |
 | `assets/pmdf-flashcards-perguntas.js` | Motor original de perguntas e seleção de formato |
-| `assets/pmdf-flashcard-io.js` | Entrada de arquivos, normalização e exportação |
+| `assets/pmdf-flashcard-io.js` | Entrada de arquivos e normalização |
 | `assets/pmdf-flashcard-migration.js` | Recuperação local da sessão anterior e dos agendamentos dos IDs do acervo |
 | `assets/pmdf-flashcards-standalone.css` | Estrutura e temas da aplicação independente |
 | `assets/pmdf-flashcards-visual.css` | Estilos originais dos cartões, com regras alheias removidas |
@@ -151,8 +141,7 @@ quando o texto não produz perguntas estratégicas.
 Os arquivos são lidos localmente, e a aplicação não usa conta, banco remoto ou
 envio do material a APIs. O armazenamento usa chaves próprias. Outro domínio,
 navegador ou dispositivo tem armazenamento separado. Se o navegador bloquear
-o armazenamento ou atingir sua capacidade, a interface avisa para exportar os
-cartões antes de fechar.
+o armazenamento ou atingir sua capacidade, a interface avisa que os cartões ficam disponíveis apenas enquanto a página estiver aberta.
 
 Na primeira abertura, quando ainda não existe um baralho desta versão, o criador
 tenta recuperar os cartões e agendamentos da sessão antiga salva neste mesmo

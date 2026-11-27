@@ -1,4 +1,4 @@
-/* Método PMDF — controlador exclusivo de criação, revisão e exportação.
+/* Método PMDF — controlador exclusivo de criação e revisão.
  * Extraído dos fluxos Anki do pmdf-app.js original. Sem rotas, contas ou serviços
  * das outras ferramentas. O agendamento mantém as caixas Leitner originais.
  */
@@ -41,7 +41,7 @@
     catch (_) {
       storageFailed = true;
       $('storage-status').dataset.error = 'true';
-      $('storage-status').textContent = 'O navegador não conseguiu salvar estes dados. Baixe um backup JSON dos cartões antes de fechar a página.';
+      $('storage-status').textContent = 'O navegador não conseguiu salvar estes dados. Os dados desta sessão podem ser perdidos ao recarregar ou fechar a página.';
       return false;
     }
   }
@@ -103,15 +103,12 @@
       'Escolha uma disciplina e um assunto na base Anki.';
     if (activeCatalog && bank.length) $('deck-breakdown').textContent = bank.length.toLocaleString('pt-BR') + ' cartões originais na seleção atual.';
     $('start-review').disabled = !bank.length;
-    $('export-cards').disabled = !bank.length;
     $('coverage-details').hidden = !report;
     if (report) {
       $('coverage-report').textContent = Number(report.coveredTopics || 0) + ' de ' +
         Number(report.sourceRows || 0) + ' trechos com cartões · ' + Number(report.sourceUnits || 0) +
         ' unidades analisadas. Trechos sem padrões reconhecidos podem ficar sem cartões.';
     }
-    if (bank.length && !bank.some(c => !c.cloze)) $('export-format').value = 'cloze';
-    else if (bank.length && $('export-format').value === 'cloze' && !cloze) $('export-format').value = 'basic';
     if ($('restore-custom')) $('restore-custom').disabled = busy || readStorage(KEY) == null;
     updateCatalogControls();
   }
@@ -281,7 +278,7 @@
       if (token !== operation || result.cancelled) return;
       if (!result.cards?.length) throw new Error('Nenhum cartão verificável foi encontrado neste formato. Use frases completas com definições, prazos ou regras, ou tente o formato Misto. O baralho anterior foi preservado.');
       acceptDeck(result.cards, title, result.report);
-      status(bank.length + ' flashcards criados. Seu baralho está pronto para revisão e exportação.');
+      status(bank.length + ' flashcards criados. Seu baralho está pronto para revisão.');
       toast(bank.length + ' flashcards criados.');
     } catch (error) {
       if (token === operation) status(error.message || 'Não foi possível criar os cartões. Confira o material.', true);
@@ -302,7 +299,7 @@
       if (token !== operation) return;
       if (result.cards) {
         acceptDeck(result.cards, result.title || file.name, null);
-        status(bank.length + ' cartões importados. Você pode revisar ou exportar o baralho.');
+        status(bank.length + ' cartões importados. Você pode revisar o baralho.');
       } else {
         importedGuide = result.guide || null;
         $('source-title').value = result.title || result.guide?.lawName || file.name;
@@ -475,17 +472,7 @@
     session.ratings[session.index] = rating;
     move(1);
   }
-  function exportCards() {
-    try {
-      const result = IO.serialize(bank, $('export-format').value, {title: deckTitle});
-      const url = URL.createObjectURL(new Blob([result.content], {type: result.mime}));
-      const link = document.createElement('a');
-      link.href = url; link.download = result.filename;
-      document.body.append(link); link.click(); link.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1500);
-      toast(result.count + ' cartões exportados.');
-    } catch (error) { toast(error.message || 'Não foi possível exportar o baralho.', true); }
-  }
+
   function restore() {
     try {
       const draft = JSON.parse(readStorage(DRAFT_KEY) || 'null');
@@ -543,7 +530,7 @@
         $('review-status').textContent = session ? 'Sua última sessão foi recuperada.' : 'Baralho recuperado. Inicie uma revisão quando quiser.';
         if (migrated) {
           // A restauração em memória já terminou. Se a gravação falhar, os
-          // cartões continuam disponíveis para revisar e exportar nesta página.
+          // cartões continuam disponíveis para revisar nesta página.
           if (persistDeck()) $('storage-status').textContent = migrated.message;
         }
       }
@@ -582,7 +569,6 @@
     status('Exemplo fictício carregado. Escolha um formato e crie os flashcards.');
   });
   $('start-review').addEventListener('click', startReview);
-  $('export-cards').addEventListener('click', exportCards);
   if (CATALOG) {
     $('anki-cfo-disciplina').addEventListener('change', () => {
       if (!catalogData || busy) return;

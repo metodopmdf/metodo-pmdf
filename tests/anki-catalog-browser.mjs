@@ -50,14 +50,6 @@ async function state(page) { return page.evaluate(key => JSON.parse(localStorage
 async function options(page, selector) {
   return page.locator(selector + ' option').evaluateAll(items => items.map(item => item.value).filter(Boolean));
 }
-async function exportJson(page) {
-  await page.selectOption('#export-format', 'json');
-  const pending = page.waitForEvent('download');
-  await page.click('#export-cards');
-  const result = await pending;
-  assert.equal(await result.failure(), null);
-  return JSON.parse(await readFile(await result.path(), 'utf8'));
-}
 async function start(page, mode = 'all', batch = '25') {
   await page.selectOption('#anki-mode', mode);
   await page.selectOption('#anki-batch-size', batch);
@@ -80,7 +72,7 @@ try {
   browser = await playwright.chromium.launch({headless: true, executablePath, args: ['--no-sandbox']});
   const report = [];
   for (const device of [{name: 'desktop', width: 1440, height: 1000}, {name: 'mobile', width: 390, height: 844}]) {
-    const context = await browser.newContext({viewport: {width: device.width, height: device.height}, acceptDownloads: true});
+    const context = await browser.newContext({viewport: {width: device.width, height: device.height}});
     const page = await context.newPage();
     page.setDefaultTimeout(15000);
     const errors = [], external = [];
@@ -116,9 +108,9 @@ try {
     assert.deepEqual(initial.session.ids, rows.slice(0, 25).map(card => card.id));
     assert.equal(Object.hasOwn(initial, 'cards'), false, 'O estado local não deve duplicar o banco completo');
     await assertFront(page, rows[0]);
-    const exported = await exportJson(page);
-    assert.equal(exported.cards.length, rows.length, 'Exportar deve incluir todos os cartões filtrados, além do lote atual');
-    assert.deepEqual(exported.cards.map(card => [card.id, card.front, card.back]), rows.map(card => [card.id, card.front, card.back]));
+    assert.equal(await page.locator('#export-cards, #export-format, a[download]').count(), 0);
+    assert.equal(await page.getByText('Baixar baralho', {exact: true}).count(), 0);
+    assert.equal(await page.evaluate(() => typeof window.PMDFFlashcardIO.serialize), 'undefined');
     await page.click('#reveal-answer');
     await assertBack(page, rows[0]);
     await page.click('[data-rating="good"]');
@@ -174,7 +166,7 @@ try {
     assert.deepEqual(external, [], 'A base pronta deve funcionar apenas com arquivos do próprio site');
     assert.deepEqual(await page.evaluate(() => window.__cspViolations), []);
     report.push({device: device.name, readyWithoutInput: true, filters: true, originalContent: true,
-      schedule: true, independentCursors: true, batch200: true, exportsAllFiltered: true});
+      schedule: true, independentCursors: true, batch200: true, noDeckExport: true});
     await context.close();
   }
 

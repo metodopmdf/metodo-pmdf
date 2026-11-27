@@ -227,7 +227,6 @@ function restoreApp(store) {
     return elements.get(id);
   };
   get('anki-card-style').value = 'questions';
-  get('export-format').value = 'basic';
   const document = {getElementById: get, documentElement: {dataset: {}}, addEventListener() {}};
   const window = {PMDFFlashcardIO: io, PMDFFlashcardMigration: migration, PMDFNeuralFlashcards: {},
     matchMedia: () => ({matches: false}), addEventListener() {}};
@@ -251,9 +250,8 @@ function restoreApp(store) {
   const initial = account(), store = storage(initial, {blockWrites: true}), get = restoreApp(store);
   assert.equal(get('deck-count').textContent, '2', 'Falhar ao salvar não pode descartar os cartões em memória');
   assert.equal(get('start-review').disabled, false);
-  assert.equal(get('export-cards').disabled, false);
   assert.equal(get('storage-status').dataset.error, 'true');
-  assert.match(get('storage-status').textContent, /backup JSON/);
+  assert.match(get('storage-status').textContent, /podem ser perdidos/);
   assert.deepEqual(Object.fromEntries(store.data), initial);
 }
 for (const existing of ['', '{corrompido', '{}']) {

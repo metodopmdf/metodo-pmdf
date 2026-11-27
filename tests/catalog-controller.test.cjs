@@ -37,7 +37,7 @@ function app(initial = {}, load = async () => data) {
     return elements.get(id);
   };
   get('anki-mode').value = 'due'; get('anki-batch-size').value = '50';
-  get('anki-card-style').value = 'questions'; get('export-format').value = 'basic';
+  get('anki-card-style').value = 'questions';
   const document = {getElementById: get, documentElement: {dataset: {}}, addEventListener() {}};
   const custom = {id: 'personal-generated', front: 'Qual é o prazo?', back: 'Quinze dias.'};
   const window = {...modules, PMDFAnkiCatalog: {...catalog, load},

@@ -1,5 +1,5 @@
-/* Método PMDF — entrada e exportação da ferramenta independente de flashcards.
- * Extraído de parseArticles/readFileText/exportAnkiCards/exportAnkiDeck do projeto
+/* Método PMDF — entrada e validação da ferramenta independente de flashcards.
+ * Extraído de parseArticles/readFileText do projeto
  * original. O texto-fonte nunca é resumido nem cortado para criar um guia.
  *
  * API pública, sem dependência de elementos da interface:
@@ -7,8 +7,6 @@
  *   parseText(text, title?) -> guide
  *   readFile(file, {onProgress(message)}?) -> Promise<{text,title,guide?,cards?}>
  *   readFileText(file, options?) -> Promise<string>
- *   serialize(cards, 'csv'|'tsv'|'basic'|'cloze'|'json', {title,deck}?)
- *     -> {content, mime, filename, count}
  *
  * TXT, Markdown e JSON são lidos localmente sem bibliotecas externas. PDF/DOCX
  * carregam somente leitores, sob demanda, de https://cdnjs.cloudflare.com.
@@ -33,10 +31,6 @@
   const escapeHtml = value => text(value).replace(/[&<>"']/g, ch => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   })[ch]);
-  const filename = value => text(value || 'flashcards').normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '').replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_')
-    .replace(/[. ]+$/g, '').replace(/\s+/g, '_').replace(/_+/g, '_').slice(0, 100) || 'flashcards';
-
   function hash(value) {
     let a = 2166136261;
     for (const ch of text(value)) a = Math.imul(a ^ ch.charCodeAt(0), 16777619);
@@ -132,7 +126,7 @@
     'answer', 'reviewed_source', 'origin'];
 
   function validateCards(cards) {
-    if (!Array.isArray(cards) || !cards.length) throw new Error('Não existem flashcards para importar ou exportar.');
+    if (!Array.isArray(cards) || !cards.length) throw new Error('Não existem flashcards para importar.');
     if (cards.length > MAX_CARDS) throw new Error('O arquivo contém mais de 30.000 flashcards. Divida o baralho em partes.');
     const seen = new Set();
     return cards.map((original, index) => {
@@ -203,7 +197,7 @@
   function parseJson(raw, defaultTitle) {
     let value;
     try { value = JSON.parse(text(raw).replace(/^\uFEFF/u, '')); }
-    catch (_) { throw new Error('O arquivo JSON não é válido. Verifique sua sintaxe ou importe um backup exportado pela ferramenta.'); }
+    catch (_) { throw new Error('O arquivo JSON não é válido. Verifique sua sintaxe ou importe um backup compatível.'); }
     if (value?.format === FORMAT && value.version === 1) {
       return {text: '', title: clean(value.title) || defaultTitle, cards: validateCards(value.cards)};
     }
@@ -295,55 +289,6 @@
     return result.text;
   }
 
-  function serialize(input, format = 'csv', options = {}) {
-    const all = validateCards(input);
-    const title = clean(options.title) || 'Flashcards';
-    const base = 'pmdf-' + filename(title);
-    if (format === 'json') {
-      const content = JSON.stringify({format: FORMAT, version: 1, title, cards: all}, null, 2) + '\n';
-      let bytes = 0;
-      for (const character of content) {
-        const codepoint = character.codePointAt(0);
-        bytes += codepoint > 0xffff ? 4 : codepoint > 0x7ff ? 3 : codepoint > 0x7f ? 2 : 1;
-        if (bytes > MAX_FILE) throw new Error('O backup excede 12 MB. Divida o baralho em conjuntos menores para que os arquivos possam ser importados novamente.');
-      }
-      return {content, mime: 'application/json;charset=utf-8', filename: base + '.json', count: all.length};
-    }
-    const extra = card => [card.extra || card.source || '',
-      'Referência: ' + (card.reference || card.article || 'Material fornecido'),
-      'Alerta: ' + (card.warning || 'Confira o trecho-fonte.')].join('\n');
-    const tags = card => clean(card.tags) || '#MetodoPMDF';
-    const quoted = value => '"' + text(value).replace(/\r\n?/g, '\n').replace(/"/g, '""') + '"';
-    if (format === 'csv' || format === 'tsv') {
-      // Protege a abertura em planilhas inclusive para prefixos precedidos por
-      // espaços, quebras de linha ou tabulações; o cartão original fica intacto.
-      const spreadsheet = value => {
-        let valueText = text(value);
-        if (/^[\s\uFEFF]*[=+@-]/u.test(valueText)) valueText = "'" + valueText;
-        return quoted(valueText);
-      };
-      const separator = format === 'tsv' ? '\t' : ';';
-      const rows = [['Frente', 'Verso', 'Extra', 'Tags'], ...all.map(card => [card.cloze || card.front, card.back, extra(card), tags(card)])];
-      return {content: '\uFEFF' + rows.map(row => row.map(spreadsheet).join(separator)).join('\r\n') + '\r\n',
-        mime: (format === 'tsv' ? 'text/tab-separated-values' : 'text/csv') + ';charset=utf-8',
-        filename: base + '-' + all.length + '.' + format, count: all.length};
-    }
-    if (format !== 'basic' && format !== 'cloze') throw new Error('Formato de exportação desconhecido.');
-    const isCloze = format === 'cloze';
-    const cards = all.filter(card => isCloze ? Boolean(card.cloze) : !card.cloze);
-    if (!cards.length) throw new Error('Não existem cartões do tipo ' + (isCloze ? 'Cloze' : 'Básico') + ' neste baralho.');
-    const deck = clean(options.deck) || 'Método PMDF::Flashcards';
-    const header = ['#separator:Tab', '#html:false', '#notetype:' + (isCloze ? 'Cloze' : 'Basic'),
-      '#deck:' + deck, '#tags column:3', '#columns:' + (isCloze ? 'Text\tExtra\tTags' : 'Front\tBack\tTags')];
-    // #html:false torna HTML do material literal. Quoting conserva aspas e tabs;
-    // linhas internas viram espaços para manter uma nota por linha na importação.
-    const field = value => quoted(text(value).replace(/\r\n?|\n/g, ' '));
-    const rows = cards.map(card => (isCloze ? [card.cloze, extra(card), tags(card)] :
-      [card.front, card.back + '\n\n' + extra(card), tags(card)]).map(field).join('\t'));
-    return {content: '\uFEFF' + header.concat(rows).join('\n') + '\n', mime: 'text/plain;charset=utf-8',
-      filename: base + '-anki-' + format + '-' + cards.length + '.txt', count: cards.length};
-  }
-
   root.PMDFFlashcardIO = Object.freeze({version: '20261124-standalone-v1', format: FORMAT, readers: READERS,
-    parseArticles, parseText, validateCards, readFile, readFileText, serialize, escapeHtml});
+    parseArticles, parseText, validateCards, readFile, readFileText, escapeHtml});
 })(typeof window === 'undefined' ? globalThis : window);

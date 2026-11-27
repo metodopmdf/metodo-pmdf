@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; script-src-attr 'none'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://cdnjs.cloudflare.com; worker-src 'self' blob: https://cdnjs.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'none'">
   <title>Método PMDF — Flashcards Anki</title>
-  <meta name="description" content="Estude a base Anki do Método PMDF por disciplina e assunto, revise com repetição espaçada e exporte seus flashcards.">
+  <meta name="description" content="Estude a base Anki do Método PMDF por disciplina e assunto e revise com repetição espaçada.">
   <meta name="theme-color" content="#17354d">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2317354d'/%3E%3Cpath d='M17 20h30v29H17zM23 14h30v29' fill='none' stroke='%23f2d38f' stroke-width='4'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="assets/pmdf-flashcards-standalone.css">
@@ -14,10 +14,10 @@
   <script defer src="assets/pmdf-flashcard-classifier.js"></script>
   <script defer src="assets/pmdf-neural-flashcards.js"></script>
   <script defer src="assets/pmdf-flashcards-perguntas.js"></script>
-  <script defer src="assets/pmdf-flashcard-io.js"></script>
+  <script defer src="assets/pmdf-flashcard-io.js?v=20261126-revisao"></script>
   <script defer src="assets/pmdf-flashcard-migration.js"></script>
   <script defer src="assets/pmdf-anki-catalog.js?v=20261125-anki-conteudo-v4"></script>
-  <script defer src="assets/pmdf-flashcards-app.js"></script>
+  <script defer src="assets/pmdf-flashcards-app.js?v=20261126-revisao"></script>
 </head>
 <body>
   <a class="skip-link" href="#anki-cfo-disciplina">Ir para a base de flashcards</a>
@@ -34,8 +34,8 @@
       <div class="anki-visual-intro-content">
         <span class="anki-visual-intro-kicker">✦ MEMORIZAÇÃO ESTRATÉGICA</span>
         <h1>Sua base Anki, pronta para <em>revisar.</em></h1>
-        <p>Escolha a disciplina e o assunto para estudar os flashcards já disponíveis. Revele o gabarito, acompanhe suas revisões e leve o baralho para o Anki.</p>
-        <div class="anki-visual-intro-pills"><span>Flashcards prontos</span><span>Revisão espaçada</span><span>Exportação para Anki</span></div>
+        <p>Escolha a disciplina e o assunto para estudar os flashcards já disponíveis. Revele o gabarito e acompanhe suas revisões direto no site.</p>
+        <div class="anki-visual-intro-pills"><span>Flashcards prontos</span><span>Revisão espaçada</span><span>Por disciplina e assunto</span></div>
       </div>
       <div class="anki-visual-intro-mark" aria-hidden="true">✦</div>
     </header>
@@ -75,13 +75,13 @@
           <div class="create-actions"><button type="submit" id="generate-cards" class="button primary">Criar flashcards <span aria-hidden="true">→</span></button><button type="button" id="stop-generation" class="button" hidden>Cancelar</button></div>
           <p id="generation-status" class="status" role="status" aria-live="polite">As respostas são extraídas do material fornecido. Revise os cartões antes de estudar.</p>
         </form>
-        <details class="method-help"><summary>Como a criação funciona</summary><p>O gerador original do Método PMDF reconhece definições, competências, prazos e condições em textos em português. Ele usa regras locais e um classificador de apoio; não é uma IA generativa.</p><p>Nem todo trecho produz um cartão. Textos sem fatos claros, incompletos ou muito extensos em uma única frase podem ficar de fora. Para conteúdo jurídico, confira a fonte e a redação vigente.</p><p>Seu texto não é enviado a uma API. O último baralho e seu progresso ficam neste navegador, quando o armazenamento está disponível. Exporte um backup JSON para guardar os cartões em outro lugar.</p></details>
+        <details class="method-help"><summary>Como a criação funciona</summary><p>O gerador original do Método PMDF reconhece definições, competências, prazos e condições em textos em português. Ele usa regras locais e um classificador de apoio; não é uma IA generativa.</p><p>Nem todo trecho produz um cartão. Textos sem fatos claros, incompletos ou muito extensos em uma única frase podem ficar de fora. Para conteúdo jurídico, confira a fonte e a redação vigente.</p><p>Seu texto não é enviado a uma API. O último baralho e seu progresso ficam neste navegador, quando o armazenamento está disponível.</p></details>
         </div>
       </details>
       </div>
 
       <aside class="panel deck-panel" aria-labelledby="deck-heading">
-        <div class="section-heading"><span class="step">02</span><div><h2 id="deck-heading">Revisar e exportar</h2><p id="deck-title">Preparando a base Anki.</p></div></div>
+        <div class="section-heading"><span class="step">02</span><div><h2 id="deck-heading">Revisar flashcards</h2><p id="deck-title">Preparando a base Anki.</p></div></div>
         <div class="deck-overview"><div><strong id="deck-count">0</strong><span>cartões no baralho</span></div><svg viewBox="0 0 100 88" width="100" height="88" fill="none" aria-hidden="true"><rect x="28" y="8" width="56" height="68" rx="8" fill="currentColor" opacity=".08" transform="rotate(12 56 42)"/><rect x="12" y="14" width="56" height="68" rx="8" fill="var(--bg-paper)" stroke="currentColor" stroke-width="2"/><path d="M26 34h29M26 44h21M26 54h25" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
         <p id="deck-breakdown" class="help">Escolha uma disciplina e um assunto na base Anki.</p>
         <p id="storage-status" class="help" role="status" aria-live="polite"></p>
@@ -91,12 +91,6 @@
         <div class="field-grid"><div><label for="anki-mode">Seleção</label><select id="anki-mode"><option value="due">Novos e vencidos</option><option value="all">Todos (treino livre)</option></select></div><div><label for="anki-batch-size">Cartões por sessão</label><select id="anki-batch-size"><option value="25">25</option><option value="50" selected>50</option><option value="100">100</option><option value="200">200</option><option value="all">Todos</option></select></div></div>
         <button type="button" id="start-review" class="button primary full" disabled>Iniciar revisão <span aria-hidden="true">→</span></button>
         <p id="review-status" class="help" role="status" aria-live="polite">Revele a resposta e avalie o quanto você lembrou.</p>
-        <div class="divider"></div>
-        <h3>Exportar</h3>
-        <label for="export-format">Formato do arquivo</label>
-        <select id="export-format"><option value="basic">Anki · Perguntas e respostas (.txt)</option><option value="cloze">Anki · Lacunas (.txt)</option><option value="csv">Planilha CSV</option><option value="tsv">Planilha TSV</option><option value="json">Backup dos cartões (.json)</option></select>
-        <button type="button" id="export-cards" class="button full" disabled>Baixar baralho</button>
-        <p class="help">Para o Anki, importe perguntas e lacunas separadamente. O backup JSON permite reabrir os cartões neste criador.</p>
       </aside>
     </div>
 

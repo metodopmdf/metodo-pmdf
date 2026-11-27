@@ -61,16 +61,6 @@ async function openCustom(page) {
   }
   await page.locator('#source-text').waitFor({state: 'visible'});
 }
-async function download(page, format) {
-  await page.selectOption('#export-format', format);
-  const pending = page.waitForEvent('download');
-  await page.click('#export-cards');
-  const result = await pending;
-  assert.equal(await result.failure(), null);
-  const content = await readFile(await result.path(), 'utf8');
-  assert(content.length > 20, 'Exportação vazia');
-  return {content, name: result.suggestedFilename()};
-}
 async function reviewAll(page) {
   await page.selectOption('#anki-mode', 'all');
   await page.selectOption('#anki-batch-size', '25');
@@ -82,7 +72,7 @@ try {
   browser = await playwright.chromium.launch({headless: true, executablePath, args: ['--no-sandbox']});
   const report = [];
   for (const device of [{name: 'desktop', width: 1440, height: 1000}, {name: 'mobile', width: 390, height: 844}]) {
-    const context = await browser.newContext({viewport: {width: device.width, height: device.height}, acceptDownloads: true});
+    const context = await browser.newContext({viewport: {width: device.width, height: device.height}});
     const page = await context.newPage();
     page.setDefaultTimeout(12000);
     const errors = [], external = [];
@@ -121,12 +111,8 @@ try {
     await page.click('#anki-nav-prev');
     assert(!(await page.locator("button[data-rating='good']").isVisible()), 'Voltar não deve permitir avaliar novamente o mesmo cartão');
 
-    const json = await download(page, 'json');
-    assert.match(json.name, /\.json$/);
-    const backup = JSON.parse(json.content);
-    assert.equal(backup.cards.length, count);
-    const basic = await download(page, 'basic');
-    assert.match(basic.content, /#notetype:Basic/);
+    assert.equal(await page.locator('#export-cards, #export-format, a[download]').count(), 0);
+    assert.equal(await page.evaluate(() => typeof window.PMDFFlashcardIO.serialize), 'undefined');
 
     await page.reload({waitUntil: 'networkidle'});
     assert.equal(await deckSize(page), count, 'O baralho deve sobreviver ao recarregamento');
@@ -141,9 +127,6 @@ try {
     await page.selectOption('#anki-card-style', 'cloze');
     await page.click('#generate-cards');
     await waitForCards(page);
-    const cloze = await download(page, 'cloze');
-    assert.match(cloze.content, /#notetype:Cloze/);
-    assert.match(cloze.content, /\{\{c1::/);
     await reviewAll(page);
     assert.equal(await page.locator('#anki-panel .anki-blank-masked').count() > 0, true);
     await page.click('#reveal-answer');
@@ -181,7 +164,7 @@ try {
     assert.deepEqual(await page.evaluate(() => window.__cspViolations), [], 'Violação da política de conteúdo');
     assert.deepEqual(errors, [], 'Erros JavaScript durante o fluxo');
     assert.deepEqual(external, [], 'O fluxo textual não deve depender de serviços externos');
-    report.push({device: device.name, generated: count, persistence: true, exports: ['json', 'basic', 'cloze'], escaped: true});
+    report.push({device: device.name, generated: count, persistence: true, noDeckExport: true, escaped: true});
     await context.close();
   }
   // A atualização deve recuperar somente a sessão local da conta identificada,
